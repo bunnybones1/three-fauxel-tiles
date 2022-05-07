@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+      "target": "es5",
+      "module": "commonjs",
+      "declaration": true,
+      "outDir": "./test-www",
+      "strict": true,
+      "typeRoots": [
+        "node_modules/@types",
+        "test/typings"
+      ],
+      "baseUrl": ".",
+      "paths": {
+        "*": ["node_modules/*"],
+        "~/*": ["test/*"],
+        "@lib/*": ["src/*"]
+      }
+    },
+    "exclude": ["node_modules", "**/__tests__/*"]
+  }

@@ -1,0 +1,78 @@
+{
+  "name": "three-force-directed-graph-on-gpu",
+  "version": "0.0.5",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "types/index.d.ts",
+  "description": "A test super-module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bunnybones1/three-force-directed-graph-on-gpu.git"
+  },
+  "scripts": {
+    "dev": "yarn lib:watch & yarn test:hotserve",
+    "lib:watch": "node ./esbuild-watch-lib.js",
+    "lib:build": "node ./esbuild-build-lib.js && yarn emit-declarations",
+    "test:watch": "node ./esbuild-watch-test.js",
+    "test:serve": "node ./esbuild-serve-test.js",
+    "test:hotserve": "node ./esbuild-hotserve-test.js",
+    "test:build": "node ./esbuild-build-test.js",
+    "tsc": "yarn run clean && tsc --project tsconfig.module.types.json",
+    "emit-declarations": "rm -rf ./types && tsc --project tsconfig.module.types.json --declaration --emitDeclarationOnly",
+    "dist": "yarn dist:clean && yarn dist:build",
+    "lib": "yarn lib:clean && yarn lib:build",
+    "clean": "rm -rf ./lib",
+    "lint": "yarn run lint:eslint && yarn run lint:prettier",
+    "lint:fix": "yarn run lint:fixeslint && yarn run lint:fixprettier",
+    "lint:eslint": "eslint ./src --ext .ts",
+    "lint:prettier": "prettier-check --config ./.prettierrc './src/**/*.ts'",
+    "lint:fixprettier": "prettier --config ./.prettierrc --write './src/**/*.ts' && prettier --config ./.prettierrc --write './test/**/*.ts'",
+    "lint:fixeslint": "eslint ./src --ext .ts --fix && eslint ./test --ext .ts --fix"
+  },
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "performance-polyfill": "^0.0.3",
+    "stream": "^0.0.2",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.4"
+  },
+  "peerDependencies": {
+    "three": "^0.134.0",
+    "three-force-directed-graph-on-gpu": "^0.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.31",
+    "@types/three": "^0.134.0",
+    "@typescript-eslint/eslint-plugin": "^4.31.0",
+    "@typescript-eslint/parser": "^4.31.0",
+    "esbuild": "^0.14.38",
+    "esbuild-hotserve": "^0.0.4",
+    "esbuild-node-externals": "^1.4.1",
+    "esbuild-plugin-glsl": "^1.1.0",
+    "eslint": "^7.32.0",
+    "get-port": "^6.1.2",
+    "glslify-loader": "^2.0.0",
+    "prettier": "^2.3.2",
+    "prettier-check": "^2.0.0",
+    "three": "^0.134.0",
+    "three-force-directed-graph-on-gpu": "^0.0.9",
+    "threejs-camera-controller-first-person-desktop": "^5.0.1",
+    "typescript": "4.4.2"
+  },
+  "bugs": {
+    "url": "https://github.com/bunnybones1/three-force-directed-graph-on-gpu/issues"
+  },
+  "homepage": "https://github.com/bunnybones1/three-force-directed-graph-on-gpu#readme",
+  "directories": {
+    "lib": "lib"
+  },
+  "keywords": [
+    "font",
+    "gamedev",
+    "threejs",
+    "webgl"
+  ],
+  "author": "Tomasz Dysinski"
+}
