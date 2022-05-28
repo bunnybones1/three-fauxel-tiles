@@ -1,3 +1,6 @@
+// noise algorthm is from https://www.shadertoy.com/view/4dS3Wd
+// written by Morgan McGuire https://github.com/morgan3d
+
 varying vec2 vUv;
 varying vec3 vColor;
 uniform float uPhase;
