@@ -102,9 +102,9 @@ float fbm(vec3 x) {
 
 void main() {
 	vec3 uv = vec3(vUv.x, vUv.y, uPhase);
-	float vx = NOISE(uv * 103.0);
-	float vy = NOISE(uv * 103.0 + 19.0);
-	float vz = NOISE(uv * 103.0 + 125.0);
+	float vx = NOISE(uv * 33.0);
+	float vy = NOISE(uv * 33.0 + 19.0);
+	float vz = NOISE(uv * 33.0 + 125.0);
 	// vec3 rawPos = fract(vec3(vx, vy, vz) * 100.0) * 2.0 - 1.0;
 	vec3 rawPos = vec3(vx, vy, vz) * 2.15 - 1.0;
 	vec3 pos = normalize(rawPos);

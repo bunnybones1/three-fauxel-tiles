@@ -37,7 +37,8 @@ export default class VelocityFieldKit extends RTDoubleBufferKit {
           uVelocitiesTexture: this.inputTextureUniform
         },
         depthTest: false,
-        depthWrite: false
+        depthWrite: false,
+        transparent: true
       })
     )
     this.scene.add(points)

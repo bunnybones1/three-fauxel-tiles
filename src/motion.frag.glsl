@@ -13,5 +13,5 @@ void main() {
     vec3 newPos = pos + vel * vec3(0.02);
     newPos = mod(newPos + 1.0, 2.0) - 1.0; //wrap around from -1.0 to 1.0
     vec3 normalized = normalize(newPos);
-    gl_FragColor = vec4(mix(newPos, normalized, 0.0005), 1.0);
+    gl_FragColor = vec4(mix(newPos, normalized, 0.0), 1.0);
 }
