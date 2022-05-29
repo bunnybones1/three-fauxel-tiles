@@ -5,17 +5,18 @@ import {
   Points,
   ShaderMaterial,
   Sphere,
-  Uniform,
   WebGLRenderer
 } from 'three'
 
 import fragmentShader from './point.frag.glsl'
 import vertexShader from './point.vert.glsl'
-import NoiseKit from './NoiseKit'
+import MotionKit from './MotionKit'
+import VelocityFieldKit from './VelocityFieldKit'
 
 export default class Atoms {
   visuals: Points
-  noiseKit: NoiseKit
+  motionKit: MotionKit
+  velocityKit: VelocityFieldKit
   constructor(edgeSize = 256) {
     const geo = new BufferGeometry()
     const total = edgeSize * edgeSize
@@ -31,26 +32,35 @@ export default class Atoms {
     geo.setAttribute('position', new BufferAttribute(bufferArr, 3))
     geo.boundingSphere = new Sphere(undefined, 1)
 
-    const noiseKit = new NoiseKit(edgeSize)
+    const motionKit = new MotionKit(edgeSize, geo)
+    const velocityKit = new VelocityFieldKit(
+      64,
+      geo,
+      motionKit.outputTextureUniform
+    )
+    motionKit.linkInput('uVelocitiesTexture', velocityKit.outputTextureUniform)
 
-    const mat2 = new ShaderMaterial({
+    const pointsMat = new ShaderMaterial({
       fragmentShader,
       vertexShader,
       uniforms: {
-        uMap: new Uniform(noiseKit.rt.texture)
+        uMap: motionKit.outputTextureUniform
       },
       blending: AdditiveBlending,
       depthTest: false
     })
-    const visuals = new Points(geo, mat2)
+    const visuals = new Points(geo, pointsMat)
 
-    // visuals.add(noiseKit.getTestPlane())
+    // visuals.add(velocityKit.getTestPlane())
 
-    this.noiseKit = noiseKit
+    this.motionKit = motionKit
+    this.velocityKit = velocityKit
     this.visuals = visuals
   }
   update(renderer: WebGLRenderer, dt: number) {
-    this.noiseKit.render(renderer, dt)
+    this.motionKit.render(renderer, dt)
+    this.velocityKit.render(renderer, dt)
+    this.visuals.rotation.y += dt * 0.2
     //
   }
 }

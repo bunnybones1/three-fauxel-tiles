@@ -14,8 +14,8 @@ const renderer = new WebGLRenderer({
   canvas,
   // context,
   antialias: true,
-  premultipliedAlpha: false
-  // powerPreference: "high-performance"
+  premultipliedAlpha: false,
+  powerPreference: 'high-performance'
   // powerPreference: "low-power"
 })
 document.body.append(canvas)
@@ -37,7 +37,7 @@ renderer.shadowMap.type = PCFShadowMap
 renderer.outputEncoding = sRGBEncoding
 // renderer.gammaOutput = true
 // renderer.gammaFactor = 2.2
-renderer.autoClear = false
+renderer.autoClear = true
 
 const downsample = new NiceParameter(
   'pixel-down-sample',

@@ -102,10 +102,12 @@ float fbm(vec3 x) {
 
 void main() {
 	vec3 uv = vec3(vUv.x, vUv.y, uPhase);
-	float vx = NOISE(uv * 16.0);
-	float vy = NOISE(uv * 16.0 + 9.0);
-	float vz = NOISE(uv * 16.0 + 25.0);
-	vec3 rawPos = vec3(vx, vy, vz) * 2.0 - 1.0;
+	float vx = NOISE(uv * 103.0);
+	float vy = NOISE(uv * 103.0 + 19.0);
+	float vz = NOISE(uv * 103.0 + 125.0);
+	// vec3 rawPos = fract(vec3(vx, vy, vz) * 100.0) * 2.0 - 1.0;
+	vec3 rawPos = vec3(vx, vy, vz) * 2.15 - 1.0;
 	vec3 pos = normalize(rawPos);
-	gl_FragColor = vec4(mix(pos, rawPos, 0.0) * 0.5 + 0.5, 1.0);
+	// gl_FragColor = vec4(rawPos, 1.0);
+	gl_FragColor = vec4(mix(pos, rawPos, 0.1), 1.0);
 }
