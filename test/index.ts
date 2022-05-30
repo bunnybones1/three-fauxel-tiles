@@ -6,6 +6,7 @@ import renderer from './renderer'
 import { testClasses } from './tests'
 import { timeUniform } from './uniforms'
 import { cameraShaker } from './utils/cameraShaker'
+import { recorderCanvas, recordFrame } from './utils/canvasRecorder'
 import { getUrlParam } from './utils/location'
 import { nextFrameUpdate } from './utils/onNextFrame'
 import UpdateManager from './utils/UpdateManager'
@@ -25,28 +26,44 @@ if (testClasses.hasOwnProperty(testParam)) {
 
 const test: BaseTestScene = new TestClass()
 
-const nthFrame: number = parseInt(getUrlParam('nthFrame') || '1')
-let frameCounter = 0
-let renderDt = 0
-const loop = () => {
-  frameCounter++
-  const dt = clock.getDelta()
-  renderDt += dt
+if (recorderCanvas) {
+  let lastTime = 0
+  recordFrame((time) => {
+    const dt = (time - lastTime) * 0.001
+    lastTime = time
+    nextFrameUpdate()
+    UpdateManager.update(dt)
+    timeUniform.value += dt
 
-  nextFrameUpdate()
-  UpdateManager.update(dt)
-  timeUniform.value += dt
+    test.update(dt)
+    test.render(renderer, dt)
+  })
 
-  test.update(dt)
-  if (frameCounter % nthFrame !== 0) {
+  // Start loop
+} else {
+  const nthFrame: number = parseInt(getUrlParam('nthFrame') || '1')
+  let frameCounter = 0
+  let renderDt = 0
+  const loop = () => {
+    frameCounter++
+    const dt = clock.getDelta()
+    renderDt += dt
+
+    nextFrameUpdate()
+    UpdateManager.update(dt)
+    timeUniform.value += dt
+
+    test.update(dt)
+    if (frameCounter % nthFrame !== 0) {
+      requestAnimationFrame(loop)
+      return
+    }
+    test.render(renderer, renderDt)
+    renderDt = 0
+
     requestAnimationFrame(loop)
-    return
   }
-  test.render(renderer, renderDt)
-  renderDt = 0
 
+  // Start loop
   requestAnimationFrame(loop)
 }
-
-// Start loop
-requestAnimationFrame(loop)

@@ -6,13 +6,14 @@ import {
   devicePixelRatioUniform,
   pixelSizeInClipSpaceUniform
 } from './uniforms'
+import { recorderCanvas, recorderContext } from './utils/canvasRecorder'
 import { NiceParameter } from './utils/NiceParameter'
 
-const canvas = document.createElement('canvas')
+const canvas = recorderCanvas || document.createElement('canvas')
 // const context = canvas.getContext('webgl') as WebGLRenderingContext
 const renderer = new WebGLRenderer({
   canvas,
-  // context,
+  context: recorderContext,
   antialias: true,
   premultipliedAlpha: false,
   powerPreference: 'high-performance'
