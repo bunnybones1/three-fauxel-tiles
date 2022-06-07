@@ -49,5 +49,5 @@ void main() {
     texel += texture2D(uFieldVelocitiesTexture, uv4).xyz;
     texel += texture2D(uFieldVelocitiesTexture, uv5).xyz;
     texel += texture2D(uFieldVelocitiesTexture, uv6).xyz;
-    gl_FragColor = vec4(texel * 0.02, 1.0);
+    gl_FragColor = vec4(texel * 0.019, 1.0);
 }

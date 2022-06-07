@@ -12,11 +12,13 @@ import fragmentShader from './point.frag.glsl'
 import vertexShader from './point.vert.glsl'
 import MotionKit from './MotionKit'
 import VelocityFieldKit from './VelocityFieldKit'
+import DensityFieldKit from './DensityFieldKit'
 
 export default class Atoms {
   visuals: Points
   motionKit: MotionKit
   velocityKit: VelocityFieldKit
+  densityKit: DensityFieldKit
   constructor(edgeSize = 256) {
     const geo = new BufferGeometry()
     const total = edgeSize * edgeSize
@@ -40,6 +42,13 @@ export default class Atoms {
     )
     motionKit.linkInput('uVelocitiesTexture', velocityKit.outputTextureUniform)
 
+    const densityKit = new DensityFieldKit(
+      64,
+      geo,
+      motionKit.outputTextureUniform
+    )
+    motionKit.linkInput('uDensitiesTexture', densityKit.outputTextureUniform)
+
     const pointsMat = new ShaderMaterial({
       fragmentShader,
       vertexShader,
@@ -52,14 +61,17 @@ export default class Atoms {
     const visuals = new Points(geo, pointsMat)
 
     // visuals.add(velocityKit.getTestPlane())
+    // visuals.add(densityKit.getTestPlane())
 
     this.motionKit = motionKit
     this.velocityKit = velocityKit
+    this.densityKit = densityKit
     this.visuals = visuals
   }
   update(renderer: WebGLRenderer, dt: number) {
     this.motionKit.render(renderer, dt)
     this.velocityKit.render(renderer, dt)
+    this.densityKit.render(renderer, dt)
     this.visuals.rotation.y += dt * 0.2
     //
   }
