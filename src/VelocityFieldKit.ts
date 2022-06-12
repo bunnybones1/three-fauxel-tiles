@@ -7,8 +7,8 @@ import {
   WebGLRenderTarget
 } from 'three'
 
-import fragmentShader2 from './velocityField.frag.glsl'
-import vertexShader2 from './velocityField.vert.glsl'
+import fragmentShader from './velocityField.frag.glsl'
+import vertexShader from './velocityField.vert.glsl'
 import fadeFragmentShader from './fade.frag.glsl'
 import fadeVertexShader from './fullclip.vert.glsl'
 import NoiseKit from './NoiseKit'
@@ -30,8 +30,8 @@ export default class VelocityFieldKit extends RTDoubleBufferKit {
     const points = new Points(
       pointGeo,
       new ShaderMaterial({
-        vertexShader: vertexShader2,
-        fragmentShader: fragmentShader2,
+        vertexShader,
+        fragmentShader,
         uniforms: {
           uPositionsTexture: positionsTextureUniform,
           uVelocitiesTexture: this.inputTextureUniform

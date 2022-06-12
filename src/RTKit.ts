@@ -1,9 +1,9 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   IUniform,
   Mesh,
   OrthographicCamera,
-  PlaneGeometry,
   Scene,
   ShaderMaterial,
   Uniform,
@@ -13,15 +13,16 @@ import {
 import basicFragmentShader from './map.frag.glsl'
 import basicVertexShader from './fullclip.vert.glsl'
 import { getBasicRenderTarget } from './renderTargetUtils'
+import { getSharedRectangleGeometry } from '../test/utils/geometry'
 
 export default class RTKit {
   outputTextureUniform: Uniform
-  plane: Mesh<PlaneGeometry, ShaderMaterial>
+  plane: Mesh<BufferGeometry, ShaderMaterial>
   rt: WebGLRenderTarget
   outputRt: WebGLRenderTarget
   getTestPlane() {
     return new Mesh(
-      new PlaneGeometry(2, 2),
+      getSharedRectangleGeometry(),
       new ShaderMaterial({
         vertexShader: basicVertexShader,
         fragmentShader: basicFragmentShader,
@@ -49,7 +50,7 @@ export default class RTKit {
     const scene = new Scene()
 
     const plane = new Mesh(
-      new PlaneGeometry(2, 2),
+      getSharedRectangleGeometry(),
       new ShaderMaterial({
         vertexShader,
         fragmentShader,

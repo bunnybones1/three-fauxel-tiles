@@ -1,4 +1,9 @@
-import { SphereBufferGeometry, Vector3 } from 'three'
+import {
+  BufferGeometry,
+  PlaneGeometry,
+  SphereBufferGeometry,
+  Vector3
+} from 'three'
 
 import { inferDirection } from './math'
 
@@ -51,4 +56,12 @@ export function getCachedChamferedBoxGeometry(
     )
   }
   return __cachedChamferedBoxGeometry.get(key)!
+}
+
+let __sharedRectangleGeometry: BufferGeometry | undefined
+export function getSharedRectangleGeometry() {
+  if (!__sharedRectangleGeometry) {
+    __sharedRectangleGeometry = new PlaneGeometry(2, 2)
+  }
+  return __sharedRectangleGeometry!
 }
