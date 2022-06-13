@@ -4,6 +4,7 @@
 varying vec2 vUv;
 varying vec3 vColor;
 uniform float uPhase;
+uniform float uOpacity;
 // For multiple octaves
 #define NOISE fbm
 #define NUM_NOISE_OCTAVES 5
@@ -109,5 +110,5 @@ void main() {
 	vec3 rawPos = vec3(vx, vy, vz) * 2.15 - 1.0;
 	vec3 pos = normalize(rawPos);
 	// gl_FragColor = vec4(rawPos, 1.0);
-	gl_FragColor = vec4(mix(pos, rawPos, 0.1), 1.0);
+	gl_FragColor = vec4(mix(pos, rawPos, 0.1) * uOpacity, 1.0);
 }

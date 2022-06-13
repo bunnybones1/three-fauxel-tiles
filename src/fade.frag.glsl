@@ -24,12 +24,12 @@ void main() {
     vec3 uvw = vec3(xy, z);
     vec3 pos = uvw * 2.0 - 1.0;
 
-    vec2 uv1 = offset(pos, vec3(0.0, 0.0, zStep));
-    vec2 uv2 = offset(pos, vec3(0.0, 0.0, -zStep));
+    vec2 uv1 = offset(pos, vec3(xyStep, 0.0, 0.0));
+    vec2 uv2 = offset(pos, vec3(-xyStep, 0.0, 0.0));
     vec2 uv3 = offset(pos, vec3(0.0, xyStep, 0.0));
     vec2 uv4 = offset(pos, vec3(0.0, -xyStep, 0.0));
-    vec2 uv5 = offset(pos, vec3(xyStep, 0.0, 0.0));
-    vec2 uv6 = offset(pos, vec3(-xyStep, 0.0, 0.0));
+    vec2 uv5 = offset(pos, vec3(0.0, 0.0, zStep));
+    vec2 uv6 = offset(pos, vec3(0.0, 0.0, -zStep));
 
 
 
@@ -41,7 +41,7 @@ void main() {
 
     // gl_FragColor = texture2D(uFieldVelocitiesTexture, vUv);
 
-    vec3 texel = texture2D(uFieldVelocitiesTexture, vUv).xyz * 44.0;
+    vec3 texel = texture2D(uFieldVelocitiesTexture, vUv).xyz * 14.0;
     
     texel += texture2D(uFieldVelocitiesTexture, uv1).xyz;
     texel += texture2D(uFieldVelocitiesTexture, uv2).xyz;
@@ -49,5 +49,5 @@ void main() {
     texel += texture2D(uFieldVelocitiesTexture, uv4).xyz;
     texel += texture2D(uFieldVelocitiesTexture, uv5).xyz;
     texel += texture2D(uFieldVelocitiesTexture, uv6).xyz;
-    gl_FragColor = vec4(texel * 0.019, 1.0);
+    gl_FragColor = vec4(texel * 0.045, 1.0);
 }
