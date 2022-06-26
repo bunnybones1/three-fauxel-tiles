@@ -1,10 +1,12 @@
 import {
-  AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
+  NearestFilter,
   Points,
   ShaderMaterial,
   Sphere,
+  TextureLoader,
+  Uniform,
   WebGLRenderer
 } from 'three'
 
@@ -13,13 +15,14 @@ import vertexShader from './point.vert.glsl'
 import MotionKit from './MotionKit'
 import VelocityFieldKit from './VelocityFieldKit'
 import DensityFieldKit from './DensityFieldKit'
+import { getTempTexture } from '../test/utils/threeUtils'
 
 export default class Atoms {
   visuals: Points
   motionKit: MotionKit
   velocityKit: VelocityFieldKit
   densityKit: DensityFieldKit
-  constructor(edgeSize = 256) {
+  constructor(edgeSize = 8) {
     const geo = new BufferGeometry()
     const total = edgeSize * edgeSize
     const bufferArr = new Float32Array(total * 3)
@@ -36,14 +39,14 @@ export default class Atoms {
 
     const motionKit = new MotionKit(edgeSize, geo)
     const velocityKit = new VelocityFieldKit(
-      64,
+      16,
       geo,
       motionKit.outputTextureUniform
     )
     motionKit.linkInput('uVelocitiesTexture', velocityKit.outputTextureUniform)
 
     const densityKit = new DensityFieldKit(
-      64,
+      16,
       geo,
       motionKit.outputTextureUniform
     )
@@ -53,15 +56,24 @@ export default class Atoms {
       fragmentShader,
       vertexShader,
       uniforms: {
-        uMap: motionKit.outputTextureUniform
+        uMap: motionKit.outputTextureUniform,
+        uParticleTexture: new Uniform(getTempTexture())
       },
-      blending: AdditiveBlending,
-      depthTest: false
+      // blending: AdditiveBlending,
+      depthWrite: true,
+      depthTest: true
+    })
+    const loader = new TextureLoader()
+    loader.load('sphere-sprite.png', (t)=> {
+      t.flipY = false
+      t.magFilter = NearestFilter
+      t.minFilter = NearestFilter
+      pointsMat.uniforms.uParticleTexture = new Uniform(t)
     })
     const visuals = new Points(geo, pointsMat)
 
     // visuals.add(velocityKit.getTestPlane())
-    // visuals.add(densityKit.getTestPlane())
+    visuals.add(densityKit.getTestPlane())
 
     this.motionKit = motionKit
     this.velocityKit = velocityKit
@@ -72,7 +84,7 @@ export default class Atoms {
     this.motionKit.render(renderer, dt)
     this.velocityKit.render(renderer, dt)
     this.densityKit.render(renderer, dt)
-    this.visuals.rotation.y += dt * 0.2
+    // this.visuals.rotation.y += dt * 0.2
     //
   }
 }
