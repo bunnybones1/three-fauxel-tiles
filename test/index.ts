@@ -4,7 +4,7 @@ import { BaseTestScene } from './helpers/scenes/BaseTestScene'
 import TestPointRenderingScene from './helpers/scenes/TestPointRenderingScene'
 import renderer from './renderer'
 import { testClasses } from './tests'
-import { timeUniform } from './uniforms'
+import { timeFractUniform, timeUniform } from './uniforms'
 import { cameraShaker } from './utils/cameraShaker'
 import { recorderCanvas, recordFrame } from './utils/canvasRecorder'
 import { getUrlParam } from './utils/location'
@@ -34,6 +34,7 @@ if (recorderCanvas) {
     nextFrameUpdate()
     UpdateManager.update(dt)
     timeUniform.value += dt
+    timeFractUniform.value = (timeFractUniform.value + dt) % 1
 
     test.update(dt)
     test.render(renderer, dt)
@@ -52,6 +53,7 @@ if (recorderCanvas) {
     nextFrameUpdate()
     UpdateManager.update(dt)
     timeUniform.value += dt
+    timeFractUniform.value = (timeFractUniform.value + dt) % 1
 
     test.update(dt)
     if (frameCounter % nthFrame !== 0) {

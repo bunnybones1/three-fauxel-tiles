@@ -13,7 +13,6 @@ import fragmentShader from './velocityField.frag.glsl'
 import vertexShader from './velocityField.vert.glsl'
 import fadeFragmentShader from './fade.frag.glsl'
 import fullClipVertexShader from './fullclip.vert.glsl'
-import noiseFragmentShader from './noise.frag.glsl'
 import NoiseKit from './NoiseKit'
 import RTDoubleBufferKit from './RTDoubleBufferKit'
 import { getSharedRectangleGeometry } from '../test/utils/geometry'
@@ -23,7 +22,8 @@ export default class VelocityFieldKit extends RTDoubleBufferKit {
   constructor(
     edgeSize3d: number,
     pointGeo: BufferGeometry,
-    positionsTextureUniform: Uniform
+    positionsTextureUniform: Uniform,
+    velocitiesTextureUniform: Uniform
   ) {
     const edgeSize2d = Math.sqrt(Math.pow(edgeSize3d, 3))
     const initPositionNoiseKit = new NoiseKit(edgeSize2d)
@@ -38,7 +38,7 @@ export default class VelocityFieldKit extends RTDoubleBufferKit {
         fragmentShader,
         uniforms: {
           uPositionsTexture: positionsTextureUniform,
-          uVelocitiesTexture: this.inputTextureUniform
+          uVelocitiesTexture: velocitiesTextureUniform
         },
         depthTest: false,
         depthWrite: false,
@@ -46,27 +46,8 @@ export default class VelocityFieldKit extends RTDoubleBufferKit {
         blending: AdditiveBlending
       })
     )
-    const phaseUniform = new Uniform(0)
-    const opacityUniform = new Uniform(0.015)
-    const uniforms = { uPhase: phaseUniform, uOpacity: opacityUniform }
-    const plane2 = new Mesh(
-      getSharedRectangleGeometry(),
-      new ShaderMaterial({
-        vertexShader: fullClipVertexShader,
-        fragmentShader: noiseFragmentShader,
-        uniforms,
-        depthTest: false,
-        depthWrite: false,
-        transparent: true,
-        blending: AdditiveBlending
-      })
-    )
-    this.scene.add(plane2)
     this.scene.add(points)
-    // this.plane.material.visible = false
-    // plane2.material.visible = false
     this.plane.renderOrder = -2
-    plane2.renderOrder = -1
   }
   render(renderer: WebGLRenderer, dt: number) {
     if (!this.initd) {

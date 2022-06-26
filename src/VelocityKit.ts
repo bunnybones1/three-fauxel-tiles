@@ -2,24 +2,24 @@ import {
   WebGLRenderer,
 } from 'three'
 
-import fragmentShader from './motion.frag.glsl'
+import fragmentShader from './velocity.frag.glsl'
 import vertexShader from './fullclip.vert.glsl'
 import NoiseKit from './NoiseKit'
 import RTDoubleBufferKit from './RTDoubleBufferKit'
-export default class MotionKit extends RTDoubleBufferKit {
-  private _initPositionsNoiseKit: NoiseKit
+export default class VelocityKit extends RTDoubleBufferKit {
+  private _initVelocitiesNoiseKit: NoiseKit
   initd = false
   constructor(edgeSize: number) {
-    const initPositionNoiseKit = new NoiseKit(edgeSize)
-    super(initPositionNoiseKit, vertexShader, fragmentShader, {})
-    this.linkInput('uPositionsTexture', this.inputTextureUniform)
-    this._initPositionsNoiseKit = initPositionNoiseKit
+    const initVelocityNoiseKit = new NoiseKit(edgeSize, 0.01)
+    super(initVelocityNoiseKit, vertexShader, fragmentShader, {})
+    this.linkInput('uVelocitiesTexture', this.inputTextureUniform)
+    this._initVelocitiesNoiseKit = initVelocityNoiseKit
   }
   render(renderer: WebGLRenderer, dt: number) {
     if (!this.initd) {
       this.initd = true
       this.swap()
-      this._initPositionsNoiseKit.render(renderer, dt)
+      this._initVelocitiesNoiseKit.render(renderer, dt)
     }
     this.swap()
     renderer.setRenderTarget(this.outputRt)

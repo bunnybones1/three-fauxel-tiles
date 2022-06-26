@@ -6,9 +6,9 @@ import RTKit from './RTKit'
 export default class NoiseKit extends RTKit {
   dirty = true
   _phaseUniform: Uniform
-  constructor(edgeSize: number) {
+  constructor(edgeSize: number, initialOpacity = 1) {
     const phaseUniform = new Uniform(0)
-    const opacityUniform = new Uniform(1)
+    const opacityUniform = new Uniform(initialOpacity)
     const uniforms = { uPhase: phaseUniform, uOpacity: opacityUniform }
     super(edgeSize, vertexShader, fragmentShader, uniforms)
 

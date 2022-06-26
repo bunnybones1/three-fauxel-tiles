@@ -13,7 +13,7 @@ export default class TestPointRenderingScene extends BaseTestScene {
   atoms: any
   constructor() {
     super()
-    this.camera.position.set(0, 0, 0.5)
+    this.camera.position.set(0, 0.4, 0.4)
 
     this.camera.lookAt(0, 0, 0)
     // this.camera.updateProjectionMatrix()

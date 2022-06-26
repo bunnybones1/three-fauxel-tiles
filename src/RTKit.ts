@@ -42,9 +42,10 @@ export default class RTKit {
     fragmentShader: string,
     protected _uniforms: {
       [uniform: string]: IUniform<any>
-    }
+    },
+    depth = false
   ) {
-    const rt = getBasicRenderTarget(edgeSize)
+    const rt = getBasicRenderTarget(edgeSize, depth)
     this.outputTextureUniform = new Uniform(rt.texture)
 
     const scene = new Scene()
