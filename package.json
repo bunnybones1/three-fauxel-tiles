@@ -1,15 +1,15 @@
 {
-  "name": "three-force-directed-graph-on-gpu",
+  "name": "three-volumetric-simulation",
   "version": "0.0.5",
   "license": "MIT",
   "private": false,
   "type": "module",
   "main": "lib/index.js",
   "types": "types/index.d.ts",
-  "description": "A test super-module",
+  "description": "An experimental approach to GPU physics for a 3D game",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bunnybones1/three-force-directed-graph-on-gpu.git"
+    "url": "git+https://github.com/bunnybones1/three-volumetric-simulation.git"
   },
   "scripts": {
     "dev": "yarn lib:watch & yarn test:hotserve",
@@ -63,9 +63,9 @@
     "typescript": "4.4.2"
   },
   "bugs": {
-    "url": "https://github.com/bunnybones1/three-force-directed-graph-on-gpu/issues"
+    "url": "https://github.com/bunnybones1/three-volumetric-simulation/issues"
   },
-  "homepage": "https://github.com/bunnybones1/three-force-directed-graph-on-gpu#readme",
+  "homepage": "https://github.com/bunnybones1/three-volumetric-simulation#readme",
   "directories": {
     "lib": "lib"
   },

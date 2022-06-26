@@ -14,7 +14,7 @@ Platform:
   darwin x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/three-force-directed-graph-on-gpu: Not found
+  Error: https://registry.yarnpkg.com/three-volumetric-simulation: Not found
       at Request.params.callback [as _callback] (/Users/tomaszdysinski/.yarn/lib/cli.js:67031:18)
       at Request.self.callback (/Users/tomaszdysinski/.yarn/lib/cli.js:140885:22)
       at Request.emit (node:events:390:28)
@@ -28,7 +28,7 @@ Trace:
 
 npm manifest: 
   {
-    "name": "three-force-directed-graph-on-gpu",
+    "name": "three-volumetric-simulation",
     "version": "0.0.5",
     "license": "MIT",
     "private": false,
@@ -38,7 +38,7 @@ npm manifest:
     "description": "A test super-module",
     "repository": {
       "type": "git",
-      "url": "git+https://github.com/bunnybones1/three-force-directed-graph-on-gpu.git"
+      "url": "git+https://github.com/bunnybones1/three-volumetric-simulation.git"
     },
     "scripts": {
       "dev": "yarn lib:watch & yarn test:hotserve",
@@ -69,7 +69,7 @@ npm manifest:
     },
     "peerDependencies": {
       "three": "^0.134.0",
-      "three-force-directed-graph-on-gpu": "^0.0.9"
+      "three-volumetric-simulation": "^0.0.9"
     },
     "devDependencies": {
       "@types/node": "^17.0.31",
@@ -86,14 +86,14 @@ npm manifest:
       "prettier": "^2.3.2",
       "prettier-check": "^2.0.0",
       "three": "^0.134.0",
-      "three-force-directed-graph-on-gpu": "^0.0.9",
+      "three-volumetric-simulation": "^0.0.9",
       "threejs-camera-controller-first-person-desktop": "^5.0.1",
       "typescript": "4.4.2"
     },
     "bugs": {
-      "url": "https://github.com/bunnybones1/three-force-directed-graph-on-gpu/issues"
+      "url": "https://github.com/bunnybones1/three-volumetric-simulation/issues"
     },
-    "homepage": "https://github.com/bunnybones1/three-force-directed-graph-on-gpu#readme",
+    "homepage": "https://github.com/bunnybones1/three-volumetric-simulation#readme",
     "directories": {
       "lib": "lib"
     },

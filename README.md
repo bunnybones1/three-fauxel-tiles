@@ -1,4 +1,4 @@
-# three-force-directed-graph-on-gpu
+# three-volumetric-simulation
 A experiment to drive a force-directed layout via WebGL, using custom shaders
 
 
