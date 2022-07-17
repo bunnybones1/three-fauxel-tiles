@@ -5,5 +5,6 @@ void main() {
 	if(texel.a < 0.5) {
 		discard;
 	}
-	gl_FragColor = vec4(vColor, 1.0) * texel;
+	// gl_FragColor = vec4(vColor, 1.0) * texel;
+	gl_FragColor = texel;
 }

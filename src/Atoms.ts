@@ -26,7 +26,7 @@ export default class Atoms {
   occupationKit: OccupationFieldKit
   densityKit: DensityFieldKit
   velocityKit: VelocityKit
-  constructor(edgeSize = 32) {
+  constructor(edgeSize = 128) {
     const geo = new BufferGeometry()
     const total = edgeSize * edgeSize
     const bufferArr = new Float32Array(total * 3)
@@ -52,7 +52,10 @@ export default class Atoms {
       motionKit.outputTextureUniform,
       velocityKit.outputTextureUniform
     )
-    velocityKit.linkInput('uFieldVelocitiesTexture', velocityFieldKit.outputTextureUniform)
+    velocityKit.linkInput(
+      'uFieldVelocitiesTexture',
+      velocityFieldKit.outputTextureUniform
+    )
 
     const densityKit = new DensityFieldKit(
       16,
@@ -66,7 +69,10 @@ export default class Atoms {
       geo,
       motionKit.outputTextureUniform
     )
-    velocityKit.linkInput('uOccupationTexture', occupationKit.outputTextureUniform)
+    velocityKit.linkInput(
+      'uOccupationTexture',
+      occupationKit.outputTextureUniform
+    )
 
     const pointsMat = new ShaderMaterial({
       fragmentShader,
@@ -79,7 +85,7 @@ export default class Atoms {
       depthTest: true
     })
     const loader = new TextureLoader()
-    loader.load('sphere-sprite.png', (t)=> {
+    loader.load('sphere-sprite2.png', (t) => {
       t.flipY = false
       t.magFilter = NearestFilter
       t.minFilter = NearestFilter
@@ -88,7 +94,7 @@ export default class Atoms {
     const visuals = new Points(geo, pointsMat)
 
     // visuals.add(motionKit.getTestPlane())
-    visuals.add(velocityFieldKit.getTestPlane())
+    // visuals.add(velocityFieldKit.getTestPlane())
     // visuals.add(velocityKit.getTestPlane())
     // visuals.add(densityKit.getTestPlane())
     // visuals.add(occupationKit.getTestPlane())

@@ -1,6 +1,4 @@
-import {
-  WebGLRenderer,
-} from 'three'
+import { WebGLRenderer } from 'three'
 
 import fragmentShader from './velocity.frag.glsl'
 import vertexShader from './fullclip.vert.glsl'

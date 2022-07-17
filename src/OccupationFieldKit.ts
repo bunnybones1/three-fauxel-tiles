@@ -36,7 +36,7 @@ export default class OccupationFieldKit extends RTKit {
           uTimeFract: timeFractUniform
         },
         depthTest: true,
-        depthWrite: true,
+        depthWrite: true
       })
     )
     this.scene.add(points)

@@ -51,11 +51,13 @@ void main() {
     texel += texture2D(uFieldVelocitiesTexture, uv6).xyz;
     // float z = mix(mix(0.0, -0.05, step(pos.z, -0.9)), 0.05, step(pos.z, -0.6));
     // float z = mix(mix(0.0, -0.05, step(pos.z, -0.9)), 0.05, step(pos.z, -0.6));
-    float zThresh = pos.z;// + length(pos.xy) * -0.045;
-    float gravity = mix(-0.1, 0.0, step(zThresh, -0.3));
-    float floor = mix(0.0, 0.05, step(zThresh, -0.5));
-    float vertical = mix(gravity, floor, step(zThresh, -0.4));
-    vec3 vel = mix(vec3(texel * 0.045), vec3(0.0, 0.0, vertical), 0.015);
+    // float zThresh = pos.z;// + length(pos.xy) * -0.045;
+    // float gravity = mix(-0.1, 0.0, step(zThresh, -0.3));
+    // float floor = mix(0.0, 0.45, step(zThresh, -0.5));
+    // float vertical = floor;
+    // float vertical = mix(gravity, floor, step(zThresh, -0.4));
+    // vec3 vel = mix(vec3(texel * 0.045), vec3(0.0, 0.0, vertical), 0.015);
+    vec3 vel = vec3(texel * 0.045);
 
     float speed = max(0.0, length(vel));
     vec3 dir = normalize(vel);
