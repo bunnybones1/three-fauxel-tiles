@@ -16,7 +16,7 @@ serve({
     tsconfig: './tsconfig.test.json',
     plugins: [
         glsl({
-            minify: true
+            minify: false
         })
     ]
   })

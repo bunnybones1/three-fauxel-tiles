@@ -13,6 +13,7 @@ const canvas = recorderCanvas || document.createElement('canvas')
 // const context = canvas.getContext('webgl') as WebGLRenderingContext
 const renderer = new WebGLRenderer({
   canvas,
+  // context,
   context: recorderContext,
   antialias: true,
   premultipliedAlpha: false,
@@ -33,12 +34,12 @@ attributeValues.forEach((v) => {
     canvas.style.setProperty('image-rendering', v)
   }
 })
-renderer.shadowMap.enabled = true
+renderer.shadowMap.enabled = false
 renderer.shadowMap.type = PCFShadowMap
 renderer.outputEncoding = sRGBEncoding
 // renderer.gammaOutput = true
 // renderer.gammaFactor = 2.2
-renderer.autoClear = true
+renderer.autoClear = false
 
 const downsample = new NiceParameter(
   'pixel-down-sample',

@@ -1,0 +1,15 @@
+{
+  "short_name": "Any Key",
+  "name": "Any Key",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "icons": [
+    {
+        "src": "images/favicon/android-chrome-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+    }
+  ]
+}

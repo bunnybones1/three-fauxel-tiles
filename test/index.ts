@@ -1,7 +1,6 @@
 import { Clock, Color, Vector3 } from 'three'
 
-import { BaseTestScene } from './helpers/scenes/BaseTestScene'
-import TestPointRenderingScene from './helpers/scenes/TestPointRenderingScene'
+import BaseTestScene from './helpers/scenes/BaseTestScene'
 import renderer from './renderer'
 import { testClasses } from './tests'
 import { timeFractUniform, timeUniform } from './uniforms'
@@ -18,7 +17,7 @@ renderer.setClearColor(new Color(0x344556), 1.0)
 cameraShaker.camera.position.set(0, 0.5, 0.5)
 cameraShaker.camera.lookAt(new Vector3())
 
-let TestClass: new () => BaseTestScene = TestPointRenderingScene
+let TestClass: new () => BaseTestScene = BaseTestScene
 const testParam = getUrlParam('test') || 'pixelText'
 if (testClasses.hasOwnProperty(testParam)) {
   TestClass = testClasses[testParam]

@@ -14,7 +14,7 @@ build({
     tsconfig: './tsconfig.module.json',
     plugins: [
         glsl({
-            minify: true
+            minify: false
         }),
         nodeExternalsPlugin()
     ],

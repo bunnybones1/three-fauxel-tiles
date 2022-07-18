@@ -11,7 +11,7 @@ import { getUrlColor } from '~/utils/location'
 
 const FOV = 35
 const MOBILE_FOV = 28
-export class BaseTestScene {
+export default class BaseTestScene {
   autoClear = true
   protected scene: Scene
   protected camera: Camera
@@ -23,7 +23,6 @@ export class BaseTestScene {
     scene.fog = new Fog(bgColor.getHex(), 0, 60)
     scene.autoUpdate = false
     scene.matrixAutoUpdate = false
-    scene.frustumCulled = true
 
     const camera = new PerspectiveCamera(
       device.isMobile ? MOBILE_FOV : FOV,
@@ -31,15 +30,18 @@ export class BaseTestScene {
       0.1,
       100
     )
-    camera.position.set(0, 2, 2)
-    camera.lookAt(0, 0, 0)
-    scene.add(camera)
 
     device.onChange(() => {
       camera.fov = device.isMobile ? MOBILE_FOV : FOV
       camera.aspect = device.aspect
       camera.updateProjectionMatrix()
     }, true)
+
+    camera.position.set(0, 2, 2)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+
+    scene.add(camera)
 
     this.scene = scene
     this.camera = camera

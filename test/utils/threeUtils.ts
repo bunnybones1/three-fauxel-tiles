@@ -1,4 +1,11 @@
-import { DataTexture, RGBAFormat, UnsignedByteType } from 'three'
+import {
+  DataTexture,
+  NearestFilter,
+  RGBAFormat,
+  sRGBEncoding,
+  TextureLoader,
+  UnsignedByteType
+} from 'three'
 
 let __tempTexture: DataTexture | undefined
 export function getTempTexture() {
@@ -12,4 +19,24 @@ export function getTempTexture() {
     __tempTexture = new DataTexture(data, s, s, RGBAFormat, UnsignedByteType)
   }
   return __tempTexture!
+}
+
+export async function loadPixelatedTexture(path: string, flipY = true) {
+  return new Promise<Texture>((resolve) => {
+    const loader = new TextureLoader()
+    loader.load(
+      path,
+      (texture) => {
+        texture.encoding = sRGBEncoding
+        texture.minFilter = NearestFilter
+        texture.magFilter = NearestFilter
+        texture.flipY = flipY
+        resolve(texture)
+      },
+      undefined,
+      function (err) {
+        console.error('An error happened.', err.message)
+      }
+    )
+  })
 }

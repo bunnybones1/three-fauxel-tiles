@@ -1,15 +1,15 @@
 {
-  "name": "three-volumetric-simulation",
-  "version": "0.0.5",
+  "name": "three-fauxel-tiles",
+  "version": "0.0.0",
   "license": "MIT",
   "private": false,
   "type": "module",
   "main": "lib/index.js",
   "types": "types/index.d.ts",
-  "description": "An experimental approach to GPU physics for a 3D game",
+  "description": "An experimental approach to rendering fake PBR pixel-art",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bunnybones1/three-volumetric-simulation.git"
+    "url": "git+https://github.com/bunnybones1/three-fauxel-tiles.git"
   },
   "scripts": {
     "dev": "yarn lib:watch & yarn test:hotserve",
@@ -33,6 +33,8 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
+    "delaunay-triangulate": "^1.1.6",
+    "fast-simplex-noise": "^4.0.0",
     "performance-polyfill": "^0.0.3",
     "stream": "^0.0.2",
     "stream-browserify": "^3.0.0",
@@ -40,7 +42,7 @@
   },
   "peerDependencies": {
     "three": "^0.134.0",
-    "three-pixel-font": "^0.0.9"
+    "three-pixel-font": "^0.0.11"
   },
   "devDependencies": {
     "@types/node": "^17.0.31",
@@ -58,14 +60,14 @@
     "prettier": "^2.3.2",
     "prettier-check": "^2.0.0",
     "three": "^0.134.0",
-    "three-pixel-font": "^0.0.9",
+    "three-pixel-font": "^0.0.11",
     "threejs-camera-controller-first-person-desktop": "^5.0.1",
     "typescript": "4.4.2"
   },
   "bugs": {
-    "url": "https://github.com/bunnybones1/three-volumetric-simulation/issues"
+    "url": "https://github.com/bunnybones1/three-fauxel-tiles/issues"
   },
-  "homepage": "https://github.com/bunnybones1/three-volumetric-simulation#readme",
+  "homepage": "https://github.com/bunnybones1/three-fauxel-tiles#readme",
   "directories": {
     "lib": "lib"
   },
