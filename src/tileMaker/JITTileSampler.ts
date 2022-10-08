@@ -245,7 +245,9 @@ export default class JITTileSampler {
 
     if (
       this.localMetaBitsHas('pyramid') &&
-      (this.localMetaBitsHas('bush') || this.localMetaBitsHas('lampPost'))
+      (this.localMetaBitsHas('bush') ||
+        this.localMetaBitsHas('grass') ||
+        this.localMetaBitsHas('goldPile'))
     ) {
       this.localMetaBitsFlip('pyramid')
     }

@@ -42,8 +42,8 @@ void main() {
   vec2 flooredUv = texelUv + vec2(0, floorYOffset);
   vec3 relLightPos2 = vec3(relLightPos.x, relLightPos.z, -relLightPos.y);
 	for(float i = RELATIVE_PIXEL_SIZE; i < RELATIVE_TILE_SIZE; i += RELATIVE_PIXEL_SIZE) {
-    float newHeight = texture2D(uTextureDepthTopDownMapCache, flooredUv - (vec2(i) * relLightPos2.xz)).b;
-    float newHeight2 = texture2D(uTextureRoughnessMetalnessHeightMapCache, texelUv + (vec2(0.0, i) + vec2(i) * -relLightPos2.xz)).b;
+    float newHeight = texture2D(uTextureDepthTopDownMapCache, flooredUv - relLightPos2.xz * i).b;
+    float newHeight2 = texture2D(uTextureRoughnessMetalnessHeightMapCache, texelUv + (vec2(0.0, i) - relLightPos2.xz * i)).b;
     mixShadow = min(mixShadow, max(step(newHeight, texelHeight), step(newHeight2, texelHeight)));
     // mixShadow = min(mixShadow, step(newHeight2, texelHeight));
     texelHeight += RELATIVE_TILE_PIXEL_SIZE;
