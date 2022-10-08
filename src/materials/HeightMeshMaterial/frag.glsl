@@ -5,5 +5,5 @@ varying float vHeight;
 
 void main() {
 	gl_FragColor = color;
-	gl_FragColor.HEIGHT_CHANNEL = vHeight;
+	gl_FragColor.HEIGHT_CHANNEL = vHeight * 0.5;
 }

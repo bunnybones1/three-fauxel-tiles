@@ -147,7 +147,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       passes
     )
     const spriteControllers: DummyController[] = []
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 200; i++) {
       spriteControllers.push(
         new DummyController(rand2(20), rand2(20, 10), rand(-Math.PI, Math.PI), 0.25)
       )
@@ -195,7 +195,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
             0,
             0
           )
-          dlc.z = 1.5
+          dlc.z = 1.25
           lightControllers.push(
             dlc
           )
@@ -211,7 +211,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           // detRandLights(0.25, 0.5)
           0.1, 0.9, 0.6
         )
-        return new DummyLanternLightController(spriteC, color, 2 * pixelsPerTile)
+        return new DummyLanternLightController(spriteC, color, 4 * pixelsPerTile)
       })
 
       const lights = lightControllers.map((tc) =>

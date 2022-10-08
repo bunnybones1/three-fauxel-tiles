@@ -112,16 +112,18 @@ export const standardMaterialParamLib: {
   },
   grass: {
     roughness: 1,
-    metalness: 0.75,
+    metalness: 0.95,
     color: new Color(0.2, 0.55, 0.2),
+    emissive: new Color(0.2, 0.55, 0.05).multiplyScalar(0.05),
     wireframe: true,
     side: DoubleSide,
     opacity: 0.5
   },
   bush: {
     roughness: 1,
-    metalness: 0.75,
+    metalness: 0.95,
     color: new Color(0.125, 0.3, 0.125),
+    emissive: new Color(0.2, 0.55, 0.05).multiplyScalar(0.05),
     // wireframe: true,
     opacity: 0.5
   },

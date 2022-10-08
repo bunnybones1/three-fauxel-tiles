@@ -3,7 +3,6 @@ import {
   BoxBufferGeometry,
   BoxGeometry,
   Color,
-  ConeBufferGeometry,
   CylinderBufferGeometry,
   DirectionalLight,
   HemisphereLight,
@@ -15,7 +14,6 @@ import {
   OrthographicCamera,
   Scene,
   SphereGeometry,
-  TetrahedronBufferGeometry,
   TorusBufferGeometry,
   TorusKnotBufferGeometry,
   Vector3,
@@ -25,6 +23,7 @@ import {
 } from 'three'
 import FibonacciSphereGeometry from '../geometries/FibonacciSphereGeometry'
 import GrassGeometry from '../geometries/GrassGeometry'
+import PyramidGeometry from '../geometries/PyramidGeometry'
 import {
   changeMaterials,
   getMaterial,
@@ -37,7 +36,7 @@ import {
   pointOnSphereFibonacci,
   rand2
 } from '../utils/math'
-import { detRandGraphics } from '../utils/random'
+import { detRandGraphics, detRandRocks, detRandWoodPlanks } from '../utils/random'
 
 // const scale = 1
 const scale = Math.SQRT2 / 2
@@ -129,7 +128,23 @@ export default class TileMaker {
     // ball.position.y = Math.SQRT1_2 * 14
     const pivot = new Object3D()
     // pivot.rotation.y = Math.PI * 0.25
+    const floorBoard = new Mesh(getChamferedBoxGeometry(8, 4, 32, 1), floorMat)
+    const floorBoardPair = new Object3D()
+    floorBoardPair.add(floorBoard)
+    const floorBoard2 = floorBoard.clone()
+    floorBoardPair.add(floorBoard2)
+    floorBoard.position.z = -16
+    floorBoard2.position.z = 16
+
     const floor = new Mesh(new BoxBufferGeometry(32, 2, 32), floorMat)
+    detRandWoodPlanks()
+    for (let i = 0; i < 4; i++) {
+      const c = floorBoardPair.clone()
+      c.position.x = i * 8 - 12
+      c.position.z = ~~detRandWoodPlanks(-14, 14)
+      floor.add(c)
+    }
+
     const ground = new Mesh(new BoxBufferGeometry(32, 2, 32), groundMat)
 
     //brick walls
@@ -492,17 +507,37 @@ export default class TileMaker {
     testObject.scale.y *= scale
     scene.add(testObject)
 
+    const pyramidGeo = new PyramidGeometry()
+
     const pyramid = new Mesh(
-      new BoxBufferGeometry(22, 22, 32),
+      pyramidGeo,
       getMaterial('floor')
     )
-    pyramid.rotation.z = Math.PI * 0.25
-    // pyramid.scale.y *= scale
-    const pyramidPivot = new Object3D()
-    pyramidPivot.add(pyramid)
-    pyramidPivot.scale.y = 0.15
-    // pyramidPivot.position.y = 12
-    scene.add(pyramidPivot)
+    const pyramidTop = new Mesh(
+      pyramidGeo,
+      getMaterial('gold')
+    )
+    pyramid.add(pyramidTop)
+    pyramidTop.scale.setScalar(0.2)
+    pyramidTop.position.y = 0.82
+    pyramid.scale.set(30, 8, 30)
+    scene.add(pyramid)
+
+
+    const rockyGroundProto = new Mesh(
+      pyramidGeo,
+      getMaterial('ground')
+    )
+    
+    const rockyGround = new Object3D()
+    for (let i = 0; i < 12; i++) {
+      const rocky = rockyGroundProto.clone()
+      rockyGround.add(rocky)
+      rocky.scale.set(detRandRocks(3, 10), detRandRocks(0.25, 0.5), detRandRocks(3, 10))
+      rocky.rotation.y = detRandRocks(0, Math.PI * 2)
+      rocky.position.set(detRandRocks(-12, 12), 0, detRandRocks(-12, 12))
+    }
+    scene.add(rockyGround)
 
     const zLimiter = new Mesh(
       new BoxGeometry(32, 32, 32),
@@ -556,7 +591,8 @@ export default class TileMaker {
       goldPile,
       lampPost,
       testObject,
-      pyramid
+      pyramid,
+      rockyGround
     ]
 
     this._indexedMeshes = indexedMeshes

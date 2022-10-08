@@ -26,15 +26,15 @@ void main() {
   #ifdef USE_WATER
     vec2 waterUvs = vUvWater * 2.0 + vec2(0.0, uWaterHeight * -0.125);
     vec4 waterData = (texture2D(uTextureFog, waterUvs + uFogScroll) + texture2D(uTextureFog, waterUvs - uFogScroll) - vec4(1.0));
-    float originalHeight = texelRoughnessMetalnessHeight.b;
+    float originalHeight = texelRoughnessMetalnessHeight.b * 2.0;
     float waterDepth = max(0.0, uWaterHeight - originalHeight);
     vec2 uv = vUv + (waterData.rg) * waterDepth * 0.03;
     texelRoughnessMetalnessHeight = texture2D(uTextureRoughnessMetalnessHeight, uv);
-    float distortedWaterDepth = max(0.0, uWaterHeight - texelRoughnessMetalnessHeight.b);
+    float distortedWaterDepth = max(0.0, uWaterHeight - texelRoughnessMetalnessHeight.b * 2.0);
     float waterMask = smoothstep(uWaterHeight, uWaterHeight - 0.1, originalHeight) * mix(0.5, 1.0, distortedWaterDepth);
   #else 
     vec2 uv = vUv;  
-    float originalHeight = texelRoughnessMetalnessHeight.b;
+    float originalHeight = texelRoughnessMetalnessHeight.b * 2.0;
   #endif
 
   vec4 texelColor = texture2D(uTextureColor, uv);
@@ -58,25 +58,25 @@ void main() {
 
 
   dotP = mix(1.0 - 0.5 * (1.0-dotP), dotP, roughness);
-  // float invRMHb = 1.0 - texelRoughnessMetalnessHeight.b;
+  // float invRMHb = 1.0 - texelRoughnessMetalnessHeight.b * 2.0;
   // float texelHeight = 1.0 - invRMHb * invRMHb;
-  float texelHeight = texelRoughnessMetalnessHeight.b;
+  float texelHeight = texelRoughnessMetalnessHeight.b * 2.0;
   float ambientLight = texelNormals.g + texelHeight * 0.5;
   float sunLightStrength = pow(max(0.0, dotP), roughness);
 
   float floorYOffset = -texelHeight * RELATIVE_TILE_SIZE;
-  texelHeight += RELATIVE_PIXEL_SIZE;
+  texelHeight += RELATIVE_TILE_PIXEL_SIZE;
   float mixShadow = 1.0;
   vec2 flooredUv = uv + vec2(0, floorYOffset);
-	for(float i = RELATIVE_PIXEL_SIZE; i < RELATIVE_TILE_SIZE; i += RELATIVE_PIXEL_SIZE) {
-    float newHeight = texture2D(uTextureTopDownHeight, flooredUv - (vec2(i) * uSunShadowDirection.xz)).b;
-    float newHeight2 = texture2D(uTextureRoughnessMetalnessHeight, uv + (vec2(0.0, i) + vec2(i) * -uSunShadowDirection.xz)).b;
+	for(float i = RELATIVE_PIXEL_SIZE; i < RELATIVE_TILE_SIZE * 2.0; i += RELATIVE_PIXEL_SIZE) {
+    float newHeight = texture2D(uTextureTopDownHeight, flooredUv - (vec2(i) * uSunShadowDirection.xz)).b * 2.0;
+    float newHeight2 = texture2D(uTextureRoughnessMetalnessHeight, uv + (vec2(0.0, i) + vec2(i) * -uSunShadowDirection.xz)).b * 2.0;
     mixShadow = min(mixShadow, max(step(newHeight, texelHeight), step(newHeight2, texelHeight)));
     // mixShadow = min(mixShadow, step(newHeight2, texelHeight));
     texelHeight += RELATIVE_TILE_PIXEL_SIZE;
 	}
   #ifdef USE_MIST
-    float mistMask = max(0.0, 0.3 - texelRoughnessMetalnessHeight.b) * max(texture2D(uTextureFog, uv + uFogScroll).b, texture2D(uTextureFog, uv + uFogScroll * 2.0).b);
+    float mistMask = max(0.0, 0.3 - texelRoughnessMetalnessHeight.b * 2.0) * max(texture2D(uTextureFog, uv + uFogScroll).b, texture2D(uTextureFog, uv + uFogScroll * 2.0).b);
     sunLightStrength *= mixShadow * (1.0-mistMask);
   #else
     sunLightStrength *= mixShadow;
@@ -97,6 +97,7 @@ void main() {
     gl_FragColor.rgb += vec3(sunLightWaterStrength) * waterMask * uColorSun; //sun on water highlights
   #endif
 
+
   vec4 texelPointLights = texture2D(uTexturePointLights, uv);
   gl_FragColor.rgb += texelPointLights.rgb;
 
@@ -110,7 +111,7 @@ void main() {
   float heightR = texture2D(uTextureRoughnessMetalnessHeight, uv + pixelH).b;
   float heightU = texture2D(uTextureRoughnessMetalnessHeight, uv + pixelV).b;
   float heightD = texture2D(uTextureRoughnessMetalnessHeight, uv - pixelV).b;
-  float highestNeighbour = max(max(heightL, heightR), max(heightU, heightD));
+  float highestNeighbour = max(max(heightL, heightR), max(heightU, heightD)) * 2.0;
   float outline = smoothstep((highestNeighbour - 0.2),(highestNeighbour - 0.05), originalHeight);
 
   #ifdef USE_MIST
@@ -125,4 +126,5 @@ void main() {
   // gl_FragColor.rgb = vec3(sin(floorYOffset * 1000.0) * 0.5 + 0.5);
 	// gl_FragColor = texelColor * texelNormals;
   // gl_FragColor.rgb = vec3(outline);
+  // gl_FragColor = texelPointLights;
 }
