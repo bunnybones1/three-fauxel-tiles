@@ -22,6 +22,7 @@ import { defaultNumber, NOOP } from '../../utils/jsUtils'
 import { makeSafetyCheckFromConstStringArray } from '../typeHelpers'
 
 const CuratedMaterialTypeStrings = [
+  'ironBlack',
   'ground',
   'brick',
   'gold',
@@ -79,6 +80,11 @@ export const standardMaterialParamLib: {
     color: new Color(0.5, 0.4, 0),
     metalness: 1,
     emissive: new Color(0.05, 0, 0)
+  },
+  ironBlack: {
+    roughness: 0.1,
+    color: new Color(0.01, 0.01, 0.015),
+    metalness: 0.9
   },
   mortar: {
     roughness: 1,

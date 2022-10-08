@@ -20,6 +20,7 @@ void main() {
   vec4 texelRoughnessMetalnessHeight = texture2D(uTextureRoughnessMetalnessHeightMapCache, texelUv);
   float lightDepth = lightHeight - texelRoughnessMetalnessHeight.b;
   vec3 relLightPos = vec3((gl_PointCoord - 0.5) * lightSize / PIXELS_PER_TILE, -lightDepth);
+  relLightPos.y += texelRoughnessMetalnessHeight.b;
   // vec3 relLightPos = vec3(gl_PointCoord - 0.5, -lightDepth);
   vec3 lightDir = normalize(-relLightPos).rbg;
   vec4 texelNormals = texture2D(uTextureNormalsMapCache, texelUv);

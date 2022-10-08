@@ -3,6 +3,8 @@ import {
   BoxBufferGeometry,
   BoxGeometry,
   Color,
+  ConeBufferGeometry,
+  CylinderBufferGeometry,
   DirectionalLight,
   HemisphereLight,
   LinearEncoding,
@@ -13,6 +15,8 @@ import {
   OrthographicCamera,
   Scene,
   SphereGeometry,
+  TetrahedronBufferGeometry,
+  TorusBufferGeometry,
   TorusKnotBufferGeometry,
   Vector3,
   Vector4,
@@ -417,7 +421,67 @@ export default class TileMaker {
     }
     const goldPile = makeGoldPile()
     scene.add(goldPile)
-    const dummy = new Object3D()
+
+    const ironBlackMat = getMaterial('ironBlack')
+    function makeLampPost() {
+      const lampPost = new Object3D()
+      const ironCylinder = new Mesh(
+        new CylinderBufferGeometry(0.5, 0.5, 1, 16, 1),
+        ironBlackMat
+      )
+      const cylPosArr = ironCylinder.geometry.attributes.position
+        .array as number[]
+      for (let i = 1; i < cylPosArr.length; i += 3) {
+        cylPosArr[i] += 0.5
+      }
+      const ring = new Mesh(
+        new TorusBufferGeometry(0.45, 0.1, 32, 16),
+        ironBlackMat
+      )
+      const lampPole = ironCylinder.clone()
+      lampPost.add(lampPole)
+      lampPole.scale.set(6, 12, 6)
+      const lampPole2 = ironCylinder.clone()
+      lampPole2.scale.set(3, 39, 3)
+      lampPost.add(lampPole2)
+      const middleRing = ring.clone()
+      middleRing.scale.set(8, 8, 8)
+      middleRing.position.y = 12
+      middleRing.rotation.x = Math.PI * 0.5
+      lampPost.add(middleRing)
+      const middleRing2 = middleRing.clone()
+      middleRing2.position.y = 2
+      lampPost.add(middleRing2)
+      // const middleRing3 = middleRing.clone()
+      // middleRing3.position.y = 32
+      // lampPost.add(middleRing3)
+      const lampPole3 = lampPole2.clone()
+      lampPole3.scale.set(2, 9, 2)
+      lampPole3.position.y = 38
+      lampPole3.rotation.z = Math.PI * -0.25
+      lampPost.add(lampPole3)
+      const lampPole4 = lampPole2.clone()
+      lampPole4.scale.set(2, 6, 2)
+      lampPole4.position.x = 6
+      lampPole4.position.y = 44
+      lampPole4.rotation.z = Math.PI * -0.5
+      lampPost.add(lampPole4)
+      const lampShade = new Mesh(
+        getChamferedBoxGeometry(8, 4, 8, 2),
+        ironBlackMat
+      )
+      lampShade.position.set(12, 43, 0)
+      lampPost.add(lampShade)
+      // const middleRing4 = middleRing.clone()
+      // middleRing4.position.y = 44
+      // lampPost.add(middleRing4)
+      // const topper = new Mesh(new ConeBufferGeometry(10, 4, 6), ironBlackMat)
+      // topper.position.y = 42
+      // lampPost.add(topper)
+      return lampPost
+    }
+    const lampPost = makeLampPost()
+    scene.add(lampPost)
 
     const testObject = new Mesh(
       new TorusKnotBufferGeometry(10, 2, 48, 8),
@@ -428,12 +492,25 @@ export default class TileMaker {
     testObject.scale.y *= scale
     scene.add(testObject)
 
+    const pyramid = new Mesh(
+      new BoxBufferGeometry(22, 22, 32),
+      getMaterial('floor')
+    )
+    pyramid.rotation.z = Math.PI * 0.25
+    // pyramid.scale.y *= scale
+    const pyramidPivot = new Object3D()
+    pyramidPivot.add(pyramid)
+    pyramidPivot.scale.y = 0.15
+    // pyramidPivot.position.y = 12
+    scene.add(pyramidPivot)
+
     const zLimiter = new Mesh(
       new BoxGeometry(32, 32, 32),
       new MeshDepthMaterial({ side: BackSide, colorWrite: false })
     )
     zLimiter.position.y += 16
     scene.add(zLimiter)
+    const dummy = new Object3D()
 
     const indexedMeshes = [
       dummy,
@@ -477,7 +554,9 @@ export default class TileMaker {
       bushW,
       bushNW,
       goldPile,
-      testObject
+      lampPost,
+      testObject,
+      pyramid
     ]
 
     this._indexedMeshes = indexedMeshes

@@ -37,7 +37,7 @@ export default class GrassGeometry extends BufferGeometry {
       )
       posA.copy(pos).add(offset)
       posB.copy(pos).sub(offset)
-      pos.y += detRandGrass(6, 10) * grassScale
+      pos.y += detRandGrass(1, 3) * grassScale
       posA.toArray(posArr, i9)
       pos.toArray(posArr, i9 + 3)
       posB.toArray(posArr, i9 + 6)
@@ -48,12 +48,12 @@ export default class GrassGeometry extends BufferGeometry {
       normal.normalize()
 
       normalUp.set(0, 1, 0)
-      normalUp.lerp(normal, 0.125)
+      normalUp.lerp(normal, 0)
       normalUp.normalize()
 
       normalUp.toArray(normalArr, i9)
       normalUp.toArray(normalArr, i9 + 6)
-      normalUp.lerp(normal, 0.25)
+      normalUp.lerp(normal, 0.1)
       normalUp.normalize()
       normalUp.toArray(normalArr, i9 + 3)
     }

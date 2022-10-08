@@ -18,7 +18,9 @@ type MetaTile =
   | 'grass'
   | 'bush'
   | 'goldPile'
+  | 'lampPost'
   | 'testObject'
+  | 'pyramid'
 
 const masks8: number[] = []
 for (let i = 0; i < 8; i++) {
@@ -80,7 +82,9 @@ export default class JITTileSampler {
       'grass',
       'bush',
       'goldPile',
-      'testObject'
+      'lampPost',
+      'testObject',
+      'pyramid'
     ]
 
     this.visualPropertyLookup = [
@@ -125,7 +129,9 @@ export default class JITTileSampler {
       'bushW',
       'bushNW',
       'goldPile',
-      'testObject'
+      'lampPost',
+      'testObject',
+      'pyramid'
     ]
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
 
@@ -137,7 +143,9 @@ export default class JITTileSampler {
     const grassNoise = new NoiseHelper2D(0.15, 100, 200, -0.2, seed)
     const bushNoise = new NoiseHelper2D(0.3, 300, 200, 0.25, seed)
     const goldNoise = new NoiseHelper2D(3, -300, 200, 0.75, seed)
-    const testObjectNoise = new NoiseHelper2D(3, -300, -200, 0.75, seed)
+    const lampPostNoise = new NoiseHelper2D(3, -1300, 200, 0.75, seed)
+    const testObjectNoise = new NoiseHelper2D(3, -100, -300, 0.75, seed)
+    const pyramidNoise = new NoiseHelper2D(3, -204, -121, -0.25, seed)
     this.metaNoiseGenerators = [
       floorNoise,
       beamNoise,
@@ -146,7 +154,9 @@ export default class JITTileSampler {
       grassNoise,
       bushNoise,
       goldNoise,
-      testObjectNoise
+      lampPostNoise,
+      testObjectNoise,
+      pyramidNoise
     ]
   }
   flipMeta(x: number, y: number, meta: MetaTile, validate = true) {
@@ -216,6 +226,30 @@ export default class JITTileSampler {
     if (!this.localMetaBitsHas('grass') && this.localMetaBitsHas('bush')) {
       this.localMetaBitsFlip('bush')
     }
+    if (
+      this.localMetaBitsHas('testObject') &&
+      (this.localMetaBitsHas('bush') || this.localMetaBitsHas('pyramid'))
+    ) {
+      this.localMetaBitsFlip('testObject')
+    }
+    if (
+      this.localMetaBitsHas('lampPost') &&
+      (this.localMetaBitsHas('beam') ||
+        this.localMetaBitsHas('bush') ||
+        this.localMetaBitsHas('bricks') ||
+        this.localMetaBitsHas('goldPile') ||
+        this.localMetaBitsHas('testObject'))
+    ) {
+      this.localMetaBitsFlip('lampPost')
+    }
+
+    if (
+      this.localMetaBitsHas('pyramid') &&
+      (this.localMetaBitsHas('bush') || this.localMetaBitsHas('lampPost'))
+    ) {
+      this.localMetaBitsFlip('pyramid')
+    }
+
     this.metaCache.set(key, this.localMetaProps)
     return this.localMetaProps
   }
@@ -389,10 +423,19 @@ export default class JITTileSampler {
     if (metaProps & propMaskGold) {
       this.myVisualBitsEnable('goldPile')
     }
+    const propMaskLampPost =
+      masks32[this.metaPropertyLookup.indexOf('lampPost')]
+    if (metaProps & propMaskLampPost) {
+      this.myVisualBitsEnable('lampPost')
+    }
     const propMaskTestObject =
       masks32[this.metaPropertyLookup.indexOf('testObject')]
     if (metaProps & propMaskTestObject) {
       this.myVisualBitsEnable('testObject')
+    }
+    const propMaskPyramid = masks32[this.metaPropertyLookup.indexOf('pyramid')]
+    if (metaProps & propMaskPyramid) {
+      this.myVisualBitsEnable('pyramid')
     }
     const idBottom = this._tileMaker.getTileId(this.visProps)
     const visProps2 = this.visProps.slice()
