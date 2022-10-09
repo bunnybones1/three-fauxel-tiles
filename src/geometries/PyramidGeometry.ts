@@ -9,12 +9,7 @@ export default class PyramidGeometry extends BufferGeometry {
     const vrb = new Vector3(0.5, 0, 0.5)
     const vrt = new Vector3(0.5, 0, -0.5)
 
-    const pts = [
-        vc, vlt, vlb,
-        vc, vlb, vrb,
-        vc, vrb, vrt,
-        vc, vrt, vlt,
-    ]
+    const pts = [vc, vlt, vlb, vc, vlb, vrb, vc, vrb, vrt, vc, vrt, vlt]
 
     this.setFromPoints(pts)
     this.computeVertexNormals()

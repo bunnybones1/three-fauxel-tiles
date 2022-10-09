@@ -36,7 +36,8 @@ const CuratedMaterialTypeStrings = [
   'bush',
   'berry',
   'pants',
-  'pantsRed'
+  'pantsRed',
+  'rock'
 ] as const
 
 export type CuratedMaterialType = typeof CuratedMaterialTypeStrings[number]
@@ -109,6 +110,11 @@ export const standardMaterialParamLib: {
   plastic: {
     roughness: 0.5,
     color: new Color(0.2, 0.25, 0.4)
+  },
+  rock: {
+    roughness: 0.85,
+    metalness: 0.95,
+    color: new Color(0.2, 0.25, 0.2)
   },
   grass: {
     roughness: 1,

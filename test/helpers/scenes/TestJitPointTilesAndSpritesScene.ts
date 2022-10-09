@@ -42,7 +42,11 @@ class DummyController {
     this.angle += this.angleDelta
     this.angle *= 0.99
     this.speedDelta += rand2(this._maxSpeedDelta)
-    this.speedDelta = clamp(this.speedDelta, -this._maxSpeedDelta, this._maxSpeedDelta)
+    this.speedDelta = clamp(
+      this.speedDelta,
+      -this._maxSpeedDelta,
+      this._maxSpeedDelta
+    )
     this.speedDelta *= 0.9
     this.speed += this.speedDelta
     this.speed = clamp(this.speed, 0, this._maxSpeed)
@@ -74,13 +78,14 @@ class DummyLightController extends DummyController {
     this._sizePhase += 1 / this._size
     // this.x += 1 / this._size
     this.size =
-      this._size * lerp(0.8, 1.2, Math.sin(this._sizePhase * this._sizeSpeed) * 0.5 + 0.5)
+      this._size *
+      lerp(0.8, 1.2, Math.sin(this._sizePhase * this._sizeSpeed) * 0.5 + 0.5)
     // this.z = lerp(0.3, 2, Math.sin(this._sizePhase * 0.3) * 0.5 + 0.5)
   }
 }
 
 class DummyLanternLightController extends DummyLightController {
-  constructor(private _parent: DummyController, color: Color, size:number) {
+  constructor(private _parent: DummyController, color: Color, size: number) {
     super(0, 0, size, color)
     this.z = 0.5
   }
@@ -149,7 +154,12 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     const spriteControllers: DummyController[] = []
     for (let i = 0; i < 200; i++) {
       spriteControllers.push(
-        new DummyController(rand2(20), rand2(20, 10), rand(-Math.PI, Math.PI), 0.25)
+        new DummyController(
+          rand2(20),
+          rand2(20, 10),
+          rand(-Math.PI, Math.PI),
+          0.25
+        )
       )
     }
     const sprites = spriteControllers.map((tc) =>
@@ -177,15 +187,19 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     for (let iy = -40; iy < 40; iy++) {
       for (let ix = -40; ix < 40; ix++) {
         const metaProps = mapScrollingView.jitTileSampler.sampleMeta(ix, iy)
-        if(mapScrollingView.jitTileSampler.metaBitsHas(metaProps, 'lampPost')) {
-          const color = new Color().setHSL(
-            detRandLights(0, 1) > 0.5 ? 0.04 : 0.5,
-            0.8,
-            0.6
-            // detRandLights(0, 100),
-            // detRandLights(0.5, 0.8),
-            // detRandLights(0.25, 0.5)
-          ).multiplyScalar(3)
+        if (
+          mapScrollingView.jitTileSampler.metaBitsHas(metaProps, 'lampPost')
+        ) {
+          const color = new Color()
+            .setHSL(
+              detRandLights(0, 1) > 0.5 ? 0.04 : 0.5,
+              0.8,
+              0.6
+              // detRandLights(0, 100),
+              // detRandLights(0.5, 0.8),
+              // detRandLights(0.25, 0.5)
+            )
+            .multiplyScalar(3)
           const dlc = new DummyLightController(
             ix + 0.3,
             iy,
@@ -196,9 +210,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
             0
           )
           dlc.z = 1.25
-          lightControllers.push(
-            dlc
-          )
+          lightControllers.push(dlc)
         }
       }
     }
@@ -209,12 +221,18 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           // detRandLights(0, 100),
           // detRandLights(0.5, 0.8),
           // detRandLights(0.25, 0.5)
-          0.1, 0.9, 0.6
+          0.1,
+          0.9,
+          0.6
         )
-        return new DummyLanternLightController(spriteC, color, 4 * pixelsPerTile)
+        return new DummyLanternLightController(
+          spriteC,
+          color,
+          4 * pixelsPerTile
+        )
       })
 
-      const lights = lightControllers.map((tc) =>
+    const lights = lightControllers.map((tc) =>
       mapScrollingView.pointLightRenderer.makeLight(
         tc.x,
         tc.y,
@@ -309,7 +327,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
 
     this._lights = lights
     this._lightControllers = lightControllers
-    
+
     this._lanternLights = lanternLights
     this._lanternLightControllers = lanternLightControllers
   }

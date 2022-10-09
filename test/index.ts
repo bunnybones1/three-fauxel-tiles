@@ -23,48 +23,50 @@ if (testClasses.hasOwnProperty(testParam)) {
   TestClass = testClasses[testParam]
 }
 
-const test: BaseTestScene = new TestClass()
+setTimeout(() => {
+  const test: BaseTestScene = new TestClass()
 
-if (recorderCanvas) {
-  let lastTime = 0
-  recordFrame((time) => {
-    const dt = (time - lastTime) * 0.001
-    lastTime = time
-    nextFrameUpdate()
-    UpdateManager.update(dt)
-    timeUniform.value += dt
-    timeFractUniform.value = (timeFractUniform.value + dt) % 1
+  if (recorderCanvas) {
+    let lastTime = 0
+    recordFrame((time) => {
+      const dt = (time - lastTime) * 0.001
+      lastTime = time
+      nextFrameUpdate()
+      UpdateManager.update(dt)
+      timeUniform.value += dt
+      timeFractUniform.value = (timeFractUniform.value + dt) % 1
 
-    test.update(dt)
-    test.render(renderer, dt)
-  })
+      test.update(dt)
+      test.render(renderer, dt)
+    })
 
-  // Start loop
-} else {
-  const nthFrame: number = parseInt(getUrlParam('nthFrame') || '1')
-  let frameCounter = 0
-  let renderDt = 0
-  const loop = () => {
-    frameCounter++
-    const dt = clock.getDelta()
-    renderDt += dt
+    // Start loop
+  } else {
+    const nthFrame: number = parseInt(getUrlParam('nthFrame') || '1')
+    let frameCounter = 0
+    let renderDt = 0
+    const loop = () => {
+      frameCounter++
+      const dt = clock.getDelta()
+      renderDt += dt
 
-    nextFrameUpdate()
-    UpdateManager.update(dt)
-    timeUniform.value += dt
-    timeFractUniform.value = (timeFractUniform.value + dt) % 1
+      nextFrameUpdate()
+      UpdateManager.update(dt)
+      timeUniform.value += dt
+      timeFractUniform.value = (timeFractUniform.value + dt) % 1
 
-    test.update(dt)
-    if (frameCounter % nthFrame !== 0) {
+      test.update(dt)
+      if (frameCounter % nthFrame !== 0) {
+        requestAnimationFrame(loop)
+        return
+      }
+      test.render(renderer, renderDt)
+      renderDt = 0
+
       requestAnimationFrame(loop)
-      return
     }
-    test.render(renderer, renderDt)
-    renderDt = 0
 
+    // Start loop
     requestAnimationFrame(loop)
   }
-
-  // Start loop
-  requestAnimationFrame(loop)
-}
+}, 1000)

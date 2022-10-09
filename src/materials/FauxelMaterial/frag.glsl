@@ -15,6 +15,7 @@ uniform vec3 uSunShadowDirection;
 uniform sampler2D uTextureFog;
 uniform vec2 uFogScroll;
 varying vec2 vUv;
+
 #ifdef USE_WATER
   uniform float uWaterHeight;
   varying vec2 vUvWater;
@@ -127,4 +128,6 @@ void main() {
 	// gl_FragColor = texelColor * texelNormals;
   // gl_FragColor.rgb = vec3(outline);
   // gl_FragColor = texelPointLights;
+  // gl_FragColor = texelEmissive;
+  // gl_FragColor = texelNormals;
 }

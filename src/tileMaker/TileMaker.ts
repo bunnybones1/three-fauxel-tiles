@@ -23,6 +23,7 @@ import {
 } from 'three'
 import FibonacciSphereGeometry from '../geometries/FibonacciSphereGeometry'
 import GrassGeometry from '../geometries/GrassGeometry'
+import RocksGeometry from '../geometries/RocksGeometry'
 import PyramidGeometry from '../geometries/PyramidGeometry'
 import {
   changeMaterials,
@@ -36,7 +37,13 @@ import {
   pointOnSphereFibonacci,
   rand2
 } from '../utils/math'
-import { detRandGraphics, detRandRocks, detRandWoodPlanks } from '../utils/random'
+import {
+  detRandGraphics,
+  detRandRocks,
+  detRandWoodPlanks
+} from '../utils/random'
+import Rocks from '../meshes/Rocks'
+import { makeRocks } from '../meshes/factoryRocks'
 
 // const scale = 1
 const scale = Math.SQRT2 / 2
@@ -120,6 +127,7 @@ export default class TileMaker {
     const groundMat = getMaterial('ground')
     const ballMat = getMaterial('plastic')
     const grassMat = getMaterial('grass')
+    const rocksMat = getMaterial('rock')
     const bushMat = getMaterial('bush')
     const berryMat = getMaterial('berry')
     const woodMat = getMaterial('wood')
@@ -509,35 +517,68 @@ export default class TileMaker {
 
     const pyramidGeo = new PyramidGeometry()
 
-    const pyramid = new Mesh(
-      pyramidGeo,
-      getMaterial('floor')
-    )
-    const pyramidTop = new Mesh(
-      pyramidGeo,
-      getMaterial('gold')
-    )
+    const pyramid = new Mesh(pyramidGeo, getMaterial('floor'))
+    const pyramidTop = new Mesh(pyramidGeo, getMaterial('gold'))
     pyramid.add(pyramidTop)
     pyramidTop.scale.setScalar(0.2)
     pyramidTop.position.y = 0.82
     pyramid.scale.set(30, 8, 30)
     scene.add(pyramid)
 
+    const rockyGroundProto = new Mesh(pyramidGeo, getMaterial('ground'))
 
-    const rockyGroundProto = new Mesh(
-      pyramidGeo,
-      getMaterial('ground')
-    )
-    
     const rockyGround = new Object3D()
     for (let i = 0; i < 12; i++) {
       const rocky = rockyGroundProto.clone()
       rockyGround.add(rocky)
-      rocky.scale.set(detRandRocks(3, 10), detRandRocks(0.25, 0.5), detRandRocks(3, 10))
+      rocky.scale.set(
+        detRandRocks(3, 10),
+        detRandRocks(0.25, 0.5),
+        detRandRocks(3, 10)
+      )
       rocky.rotation.y = detRandRocks(0, Math.PI * 2)
       rocky.position.set(detRandRocks(-12, 12), 0, detRandRocks(-12, 12))
     }
     scene.add(rockyGround)
+
+    const rocksA = makeRocks(rocksMat, 0)
+    const rocksABig = makeRocks(rocksMat, 0)
+    const rocksH = makeRocks(rocksMat, 4)
+    const rocksV = makeRocks(rocksMat, 4)
+    const rocksCorner = makeRocks(rocksMat, 8)
+    //rocks
+
+    const rocksC = rocksA.clone()
+    scene.add(rocksC)
+    const rocksN = rocksV.clone()
+    rocksN.name === 'rocks'
+    scene.add(rocksN)
+    rocksN.position.set(0, 0, 16)
+    const rocksNE = rocksCorner.clone()
+    scene.add(rocksNE)
+    rocksNE.position.set(16, 0, 16)
+    const rocksE = rocksH.clone()
+    scene.add(rocksE)
+    rocksE.position.set(16, 0, 0)
+    const rocksSE = rocksCorner.clone()
+    scene.add(rocksSE)
+    rocksSE.position.set(16, 0, -16)
+    const rocksS = rocksV.clone()
+    scene.add(rocksS)
+    rocksS.position.set(0, 0, -16)
+    const rocksSW = rocksCorner.clone()
+    scene.add(rocksSW)
+    rocksSW.position.set(-16, 0, -16)
+    const rocksW = rocksH.clone()
+    scene.add(rocksW)
+    rocksW.position.set(-16, 0, 0)
+    const rocksNW = rocksCorner.clone()
+    scene.add(rocksNW)
+    rocksNW.position.set(-16, 0, 16)
+
+    const rocksCBig = rocksABig.clone()
+    rocksCBig.position.y += 12
+    scene.add(rocksCBig)
 
     const zLimiter = new Mesh(
       new BoxGeometry(32, 32, 32),
@@ -592,7 +633,17 @@ export default class TileMaker {
       lampPost,
       testObject,
       pyramid,
-      rockyGround
+      rockyGround,
+      rocksC,
+      rocksCBig,
+      rocksN,
+      rocksNE,
+      rocksE,
+      rocksSE,
+      rocksS,
+      rocksSW,
+      rocksW,
+      rocksNW
     ]
 
     this._indexedMeshes = indexedMeshes
@@ -647,6 +698,7 @@ export default class TileMaker {
             const j8 = j % 8
             this._indexedMeshes[j].visible = !!(visualProps[jb] & (1 << j8))
           }
+
           renderer.setViewport(iCol * p, iRow * p, p, p)
           renderer.setScissor(iCol * p, iRow * p, p, p)
           changeMaterials(this._scene, pass, true)

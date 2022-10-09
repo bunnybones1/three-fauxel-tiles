@@ -22,6 +22,7 @@ type MetaTile =
   | 'testObject'
   | 'pyramid'
   | 'rockyGround'
+  | 'rocks'
 
 const masks8: number[] = []
 for (let i = 0; i < 8; i++) {
@@ -86,7 +87,8 @@ export default class JITTileSampler {
       'lampPost',
       'testObject',
       'pyramid',
-      'rockyGround'
+      'rockyGround',
+      'rocks'
     ]
 
     this.visualPropertyLookup = [
@@ -134,7 +136,17 @@ export default class JITTileSampler {
       'lampPost',
       'testObject',
       'pyramid',
-      'rockyGround'
+      'rockyGround',
+      'rocksC',
+      'rocksCBig',
+      'rocksN',
+      'rocksNE',
+      'rocksE',
+      'rocksSE',
+      'rocksS',
+      'rocksSW',
+      'rocksW',
+      'rocksNW'
     ]
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
 
@@ -150,6 +162,7 @@ export default class JITTileSampler {
     const testObjectNoise = new NoiseHelper2D(3, -100, -300, 0.75, seed)
     const pyramidNoise = new NoiseHelper2D(3, -204, -121, 0.85, seed)
     const rockyGroundNoise = new NoiseHelper2D(3, 204, -121, 0.25, seed)
+    const rocksNoise = new NoiseHelper2D(0.05, 604, -121, 0.7, seed)
     this.metaNoiseGenerators = [
       floorNoise,
       beamNoise,
@@ -161,7 +174,8 @@ export default class JITTileSampler {
       lampPostNoise,
       testObjectNoise,
       pyramidNoise,
-      rockyGroundNoise
+      rockyGroundNoise,
+      rocksNoise
     ]
   }
   flipMeta(x: number, y: number, meta: MetaTile, validate = true) {
@@ -272,6 +286,11 @@ export default class JITTileSampler {
         this.localMetaBitsHas('testObject'))
     ) {
       this.localMetaBitsFlip('rockyGround')
+    }
+
+    if (this.localMetaBitsHas('rocks')) {
+      this.localMetaProps = 0
+      this.localMetaBitsFlip('rocks')
     }
 
     this.metaCache.set(key, this.localMetaProps)
@@ -466,6 +485,60 @@ export default class JITTileSampler {
     if (metaProps & propMaskRockyGround) {
       this.myVisualBitsEnable('rockyGround')
     }
+
+    const propMaskRocks = masks32[this.metaPropertyLookup.indexOf('rocks')]
+    if (this.localMetaBitsHas('rocks')) {
+      this.myVisualBitsEnable('rocksC')
+      if (metaPropsN & propMaskRocks) {
+        this.myVisualBitsEnable('rocksN')
+      }
+      if (metaPropsE & propMaskRocks) {
+        this.myVisualBitsEnable('rocksE')
+      }
+      if (metaPropsS & propMaskRocks) {
+        this.myVisualBitsEnable('rocksS')
+      }
+      if (metaPropsW & propMaskRocks) {
+        this.myVisualBitsEnable('rocksW')
+      }
+      if (
+        metaPropsNE & propMaskRocks &&
+        metaPropsN & propMaskRocks &&
+        metaPropsE & propMaskRocks
+      ) {
+        this.myVisualBitsEnable('rocksNE')
+      }
+      if (
+        metaPropsNW & propMaskRocks &&
+        metaPropsN & propMaskRocks &&
+        metaPropsW & propMaskRocks
+      ) {
+        this.myVisualBitsEnable('rocksNW')
+      }
+      if (
+        metaPropsSE & propMaskRocks &&
+        metaPropsS & propMaskRocks &&
+        metaPropsE & propMaskRocks
+      ) {
+        this.myVisualBitsEnable('rocksSE')
+      }
+      if (
+        metaPropsSW & propMaskRocks &&
+        metaPropsS & propMaskRocks &&
+        metaPropsW & propMaskRocks
+      ) {
+        this.myVisualBitsEnable('rocksSW')
+      }
+      if (
+        metaPropsN & propMaskRocks &&
+        metaPropsE & propMaskRocks &&
+        metaPropsS & propMaskRocks &&
+        metaPropsW & propMaskRocks
+      ) {
+        this.myVisualBitsEnable('rocksCBig')
+      }
+    }
+
     const idBottom = this._tileMaker.getTileId(this.visProps)
     const visProps2 = this.visProps.slice()
     visProps2[0] |= 1
