@@ -1,5 +1,6 @@
 import { BufferGeometry } from 'three'
 import NoiseHelper2D from '../helpers/utils/NoiseHelper2D'
+import ThreshNoiseHelper2D from '../helpers/utils/ThreshNoiseHelper2D'
 import { wrap } from '../utils/math'
 
 import SpriteMaker from './SpriteMaker'
@@ -48,7 +49,7 @@ export default class JITTileSampler {
   }
   metaPropertyLookup: MetaSprite[]
   visualPropertyLookup: string[]
-  metaNoiseGenerators: NoiseHelper2D[]
+  metaNoiseGenerators: ThreshNoiseHelper2D[]
   bytesPerTile: number
   localMetaProps: number
   visProps: Uint8Array
@@ -77,12 +78,12 @@ export default class JITTileSampler {
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
 
     const seed = 1
-    const bodyNoise = new NoiseHelper2D(0.1, 0, 0, 0, seed)
-    const body2Noise = new NoiseHelper2D(0.08, -100, -100, 0, seed)
-    const hatNoise = new NoiseHelper2D(0.06, -50, -50, 0.5, seed)
-    const goldNoise = new NoiseHelper2D(0.16, 50, -50, 0, seed)
-    const swordNoise = new NoiseHelper2D(0.26, 50, 50, 0, seed)
-    const shieldNoise = new NoiseHelper2D(0.36, 50, 150, 0, seed)
+    const bodyNoise = ThreshNoiseHelper2D.simple(0.1, 0, 0, 0, seed)
+    const body2Noise = ThreshNoiseHelper2D.simple(0.08, -100, -100, 0, seed)
+    const hatNoise = ThreshNoiseHelper2D.simple(0.06, -50, -50, 0.5, seed)
+    const goldNoise = ThreshNoiseHelper2D.simple(0.16, 50, -50, 0, seed)
+    const swordNoise = ThreshNoiseHelper2D.simple(0.26, 50, 50, 0, seed)
+    const shieldNoise = ThreshNoiseHelper2D.simple(0.36, 50, 150, 0, seed)
     this.metaNoiseGenerators = [
       bodyNoise,
       body2Noise,

@@ -1,6 +1,7 @@
 import { BufferGeometry } from 'three'
 import { initOffset } from '../constants'
 import NoiseHelper2D from '../helpers/utils/NoiseHelper2D'
+import ThreshNoiseHelper2D from '../helpers/utils/ThreshNoiseHelper2D'
 import { wrap } from '../utils/math'
 
 import TileMaker from './TileMaker'
@@ -23,6 +24,8 @@ type MetaTile =
   | 'pyramid'
   | 'rockyGround'
   | 'rocks'
+  | 'goldOreForRocks'
+  | 'harvested'
 
 const masks8: number[] = []
 for (let i = 0; i < 8; i++) {
@@ -50,7 +53,7 @@ export default class JITTileSampler {
   set tileMaker(value: TileMaker) {
     throw new Error('Cannot change tileMaker during runtime')
   }
-  metaNoiseGenerators: NoiseHelper2D[]
+  metaNoiseGenerators: ThreshNoiseHelper2D[]
   metaPropertyLookup: MetaTile[]
   visualPropertyLookup: string[]
   bytesPerTile: number
@@ -88,7 +91,9 @@ export default class JITTileSampler {
       'testObject',
       'pyramid',
       'rockyGround',
-      'rocks'
+      'rocks',
+      'goldOreForRocks',
+      'harvested'
     ]
 
     this.visualPropertyLookup = [
@@ -146,23 +151,60 @@ export default class JITTileSampler {
       'rocksS',
       'rocksSW',
       'rocksW',
-      'rocksNW'
+      'rocksNW',
+      'goldOreForRocks',
+      'goldOreForBigRocks',
+      'rockCrumbsC',
+      'rockCrumbsN',
+      'rockCrumbsNE',
+      'rockCrumbsE',
+      'rockCrumbsSE',
+      'rockCrumbsS',
+      'rockCrumbsSW',
+      'rockCrumbsW',
+      'rockCrumbsNW'
     ]
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
 
     const seed = 1
-    const floorNoise = new NoiseHelper2D(0.1, 0, 0, 0.5, seed)
-    const beamNoise = new NoiseHelper2D(0.08, -100, -100, 0.4, seed)
-    const bricksNoise = new NoiseHelper2D(0.06, -50, -50, 0.5, seed)
-    const drywallNoise = new NoiseHelper2D(0.05, 20, 20, 0.5, seed)
-    const grassNoise = new NoiseHelper2D(0.15, 100, 200, -0.2, seed)
-    const bushNoise = new NoiseHelper2D(0.3, 300, 200, 0.25, seed)
-    const goldNoise = new NoiseHelper2D(3, -300, 200, 0.75, seed)
-    const lampPostNoise = new NoiseHelper2D(3, -1300, 200, 0.75, seed)
-    const testObjectNoise = new NoiseHelper2D(3, -100, -300, 0.75, seed)
-    const pyramidNoise = new NoiseHelper2D(3, -204, -121, 0.85, seed)
-    const rockyGroundNoise = new NoiseHelper2D(3, 204, -121, 0.25, seed)
-    const rocksNoise = new NoiseHelper2D(0.05, 604, -121, 0.7, seed)
+    const floorNoise = ThreshNoiseHelper2D.simple(0.1, 0, 0, 0.5, seed)
+    const beamNoise = ThreshNoiseHelper2D.simple(0.08, -100, -100, 0.4, seed)
+    const bricksNoise = ThreshNoiseHelper2D.simple(0.06, -50, -50, 0.5, seed)
+    const drywallNoise = ThreshNoiseHelper2D.simple(0.05, 20, 20, 0.5, seed)
+    const grassNoise = ThreshNoiseHelper2D.simple(0.15, 100, 200, -0.2, seed)
+    const bushNoise = ThreshNoiseHelper2D.simple(0.3, 300, 200, 0.25, seed)
+    const goldNoise = ThreshNoiseHelper2D.simple(3, -300, 200, 0.75, seed)
+    const lampPostNoise = ThreshNoiseHelper2D.simple(3, -1300, 200, 0.75, seed)
+    const testObjectNoise = ThreshNoiseHelper2D.simple(
+      3,
+      -100,
+      -300,
+      0.75,
+      seed
+    )
+    const pyramidNoise = ThreshNoiseHelper2D.simple(3, -204, -121, 0.85, seed)
+    const rockyGroundNoise = ThreshNoiseHelper2D.simple(
+      3,
+      204,
+      -121,
+      0.25,
+      seed
+    )
+    const rocksNoise = ThreshNoiseHelper2D.simple(0.05, 604, -121, 0.7, seed)
+    const goldOreForRocksNoise = new ThreshNoiseHelper2D(
+      [
+        new NoiseHelper2D(0.05, 604, -121, seed),
+        new NoiseHelper2D(0.8, 604, -121, seed, 0.2)
+      ],
+      0.97
+    )
+    const harvestedNoise = ThreshNoiseHelper2D.simple(
+      0.08,
+      -500,
+      -100,
+      0.35,
+      seed
+    )
     this.metaNoiseGenerators = [
       floorNoise,
       beamNoise,
@@ -175,7 +217,9 @@ export default class JITTileSampler {
       testObjectNoise,
       pyramidNoise,
       rockyGroundNoise,
-      rocksNoise
+      rocksNoise,
+      goldOreForRocksNoise,
+      harvestedNoise
     ]
   }
   flipMeta(x: number, y: number, meta: MetaTile, validate = true) {
@@ -289,8 +333,16 @@ export default class JITTileSampler {
     }
 
     if (this.localMetaBitsHas('rocks')) {
+      const wasHarvested = this.localMetaBitsHas('harvested')
+      const hasGold = this.localMetaBitsHas('goldOreForRocks')
       this.localMetaProps = 0
       this.localMetaBitsFlip('rocks')
+      if (hasGold) {
+        this.localMetaBitsFlip('goldOreForRocks')
+      }
+      if (wasHarvested) {
+        this.localMetaBitsFlip('harvested')
+      }
     }
 
     this.metaCache.set(key, this.localMetaProps)
@@ -487,55 +539,101 @@ export default class JITTileSampler {
     }
 
     const propMaskRocks = masks32[this.metaPropertyLookup.indexOf('rocks')]
-    if (this.localMetaBitsHas('rocks')) {
-      this.myVisualBitsEnable('rocksC')
-      if (metaPropsN & propMaskRocks) {
-        this.myVisualBitsEnable('rocksN')
+    const propMaskHarvested =
+      masks32[this.metaPropertyLookup.indexOf('harvested')]
+
+    const isRocksC = metaProps & propMaskRocks
+    const isHarvestedC = metaProps & propMaskHarvested
+    const isGoldOre = this.localMetaBitsHas('goldOreForRocks')
+    if (isRocksC) {
+      const isRocksN = metaPropsN & propMaskRocks
+      const isHarvestedN = metaPropsN & propMaskHarvested
+      const isRocksE = metaPropsE & propMaskRocks
+      const isHarvestedE = metaPropsE & propMaskHarvested
+      const isRocksS = metaPropsS & propMaskRocks
+      const isHarvestedS = metaPropsS & propMaskHarvested
+      const isRocksW = metaPropsW & propMaskRocks
+      const isHarvestedW = metaPropsW & propMaskHarvested
+      const isRocksNE = metaPropsNE & propMaskRocks
+      const isHarvestedNE = metaPropsNE & propMaskHarvested
+      const isRocksSE = metaPropsSE & propMaskRocks
+      const isHarvestedSE = metaPropsSE & propMaskHarvested
+      const isRocksSW = metaPropsSW & propMaskRocks
+      const isHarvestedSW = metaPropsSW & propMaskHarvested
+      const isRocksNW = metaPropsNW & propMaskRocks
+      const isHarvestedNW = metaPropsNW & propMaskHarvested
+
+      this.myVisualBitsEnable(isHarvestedC ? 'rockCrumbsC' : 'rocksC')
+      if (isRocksN) {
+        this.myVisualBitsEnable(
+          isHarvestedN || isHarvestedC ? 'rockCrumbsN' : 'rocksN'
+        )
       }
-      if (metaPropsE & propMaskRocks) {
-        this.myVisualBitsEnable('rocksE')
+      if (isRocksS) {
+        this.myVisualBitsEnable(
+          isHarvestedS || isHarvestedC ? 'rockCrumbsS' : 'rocksS'
+        )
       }
-      if (metaPropsS & propMaskRocks) {
-        this.myVisualBitsEnable('rocksS')
+      if (isRocksE) {
+        this.myVisualBitsEnable(
+          isHarvestedE || isHarvestedC ? 'rockCrumbsE' : 'rocksE'
+        )
       }
-      if (metaPropsW & propMaskRocks) {
-        this.myVisualBitsEnable('rocksW')
+      if (isRocksW) {
+        this.myVisualBitsEnable(
+          isHarvestedW || isHarvestedC ? 'rockCrumbsW' : 'rocksW'
+        )
       }
-      if (
-        metaPropsNE & propMaskRocks &&
-        metaPropsN & propMaskRocks &&
-        metaPropsE & propMaskRocks
-      ) {
-        this.myVisualBitsEnable('rocksNE')
+
+      if (isRocksW && isRocksN && isRocksNW) {
+        this.myVisualBitsEnable(
+          isHarvestedW || isHarvestedN || isHarvestedNW || isHarvestedC
+            ? 'rockCrumbsNW'
+            : 'rocksNW'
+        )
       }
-      if (
-        metaPropsNW & propMaskRocks &&
-        metaPropsN & propMaskRocks &&
-        metaPropsW & propMaskRocks
-      ) {
-        this.myVisualBitsEnable('rocksNW')
+      if (isRocksE && isRocksN && isRocksNE) {
+        this.myVisualBitsEnable(
+          isHarvestedE || isHarvestedN || isHarvestedNE || isHarvestedC
+            ? 'rockCrumbsNE'
+            : 'rocksNE'
+        )
       }
-      if (
-        metaPropsSE & propMaskRocks &&
-        metaPropsS & propMaskRocks &&
-        metaPropsE & propMaskRocks
-      ) {
-        this.myVisualBitsEnable('rocksSE')
+      if (isRocksW && isRocksS && isRocksSW) {
+        this.myVisualBitsEnable(
+          isHarvestedW || isHarvestedS || isHarvestedSW || isHarvestedC
+            ? 'rockCrumbsSW'
+            : 'rocksSW'
+        )
       }
-      if (
-        metaPropsSW & propMaskRocks &&
-        metaPropsS & propMaskRocks &&
-        metaPropsW & propMaskRocks
-      ) {
-        this.myVisualBitsEnable('rocksSW')
+      if (isRocksE && isRocksS && isRocksSE) {
+        this.myVisualBitsEnable(
+          isHarvestedE || isHarvestedS || isHarvestedSE || isHarvestedC
+            ? 'rockCrumbsSE'
+            : 'rocksSE'
+        )
       }
-      if (
-        metaPropsN & propMaskRocks &&
-        metaPropsE & propMaskRocks &&
-        metaPropsS & propMaskRocks &&
-        metaPropsW & propMaskRocks
-      ) {
-        this.myVisualBitsEnable('rocksCBig')
+
+      if (!isHarvestedC) {
+        if (
+          isRocksN &&
+          isRocksE &&
+          isRocksS &&
+          isRocksW &&
+          !isHarvestedN &&
+          !isHarvestedE &&
+          !isHarvestedS &&
+          !isHarvestedW
+        ) {
+          this.myVisualBitsEnable('rocksCBig')
+          if (isGoldOre) {
+            this.myVisualBitsEnable('goldOreForBigRocks')
+          }
+        } else {
+          if (isGoldOre) {
+            this.myVisualBitsEnable('goldOreForRocks')
+          }
+        }
       }
     }
 

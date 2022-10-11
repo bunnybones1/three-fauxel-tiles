@@ -44,6 +44,7 @@ import {
 } from '../utils/random'
 import Rocks from '../meshes/Rocks'
 import { makeRocks } from '../meshes/factoryRocks'
+import { makeRockCrumbs } from '../meshes/factoryRockCrumbs'
 
 // const scale = 1
 const scale = Math.SQRT2 / 2
@@ -551,7 +552,6 @@ export default class TileMaker {
     const rocksC = rocksA.clone()
     scene.add(rocksC)
     const rocksN = rocksV.clone()
-    rocksN.name === 'rocks'
     scene.add(rocksN)
     rocksN.position.set(0, 0, 16)
     const rocksNE = rocksCorner.clone()
@@ -579,6 +579,46 @@ export default class TileMaker {
     const rocksCBig = rocksABig.clone()
     rocksCBig.position.y += 12
     scene.add(rocksCBig)
+
+    const goldOreForRocks = makeRocks(goldMat, 0, 2)
+    scene.add(goldOreForRocks)
+    const goldOreForBigRocks = makeRocks(goldMat, 10, 2)
+    scene.add(goldOreForBigRocks)
+
+
+    const rockCrumbsA = makeRockCrumbs(rocksMat)
+    const rockCrumbsH = makeRockCrumbs(rocksMat)
+    const rockCrumbsV = makeRockCrumbs(rocksMat)
+    const rockCrumbsCorner = makeRockCrumbs(rocksMat)
+    //rockCrumbs
+
+    const rockCrumbsC = rockCrumbsA.clone()
+    scene.add(rockCrumbsC)
+    const rockCrumbsN = rockCrumbsV.clone()
+    scene.add(rockCrumbsN)
+    rockCrumbsN.position.set(0, 0, 16)
+    const rockCrumbsNE = rockCrumbsCorner.clone()
+    scene.add(rockCrumbsNE)
+    rockCrumbsNE.position.set(16, 0, 16)
+    const rockCrumbsE = rockCrumbsH.clone()
+    scene.add(rockCrumbsE)
+    rockCrumbsE.position.set(16, 0, 0)
+    const rockCrumbsSE = rockCrumbsCorner.clone()
+    scene.add(rockCrumbsSE)
+    rockCrumbsSE.position.set(16, 0, -16)
+    const rockCrumbsS = rockCrumbsV.clone()
+    scene.add(rockCrumbsS)
+    rockCrumbsS.position.set(0, 0, -16)
+    const rockCrumbsSW = rockCrumbsCorner.clone()
+    scene.add(rockCrumbsSW)
+    rockCrumbsSW.position.set(-16, 0, -16)
+    const rockCrumbsW = rockCrumbsH.clone()
+    scene.add(rockCrumbsW)
+    rockCrumbsW.position.set(-16, 0, 0)
+    const rockCrumbsNW = rockCrumbsCorner.clone()
+    scene.add(rockCrumbsNW)
+    rockCrumbsNW.position.set(-16, 0, 16)
+
 
     const zLimiter = new Mesh(
       new BoxGeometry(32, 32, 32),
@@ -643,7 +683,18 @@ export default class TileMaker {
       rocksS,
       rocksSW,
       rocksW,
-      rocksNW
+      rocksNW,
+      goldOreForRocks,
+      goldOreForBigRocks,
+      rockCrumbsC,
+      rockCrumbsN,
+      rockCrumbsNE,
+      rockCrumbsE,
+      rockCrumbsSE,
+      rockCrumbsS,
+      rockCrumbsSW,
+      rockCrumbsW,
+      rockCrumbsNW,
     ]
 
     this._indexedMeshes = indexedMeshes
