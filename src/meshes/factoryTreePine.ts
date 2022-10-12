@@ -12,6 +12,42 @@ import {
 } from '../utils/geometry'
 import { detRandTrees } from '../utils/random'
 
+export function makeTreePineStumpMature(matBark: Material, matWood: Material) {
+  const tiltRange = 0.1
+  const height = 10
+  const baseRadius = 5
+  const pivot = new Object3D()
+
+  //trunk
+  const wood = new Mesh(
+    new CylinderBufferGeometry(baseRadius, baseRadius, height, 16),
+    matWood
+  )
+  pivot.add(wood)
+  wood.position.y = height * 0.5
+  for (let i = 0; i < 80; i++) {
+    const size = ~~detRandTrees(6, 8)
+    const bark = new Mesh(getCachedChamferedBoxGeometry(2, size, 4, 1), matBark)
+    bark.rotation.order = 'YXZ'
+    const y = Math.pow(detRandTrees(), 2)
+    const tiltAmt = Math.pow(1 - y, 4)
+    const radius = baseRadius + tiltAmt * 8 + Math.round(detRandTrees(0, 2))
+    const angle = detRandTrees(0, Math.PI * 2)
+    bark.position.set(
+      Math.cos(angle) * radius,
+      y * height,
+      Math.sin(angle) * radius
+    )
+    bark.rotation.y = -angle
+    bark.rotation.z = tiltAmt * 1
+    bark.rotation.x += detRandTrees(-tiltRange, tiltRange)
+    bark.rotation.y += detRandTrees(-tiltRange, tiltRange)
+    bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
+    pivot.add(bark)
+  }
+  return pivot
+}
+
 export function makeTreePineMature(
   matBark: Material,
   matLeaf: Material,

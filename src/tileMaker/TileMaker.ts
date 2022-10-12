@@ -44,7 +44,11 @@ import {
 import Rocks from '../meshes/Rocks'
 import { makeRocks } from '../meshes/factoryRocks'
 import { makeRockCrumbs } from '../meshes/factoryRockCrumbs'
-import { makeTreePine, makeTreePineMature } from '../meshes/factoryTreePine'
+import {
+  makeTreePine,
+  makeTreePineMature,
+  makeTreePineStumpMature
+} from '../meshes/factoryTreePine'
 
 // const scale = 1
 const scale = Math.SQRT2 / 2
@@ -690,6 +694,12 @@ export default class TileMaker {
     treePineMatureSW.position.set(-32, 0, -32)
     scene.add(treePineMatureSW)
 
+    const treePineStumpMature = makeTreePineStumpMature(
+      getMaterial('bark'),
+      getMaterial('wood')
+    )
+    scene.add(treePineStumpMature)
+
     const indexedMeshes = [
       dummy,
       floor,
@@ -774,7 +784,8 @@ export default class TileMaker {
       treePineMatureS,
       treePineMatureSW,
       treePineMatureW,
-      treePineMatureNW
+      treePineMatureNW,
+      treePineStumpMature
     ]
 
     this._indexedMeshes = indexedMeshes

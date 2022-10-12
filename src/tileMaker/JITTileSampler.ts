@@ -184,7 +184,8 @@ export default class JITTileSampler {
       'treePineMatureS',
       'treePineMatureSW',
       'treePineMatureW',
-      'treePineMatureNW'
+      'treePineMatureNW',
+      'treePineStumpMature'
     ]
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
 
@@ -406,9 +407,6 @@ export default class JITTileSampler {
     return this.localMetaProps
   }
   myVisualBitsEnable(maskName: string) {
-    if (maskName.includes('tree')) {
-      console.log(maskName)
-    }
     this.visualBitsEnable(this.visProps, maskName)
   }
   sampleVis(x: number, y: number) {
@@ -700,50 +698,54 @@ export default class JITTileSampler {
       masks32[this.metaPropertyLookup.indexOf('treePine')]
     const propMaskMaturePlant =
       masks32[this.metaPropertyLookup.indexOf('maturePlant')]
-    if (metaProps & propMaskTreePine) {
+    if (metaProps & propMaskTreePine && !(metaProps & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaProps & propMaskMaturePlant ? 'Mature' : '') + 'C'
       )
     }
-    if (metaPropsE & propMaskTreePine) {
+    if (metaPropsE & propMaskTreePine && !(metaPropsE & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsE & propMaskMaturePlant ? 'Mature' : '') + 'E'
       )
     }
-    if (metaPropsW & propMaskTreePine) {
+    if (metaPropsW & propMaskTreePine && !(metaPropsW & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsW & propMaskMaturePlant ? 'Mature' : '') + 'W'
       )
     }
-    if (metaPropsN & propMaskTreePine) {
+    if (metaPropsN & propMaskTreePine && !(metaPropsN & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsN & propMaskMaturePlant ? 'Mature' : '') + 'N'
       )
     }
-    if (metaPropsS & propMaskTreePine) {
+    if (metaPropsS & propMaskTreePine && !(metaPropsS & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsS & propMaskMaturePlant ? 'Mature' : '') + 'S'
       )
     }
-    if (metaPropsNE & propMaskTreePine) {
+    if (metaPropsNE & propMaskTreePine && !(metaPropsNE & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsNE & propMaskMaturePlant ? 'Mature' : '') + 'NE'
       )
     }
-    if (metaPropsSW & propMaskTreePine) {
+    if (metaPropsSW & propMaskTreePine && !(metaPropsSW & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsSW & propMaskMaturePlant ? 'Mature' : '') + 'SW'
       )
     }
-    if (metaPropsNW & propMaskTreePine) {
+    if (metaPropsNW & propMaskTreePine && !(metaPropsNW & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsNW & propMaskMaturePlant ? 'Mature' : '') + 'NW'
       )
     }
-    if (metaPropsSE & propMaskTreePine) {
+    if (metaPropsSE & propMaskTreePine && !(metaPropsSE & propMaskHarvested)) {
       this.myVisualBitsEnable(
         'treePine' + (metaPropsSE & propMaskMaturePlant ? 'Mature' : '') + 'SE'
       )
+    }
+
+    if (metaProps & propMaskTreePine && metaProps & propMaskHarvested) {
+      this.myVisualBitsEnable('treePineStumpMature')
     }
 
     const idBottom = this._tileMaker.getTileId(this.visProps)
