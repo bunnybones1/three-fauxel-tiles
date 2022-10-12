@@ -14,9 +14,11 @@ export default class NoiseHelper2D {
     this._noise = makeNoise2D(randGenerator)
   }
   getValue(x: number, y: number) {
-    return this._noise(
-      x * this._scale + this._offsetX,
-      y * this._scale + this._offsetY
-    ) * this._strength
+    return (
+      this._noise(
+        x * this._scale + this._offsetX,
+        y * this._scale + this._offsetY
+      ) * this._strength
+    )
   }
 }

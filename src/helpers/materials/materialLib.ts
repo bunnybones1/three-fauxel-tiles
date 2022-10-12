@@ -30,10 +30,12 @@ const CuratedMaterialTypeStrings = [
   'drywall',
   'floor',
   'wood',
+  'bark',
   'skin',
   'plastic',
   'grass',
   'bush',
+  'pineNeedle',
   'berry',
   'pants',
   'pantsRed',
@@ -103,6 +105,11 @@ export const standardMaterialParamLib: {
     roughness: 1,
     color: new Color(0.6, 0.4, 0.3)
   },
+  bark: {
+    roughness: 1,
+    metalness: 0.8,
+    color: new Color(0.6, 0.4, 0.3).addScalar(-0.2)
+  },
   skin: {
     roughness: 1,
     color: new Color(0.8, 0.4, 0.4)
@@ -130,6 +137,14 @@ export const standardMaterialParamLib: {
     metalness: 0.95,
     color: new Color(0.125, 0.3, 0.125),
     emissive: new Color(0.2, 0.55, 0.05).multiplyScalar(0.05),
+    // wireframe: true,
+    opacity: 0.5
+  },
+  pineNeedle: {
+    roughness: 0.8,
+    metalness: 0.95,
+    color: new Color(0.1, 0.3, 0.1),
+    emissive: new Color(0.1, 0.45, 0.05).multiplyScalar(0.05),
     // wireframe: true,
     opacity: 0.5
   },

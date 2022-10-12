@@ -8,8 +8,7 @@ export function makeRockCrumbs(mat: Material, chamfer = 0.5) {
   const pivot = new Object3D()
   const pos = new Vector3()
   for (let i = 0; i < 20; i++) {
-    pos
-      .set(detRandRocks(-1, 1), 0, detRandRocks(-1, 1))
+    pos.set(detRandRocks(-1, 1), 0, detRandRocks(-1, 1))
     if (pos.x + pos.z > 1) {
       continue
     }

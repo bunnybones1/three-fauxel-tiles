@@ -23,7 +23,6 @@ import {
 } from 'three'
 import FibonacciSphereGeometry from '../geometries/FibonacciSphereGeometry'
 import GrassGeometry from '../geometries/GrassGeometry'
-import RocksGeometry from '../geometries/RocksGeometry'
 import PyramidGeometry from '../geometries/PyramidGeometry'
 import {
   changeMaterials,
@@ -45,6 +44,7 @@ import {
 import Rocks from '../meshes/Rocks'
 import { makeRocks } from '../meshes/factoryRocks'
 import { makeRockCrumbs } from '../meshes/factoryRockCrumbs'
+import { makeTreePine, makeTreePineMature } from '../meshes/factoryTreePine'
 
 // const scale = 1
 const scale = Math.SQRT2 / 2
@@ -523,7 +523,7 @@ export default class TileMaker {
     pyramid.add(pyramidTop)
     pyramidTop.scale.setScalar(0.2)
     pyramidTop.position.y = 0.82
-    pyramid.scale.set(30, 8, 30)
+    pyramid.scale.set(30, 16, 30)
     scene.add(pyramid)
 
     const rockyGroundProto = new Mesh(pyramidGeo, getMaterial('ground'))
@@ -585,7 +585,6 @@ export default class TileMaker {
     const goldOreForBigRocks = makeRocks(goldMat, 10, 2)
     scene.add(goldOreForBigRocks)
 
-
     const rockCrumbsA = makeRockCrumbs(rocksMat)
     const rockCrumbsH = makeRockCrumbs(rocksMat)
     const rockCrumbsV = makeRockCrumbs(rocksMat)
@@ -619,7 +618,6 @@ export default class TileMaker {
     scene.add(rockCrumbsNW)
     rockCrumbsNW.position.set(-16, 0, 16)
 
-
     const zLimiter = new Mesh(
       new BoxGeometry(32, 32, 32),
       new MeshDepthMaterial({ side: BackSide, colorWrite: false })
@@ -627,6 +625,70 @@ export default class TileMaker {
     zLimiter.position.y += 16
     scene.add(zLimiter)
     const dummy = new Object3D()
+
+    const treePine = makeTreePine(
+      getMaterial('bark'),
+      getMaterial('pineNeedle')
+    )
+
+    const treePineC = treePine.clone()
+    scene.add(treePineC)
+    const treePineN = treePine.clone()
+    treePineN.position.set(0, 0, 32)
+    scene.add(treePineN)
+    const treePineS = treePine.clone()
+    treePineS.position.set(0, 0, -32)
+    scene.add(treePineS)
+    const treePineE = treePine.clone()
+    treePineE.position.set(32, 0, 0)
+    scene.add(treePineE)
+    const treePineW = treePine.clone()
+    treePineW.position.set(-32, 0, 0)
+    scene.add(treePineW)
+    const treePineNE = treePine.clone()
+    treePineNE.position.set(32, 0, 32)
+    scene.add(treePineNE)
+    const treePineSE = treePine.clone()
+    treePineSE.position.set(32, 0, -32)
+    scene.add(treePineSE)
+    const treePineNW = treePine.clone()
+    treePineNW.position.set(-32, 0, 32)
+    scene.add(treePineNW)
+    const treePineSW = treePine.clone()
+    treePineSW.position.set(-32, 0, -32)
+    scene.add(treePineSW)
+
+    const treePineMature = makeTreePineMature(
+      getMaterial('bark'),
+      getMaterial('pineNeedle'),
+      getMaterial('wood')
+    )
+    const treePineMatureC = treePineMature.clone()
+    scene.add(treePineMatureC)
+    const treePineMatureN = treePineMature.clone()
+    treePineMatureN.position.set(0, 0, 32)
+    scene.add(treePineMatureN)
+    const treePineMatureS = treePineMature.clone()
+    treePineMatureS.position.set(0, 0, -32)
+    scene.add(treePineMatureS)
+    const treePineMatureE = treePineMature.clone()
+    treePineMatureE.position.set(32, 0, 0)
+    scene.add(treePineMatureE)
+    const treePineMatureW = treePineMature.clone()
+    treePineMatureW.position.set(-32, 0, 0)
+    scene.add(treePineMatureW)
+    const treePineMatureNE = treePineMature.clone()
+    treePineMatureNE.position.set(32, 0, 32)
+    scene.add(treePineMatureNE)
+    const treePineMatureSE = treePineMature.clone()
+    treePineMatureSE.position.set(32, 0, -32)
+    scene.add(treePineMatureSE)
+    const treePineMatureNW = treePineMature.clone()
+    treePineMatureNW.position.set(-32, 0, 32)
+    scene.add(treePineMatureNW)
+    const treePineMatureSW = treePineMature.clone()
+    treePineMatureSW.position.set(-32, 0, -32)
+    scene.add(treePineMatureSW)
 
     const indexedMeshes = [
       dummy,
@@ -695,6 +757,24 @@ export default class TileMaker {
       rockCrumbsSW,
       rockCrumbsW,
       rockCrumbsNW,
+      treePineC,
+      treePineN,
+      treePineNE,
+      treePineE,
+      treePineSE,
+      treePineS,
+      treePineSW,
+      treePineW,
+      treePineNW,
+      treePineMatureC,
+      treePineMatureN,
+      treePineMatureNE,
+      treePineMatureE,
+      treePineMatureSE,
+      treePineMatureS,
+      treePineMatureSW,
+      treePineMatureW,
+      treePineMatureNW
     ]
 
     this._indexedMeshes = indexedMeshes
