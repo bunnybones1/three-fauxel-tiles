@@ -185,6 +185,7 @@ export default class JITTileSampler {
       'treePineMatureSW',
       'treePineMatureW',
       'treePineMatureNW',
+      'treePineStump',
       'treePineStumpMature'
     ]
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
@@ -745,7 +746,9 @@ export default class JITTileSampler {
     }
 
     if (metaProps & propMaskTreePine && metaProps & propMaskHarvested) {
-      this.myVisualBitsEnable('treePineStumpMature')
+      this.myVisualBitsEnable(
+        'treePineStump' + (metaProps & propMaskMaturePlant ? 'Mature' : '')
+      )
     }
 
     const idBottom = this._tileMaker.getTileId(this.visProps)

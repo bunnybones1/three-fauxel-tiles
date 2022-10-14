@@ -47,6 +47,7 @@ import { makeRockCrumbs } from '../meshes/factoryRockCrumbs'
 import {
   makeTreePine,
   makeTreePineMature,
+  makeTreePineStump,
   makeTreePineStumpMature
 } from '../meshes/factoryTreePine'
 
@@ -694,6 +695,12 @@ export default class TileMaker {
     treePineMatureSW.position.set(-32, 0, -32)
     scene.add(treePineMatureSW)
 
+    const treePineStump = makeTreePineStump(
+      getMaterial('bark'),
+      getMaterial('wood')
+    )
+    scene.add(treePineStump)
+
     const treePineStumpMature = makeTreePineStumpMature(
       getMaterial('bark'),
       getMaterial('wood')
@@ -785,6 +792,7 @@ export default class TileMaker {
       treePineMatureSW,
       treePineMatureW,
       treePineMatureNW,
+      treePineStump,
       treePineStumpMature
     ]
 
