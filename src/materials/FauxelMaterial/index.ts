@@ -8,6 +8,7 @@ import {
   Vector3,
   Vector4
 } from 'three'
+import { lerp } from 'three/src/math/MathUtils'
 import { buildParameters } from '../../utils/jsUtils'
 import { getTempTexture } from '../../utils/threeUtils'
 
@@ -107,31 +108,19 @@ export class FauxelMaterial extends RawShaderMaterial {
     const uFogScroll = new Uniform(params.fogScroll)
     const uWaterHeight = new Uniform(params.waterHeight)
 
-    // const temp = getMouseBoundViewTransform('waterReflAngle')
-    // const sunAngleY = temp.y
     const waterSunAngleY = 0.9
     __sunDirectionForWaterFake.set(
       0,
       Math.cos(waterSunAngleY),
       Math.sin(waterSunAngleY)
     )
-    setInterval(() => {
-      // sunDirectionForWater.copy(__sunDirectionForWaterFake)
-      // sunDirectionForWater.x += params.sunDirection.x * 0.4
-      // __tempVec3.copy(sunDirectionForWater).normalize()
-      // sunDirectionForWater.lerp(__tempVec3, 0.4)
-      // sunDirectionForWater.multiplyScalar(
-      //   lerp(0.97, 1, 1 - Math.abs(sunDirection.x))
-      // )
-      // params.sunShadowDirection.multiplyScalar(params.pixelsPerTile*params.relativePixelSize*16)
-      // params.sunShadowDirection.y = 0.1
-      // params.sunShadowDirection.applyAxisAngle(axis, Math.PI * 0.5)
-      // params.sunDirection.y *= -1
-      // params.sunDirection.applyAxisAngle(axis, Math.PI * -0.5)
-      // params.sunDirection.multiplyScalar(-1)
-      // params.fogScroll.x = performance.now() * 0.00001
-      // uWaterHeight.value = Math.sin(3 + performance.now() * 0.001) * 0.5 + 0.4
-    }, 50)
+    sunDirectionForWater.copy(__sunDirectionForWaterFake)
+    sunDirectionForWater.x += params.sunDirection.x * 0.4
+    __tempVec3.copy(sunDirectionForWater).normalize()
+    sunDirectionForWater.lerp(__tempVec3, 0.4)
+    sunDirectionForWater.multiplyScalar(
+      lerp(0.97, 1, 1 - Math.abs(sunDirection.x))
+    )
     const uniforms = {
       uUvST,
       uUvSTWorldOffset,
