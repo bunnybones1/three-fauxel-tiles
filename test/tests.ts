@@ -22,6 +22,7 @@ import TestNoiseShaderScene from './helpers/scenes/TestNoiseShaderScene'
 // import TestPhysicsConcaveBodiesScene from './helpers/scenes/TestPhysicsConcaveBodies'
 // import TestPhysicsPNGScene from './helpers/scenes/TestPhysicsPNG'
 import TestPixelTextScene from './helpers/scenes/TestPixelText'
+import TestModelScene from './helpers/scenes/TestModelScene'
 // import TestStencilsScene from './helpers/scenes/TestStencils'
 // import TestTextScene from './helpers/scenes/TestText'
 // import TestTextPhysicsScene from './helpers/scenes/TestTextPhysics'
@@ -41,6 +42,7 @@ export const testClasses: { [K: string]: any } = {
   jitPointTiles: TestJitPointTilesScene, //fail
   jitPointTilesAndSprites: TestJitPointTilesAndSpritesScene,
   noiseShader: TestNoiseShaderScene, //pass
+  model: TestModelScene, //pass
   cachedScrollingNoiseViewShader: TestCachedScrollingNoiseViewShaderScene, //pass
   cachedScrollingMeshesViewShader: TestCachedScrollingMeshesViewShaderScene, //pass
   cachedScrollingJitTileViewShader: TestCachedScrollingJitTileShaderScene //fail

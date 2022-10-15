@@ -9,3 +9,6 @@ export const initOffset = {
 
 export const sunSpeed = getUrlFloat('sunSpeed', -0.001)
 export const sunOffset = getUrlFloat('sunOffset', 0.5)
+
+//export const verticalScale = 1
+export const verticalScale = Math.SQRT2 / 2

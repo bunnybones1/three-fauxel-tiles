@@ -50,9 +50,17 @@ import {
   makeTreePineStump,
   makeTreePineStumpMature
 } from '../meshes/factoryTreePine'
+import {
+  makeTreeMaple,
+  makeTreeMapleMature,
+  makeTreeMapleStump,
+  makeTreeMapleStumpMature
+} from '../meshes/factoryTreeMaple'
+import { makeGoldPile } from '../meshes/factoryGoldPile'
+import { makeLampPost } from '../meshes/factoryLampPost'
+import { verticalScale } from '../constants'
+import { BushProps, makeRecursiveBush } from '../meshes/factoryBush'
 
-// const scale = 1
-const scale = Math.SQRT2 / 2
 export default class TileMaker {
   public get passes(): MaterialPassType[] {
     return this._passes
@@ -68,16 +76,16 @@ export default class TileMaker {
   private _cameraTiltedBottom = new OrthographicCamera(
     -16,
     16,
-    (0 * 32 + 16) * scale,
-    (0 * 32 - 16) * scale,
+    (0 * 32 + 16) * verticalScale,
+    (0 * 32 - 16) * verticalScale,
     0,
     64
   )
   private _cameraTiltedTop = new OrthographicCamera(
     -16,
     16,
-    (1 * 32 + 16) * scale,
-    (1 * 32 - 16) * scale,
+    (1 * 32 + 16) * verticalScale,
+    (1 * 32 - 16) * verticalScale,
     0,
     64
   )
@@ -140,8 +148,6 @@ export default class TileMaker {
     const ball = new Mesh(new SphereGeometry(16, 32, 16), ballMat)
     ball.scale.y = Math.SQRT1_2
     // ball.position.y = Math.SQRT1_2 * 14
-    const pivot = new Object3D()
-    // pivot.rotation.y = Math.PI * 0.25
     const floorBoard = new Mesh(getChamferedBoxGeometry(8, 4, 32, 1), floorMat)
     const floorBoardPair = new Object3D()
     floorBoardPair.add(floorBoard)
@@ -286,32 +292,31 @@ export default class TileMaker {
     // ball.position.y = 14
     // this._camera.position.y = 16
     // this._camera.rotateY(Math.PI * -0.25)
-    pivot.add(brickWallSectionNC)
-    pivot.add(brickWallSectionWC)
-    pivot.add(brickWallSectionSC)
-    pivot.add(brickWallSectionEC)
-    pivot.add(brickWallSectionNL)
-    pivot.add(brickWallSectionWL)
-    pivot.add(brickWallSectionSL)
-    pivot.add(brickWallSectionEL)
-    pivot.add(brickWallSectionNR)
-    pivot.add(brickWallSectionWR)
-    pivot.add(brickWallSectionSR)
-    pivot.add(brickWallSectionER)
-    pivot.add(beamCenter)
-    pivot.add(beamW)
-    pivot.add(beamS)
-    pivot.add(beamE)
-    pivot.add(beamN)
-    pivot.add(beamFullSectionEW)
-    pivot.add(beamFullSectionNS)
+    scene.add(brickWallSectionNC)
+    scene.add(brickWallSectionWC)
+    scene.add(brickWallSectionSC)
+    scene.add(brickWallSectionEC)
+    scene.add(brickWallSectionNL)
+    scene.add(brickWallSectionWL)
+    scene.add(brickWallSectionSL)
+    scene.add(brickWallSectionEL)
+    scene.add(brickWallSectionNR)
+    scene.add(brickWallSectionWR)
+    scene.add(brickWallSectionSR)
+    scene.add(brickWallSectionER)
+    scene.add(beamCenter)
+    scene.add(beamW)
+    scene.add(beamS)
+    scene.add(beamE)
+    scene.add(beamN)
+    scene.add(beamFullSectionEW)
+    scene.add(beamFullSectionNS)
     // pivot.add(drywall)
     floor.position.y = -1
     scene.add(floor)
     ground.position.y = -1
     scene.add(ground)
     // scene.add(ball)
-    scene.add(pivot)
 
     const grassGeoA = new GrassGeometry()
     const grassGeoH = new GrassGeometry()
@@ -345,64 +350,15 @@ export default class TileMaker {
     scene.add(grassNW)
     grassNW.position.set(-16, 0, 16)
 
-    const bushGeoA3 = new FibonacciSphereGeometry(2, 8)
-    const berryGeo = new FibonacciSphereGeometry(3, 15)
-    function makeRecursiveBush(
-      radius1 = 7,
-      radius2 = 4,
-      knobs = 16,
-      knobs2 = 30,
-      y = 11
-    ) {
-      //bush
-      const bushC = new Object3D()
-      const bushC2Proto = new Object3D()
-      const bushC3Proto = new Mesh(bushGeoA3, bushMat)
-
-      for (let i = 0; i < knobs2; i++) {
-        const bushC3 = bushC3Proto.clone()
-        bushC3.position.fromArray(
-          longLatToXYZ(pointOnSphereFibonacci(i, knobs2), radius2)
-        )
-        bushC3.rotation.set(
-          detRandGraphics(-Math.PI, Math.PI),
-          detRandGraphics(-Math.PI, Math.PI),
-          detRandGraphics(-Math.PI, Math.PI)
-        )
-        bushC2Proto.add(bushC3)
-      }
-      for (let i = 0; i < knobs; i++) {
-        const bushC2 = bushC2Proto.clone(true)
-        bushC2.position.fromArray(
-          longLatToXYZ(pointOnSphereFibonacci(i, knobs), radius1)
-        )
-        bushC.add(bushC2)
-        // bushC2.scale.multiplyScalar(rand2(0.8, 1.2))
-      }
-      bushC.traverse((obj) => {
-        if (detRandGraphics() > 0.975 && obj instanceof Mesh) {
-          obj.geometry = berryGeo
-          obj.material = berryMat
-          // obj.scale.multiplyScalar(5.75) //do not scale for now, this will mess up (weaken) normals for some reason
-          obj.position.multiplyScalar(1.15)
-        }
-      })
-      bushC.rotation.set(
-        detRandGraphics(-Math.PI, Math.PI),
-        detRandGraphics(-Math.PI, Math.PI),
-        detRandGraphics(-Math.PI, Math.PI)
-      )
-      const bushBase = new Object3D()
-      bushBase.add(bushC)
-      bushBase.scale.y *= scale
-      bushC.position.y += y
-      return bushBase
-    }
     // bushC.material.visible = false
-    const bushC = makeRecursiveBush()
-    const bushVProto = makeRecursiveBush()
-    const bushHProto = makeRecursiveBush()
-    const bushCornerProto = makeRecursiveBush(16, 8, 24, 60, 22)
+    const bushC = makeRecursiveBush(bushMat, berryMat)
+    const bushVProto = makeRecursiveBush(bushMat, berryMat)
+    const bushHProto = makeRecursiveBush(bushMat, berryMat)
+    const bushCornerProto = makeRecursiveBush(
+      bushMat,
+      berryMat,
+      new BushProps(16, 8, 24, 60, 22)
+    )
     scene.add(bushC)
     const bushN = bushVProto.clone(true)
     scene.add(bushN)
@@ -431,85 +387,12 @@ export default class TileMaker {
 
     const goldMat = getMaterial('gold')
     const goldChunkGeo = new FibonacciSphereGeometry(4, 17)
-    function makeGoldPile(radius = 16, knobs = 170, y = -12) {
-      const goldPile = new Object3D()
-      const goldChunk = new Mesh(goldChunkGeo, goldMat)
-      const pos = new Vector3()
-      for (let i = 0; i < knobs; i++) {
-        pos.fromArray(longLatToXYZ(pointOnSphereFibonacci(i, knobs), radius))
-        if (pos.y > -y) {
-          const goldCoin = goldChunk.clone()
-          goldCoin.scale.y *= 0.2
-          goldCoin.position.copy(pos)
-          goldCoin.rotation.set(rand2(0.2), rand2(0.2), rand2(0.2))
-          goldPile.add(goldCoin)
-        }
-      }
-      goldPile.position.y += y
-      return goldPile
-    }
-    const goldPile = makeGoldPile()
+    const goldPile = makeGoldPile(goldChunkGeo, goldMat)
     scene.add(goldPile)
 
     const ironBlackMat = getMaterial('ironBlack')
-    function makeLampPost() {
-      const lampPost = new Object3D()
-      const ironCylinder = new Mesh(
-        new CylinderBufferGeometry(0.5, 0.5, 1, 16, 1),
-        ironBlackMat
-      )
-      const cylPosArr = ironCylinder.geometry.attributes.position
-        .array as number[]
-      for (let i = 1; i < cylPosArr.length; i += 3) {
-        cylPosArr[i] += 0.5
-      }
-      const ring = new Mesh(
-        new TorusBufferGeometry(0.45, 0.1, 32, 16),
-        ironBlackMat
-      )
-      const lampPole = ironCylinder.clone()
-      lampPost.add(lampPole)
-      lampPole.scale.set(6, 12, 6)
-      const lampPole2 = ironCylinder.clone()
-      lampPole2.scale.set(3, 39, 3)
-      lampPost.add(lampPole2)
-      const middleRing = ring.clone()
-      middleRing.scale.set(8, 8, 8)
-      middleRing.position.y = 12
-      middleRing.rotation.x = Math.PI * 0.5
-      lampPost.add(middleRing)
-      const middleRing2 = middleRing.clone()
-      middleRing2.position.y = 2
-      lampPost.add(middleRing2)
-      // const middleRing3 = middleRing.clone()
-      // middleRing3.position.y = 32
-      // lampPost.add(middleRing3)
-      const lampPole3 = lampPole2.clone()
-      lampPole3.scale.set(2, 9, 2)
-      lampPole3.position.y = 38
-      lampPole3.rotation.z = Math.PI * -0.25
-      lampPost.add(lampPole3)
-      const lampPole4 = lampPole2.clone()
-      lampPole4.scale.set(2, 6, 2)
-      lampPole4.position.x = 6
-      lampPole4.position.y = 44
-      lampPole4.rotation.z = Math.PI * -0.5
-      lampPost.add(lampPole4)
-      const lampShade = new Mesh(
-        getChamferedBoxGeometry(8, 4, 8, 2),
-        ironBlackMat
-      )
-      lampShade.position.set(12, 43, 0)
-      lampPost.add(lampShade)
-      // const middleRing4 = middleRing.clone()
-      // middleRing4.position.y = 44
-      // lampPost.add(middleRing4)
-      // const topper = new Mesh(new ConeBufferGeometry(10, 4, 6), ironBlackMat)
-      // topper.position.y = 42
-      // lampPost.add(topper)
-      return lampPost
-    }
-    const lampPost = makeLampPost()
+
+    const lampPost = makeLampPost(ironBlackMat)
     scene.add(lampPost)
 
     const testObject = new Mesh(
@@ -518,7 +401,7 @@ export default class TileMaker {
     )
     testObject.position.y = 12
     testObject.rotation.x = Math.PI * 0.5
-    testObject.scale.y *= scale
+    testObject.scale.y *= verticalScale
     scene.add(testObject)
 
     const pyramidGeo = new PyramidGeometry()
@@ -707,6 +590,82 @@ export default class TileMaker {
     )
     scene.add(treePineStumpMature)
 
+    const treeMaple = makeTreeMaple(
+      getMaterial('barkMaple'),
+      getMaterial('leafMaple')
+    )
+
+    const treeMapleC = treeMaple.clone()
+    scene.add(treeMapleC)
+    const treeMapleN = treeMaple.clone()
+    treeMapleN.position.set(0, 0, 32)
+    scene.add(treeMapleN)
+    const treeMapleS = treeMaple.clone()
+    treeMapleS.position.set(0, 0, -32)
+    scene.add(treeMapleS)
+    const treeMapleE = treeMaple.clone()
+    treeMapleE.position.set(32, 0, 0)
+    scene.add(treeMapleE)
+    const treeMapleW = treeMaple.clone()
+    treeMapleW.position.set(-32, 0, 0)
+    scene.add(treeMapleW)
+    const treeMapleNE = treeMaple.clone()
+    treeMapleNE.position.set(32, 0, 32)
+    scene.add(treeMapleNE)
+    const treeMapleSE = treeMaple.clone()
+    treeMapleSE.position.set(32, 0, -32)
+    scene.add(treeMapleSE)
+    const treeMapleNW = treeMaple.clone()
+    treeMapleNW.position.set(-32, 0, 32)
+    scene.add(treeMapleNW)
+    const treeMapleSW = treeMaple.clone()
+    treeMapleSW.position.set(-32, 0, -32)
+    scene.add(treeMapleSW)
+
+    const treeMapleMature = makeTreeMapleMature(
+      getMaterial('barkMaple'),
+      getMaterial('leafMaple'),
+      getMaterial('woodMaple')
+    )
+    const treeMapleMatureC = treeMapleMature.clone()
+    scene.add(treeMapleMatureC)
+    const treeMapleMatureN = treeMapleMature.clone()
+    treeMapleMatureN.position.set(0, 0, 32)
+    scene.add(treeMapleMatureN)
+    const treeMapleMatureS = treeMapleMature.clone()
+    treeMapleMatureS.position.set(0, 0, -32)
+    scene.add(treeMapleMatureS)
+    const treeMapleMatureE = treeMapleMature.clone()
+    treeMapleMatureE.position.set(32, 0, 0)
+    scene.add(treeMapleMatureE)
+    const treeMapleMatureW = treeMapleMature.clone()
+    treeMapleMatureW.position.set(-32, 0, 0)
+    scene.add(treeMapleMatureW)
+    const treeMapleMatureNE = treeMapleMature.clone()
+    treeMapleMatureNE.position.set(32, 0, 32)
+    scene.add(treeMapleMatureNE)
+    const treeMapleMatureSE = treeMapleMature.clone()
+    treeMapleMatureSE.position.set(32, 0, -32)
+    scene.add(treeMapleMatureSE)
+    const treeMapleMatureNW = treeMapleMature.clone()
+    treeMapleMatureNW.position.set(-32, 0, 32)
+    scene.add(treeMapleMatureNW)
+    const treeMapleMatureSW = treeMapleMature.clone()
+    treeMapleMatureSW.position.set(-32, 0, -32)
+    scene.add(treeMapleMatureSW)
+
+    const treeMapleStump = makeTreeMapleStump(
+      getMaterial('barkMaple'),
+      getMaterial('woodMaple')
+    )
+    scene.add(treeMapleStump)
+
+    const treeMapleStumpMature = makeTreeMapleStumpMature(
+      getMaterial('barkMaple'),
+      getMaterial('woodMaple')
+    )
+    scene.add(treeMapleStumpMature)
+
     const indexedMeshes = [
       dummy,
       floor,
@@ -793,7 +752,27 @@ export default class TileMaker {
       treePineMatureW,
       treePineMatureNW,
       treePineStump,
-      treePineStumpMature
+      treePineStumpMature,
+      treeMapleC,
+      treeMapleN,
+      treeMapleNE,
+      treeMapleE,
+      treeMapleSE,
+      treeMapleS,
+      treeMapleSW,
+      treeMapleW,
+      treeMapleNW,
+      treeMapleMatureC,
+      treeMapleMatureN,
+      treeMapleMatureNE,
+      treeMapleMatureE,
+      treeMapleMatureSE,
+      treeMapleMatureS,
+      treeMapleMatureSW,
+      treeMapleMatureW,
+      treeMapleMatureNW,
+      treeMapleStump,
+      treeMapleStumpMature
     ]
 
     this._indexedMeshes = indexedMeshes
@@ -867,5 +846,8 @@ export default class TileMaker {
       renderer.setRenderTarget(null)
       this._renderQueue.length = 0
     }
+  }
+  update(dt: number) {
+    //
   }
 }

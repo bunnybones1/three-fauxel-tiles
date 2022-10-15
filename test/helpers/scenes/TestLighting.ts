@@ -28,7 +28,7 @@ export default class TestLightingScene extends BaseTestScene {
     if (getUrlFlag('fpsCam')) {
       fps.toggle(true)
     }
-    const init = async () => {
+    const init = () => {
       const unitSize = 0.6
       const radius = unitSize * 0.5
       const basicMaterial = new MeshStandardMaterial({

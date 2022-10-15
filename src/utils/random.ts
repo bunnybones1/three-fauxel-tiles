@@ -45,6 +45,11 @@ export function detRandTrees(min = 0, max = 1) {
   return genTrees() * (max - min) + min
 }
 
+const genTreesMaple = sfc32(100, 200, 300, 444)
+export function detRandTreesMaple(min = 0, max = 1) {
+  return genTreesMaple() * (max - min) + min
+}
+
 const genWoodPlanks = sfc32(100, 152, 353, 504)
 export function detRandWoodPlanks(min = 0, max = 1) {
   return genWoodPlanks() * (max - min) + min
