@@ -418,14 +418,27 @@ export default class JITTileSampler {
 
     //TEST SIMPLER MAP
     if (getUrlFlag('simple')) {
-      const item = this.localMetaBitsHas('testObject')
-      const keepGrass = this.localMetaBitsHas('grass')
+      // const item = this.localMetaBitsHas('testObject')
+      // const keepGrass = this.localMetaBitsHas('grass')
+      // this.localMetaProps = 0
+      // if (keepGrass) {
+      //   this.localMetaBitsFlip('grass')
+      // }
+      // if (keepGrass && item) {
+      //   this.localMetaBitsFlip('testObject')
+      // }
+      const item = this.localMetaBitsHas('floor')
+      const item2 = this.localMetaBitsHas('beam')
+      const item3 = this.localMetaBitsHas('bricks')
       this.localMetaProps = 0
-      if (keepGrass) {
-        this.localMetaBitsFlip('grass')
+      if (item) {
+        this.localMetaBitsFlip('floor')
       }
-      if (keepGrass && item) {
-        this.localMetaBitsFlip('testObject')
+      if (item2) {
+        this.localMetaBitsFlip('beam')
+      }
+      if (item3) {
+        this.localMetaBitsFlip('bricks')
       }
     }
 

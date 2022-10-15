@@ -8,8 +8,6 @@ import {
   Vector3,
   Vector4
 } from 'three'
-import { lerp } from 'three/src/math/MathUtils'
-import { sunOffset, sunSpeed } from '../../constants'
 import { buildParameters } from '../../utils/jsUtils'
 import { getTempTexture } from '../../utils/threeUtils'
 
@@ -75,6 +73,7 @@ const __sunDirectionForWaterFake = new Vector3(
 )
 const __tempVec3 = new Vector3()
 export class FauxelMaterial extends RawShaderMaterial {
+  setSunAngle: (sunAngle: number) => void
   constructor(options: Partial<Parameters> = {}) {
     const params = buildParameters(__defaultParams, options)
     const uUvST = new Uniform(params.uvST)
@@ -88,78 +87,50 @@ export class FauxelMaterial extends RawShaderMaterial {
     const uTextureTopDownHeight = new Uniform(params.textureTopDownHeight)
     const uTexturePointLights = new Uniform(params.texturePointLights)
 
-    const uSunDirection = new Uniform(params.sunDirection)
-    const uSunDirectionForWater = new Uniform(params.sunDirectionForWater)
-    const uSunShadowDirection = new Uniform(params.sunShadowDirection)
+    const sunDirection = params.sunDirection
+    const uSunDirection = new Uniform(sunDirection)
+    const sunDirectionForWater = params.sunDirectionForWater
+    const uSunDirectionForWater = new Uniform(sunDirectionForWater)
+    const sunShadowDirection = params.sunShadowDirection
+    const uSunShadowDirection = new Uniform(sunShadowDirection)
     const originalColorLightAmbient = params.colorLightAmbient.clone()
     const nightColorLightAmbient = new Color(0.05, 0.1, 0.4)
-    const uColorLightAmbient = new Uniform(params.colorLightAmbient)
+    const colorLightAmbient = params.colorLightAmbient
+    const uColorLightAmbient = new Uniform(colorLightAmbient)
     const originalColorDarkAmbient = params.colorDarkAmbient.clone()
     const nightColorDarkAmbient = new Color(0, 0.05, 0.2)
-    const uColorDarkAmbient = new Uniform(params.colorDarkAmbient)
-    const uColorSun = new Uniform(params.colorSun)
+    const colorDarkAmbient = params.colorDarkAmbient
+    const uColorDarkAmbient = new Uniform(colorDarkAmbient)
+    const colorSun = params.colorSun
+    const uColorSun = new Uniform(colorSun)
     const uTextureFog = new Uniform(params.textureFog)
     const uFogScroll = new Uniform(params.fogScroll)
     const uWaterHeight = new Uniform(params.waterHeight)
 
     // const temp = getMouseBoundViewTransform('waterReflAngle')
     // const sunAngleY = temp.y
-    const sunAngleY = 0.9
+    const waterSunAngleY = 0.9
+    __sunDirectionForWaterFake.set(
+      0,
+      Math.cos(waterSunAngleY),
+      Math.sin(waterSunAngleY)
+    )
     setInterval(() => {
-      // console.log(sunAngleY)
-      __sunDirectionForWaterFake.set(
-        0,
-        Math.cos(sunAngleY),
-        Math.sin(sunAngleY)
-      )
-
-      // const a = 2.5
-      // const a = performance.now() * 0.001
-      const a = 0.1 + performance.now() * sunSpeed + sunOffset * Math.PI * 2
-      params.sunDirection.set(Math.cos(a), 0.75, Math.sin(a))
-      // params.sunDirection.y += 0.75
-      // params.sunDirection.applyAxisAngle(axis, Math.PI * -1)
-      // params.sunDirection.set(0, 1, 0)
-      params.sunDirection.normalize()
-      params.sunDirectionForWater.copy(__sunDirectionForWaterFake)
-      params.sunDirectionForWater.x += params.sunDirection.x * 0.4
-      __tempVec3.copy(params.sunDirectionForWater).normalize()
-      params.sunDirectionForWater.lerp(__tempVec3, 0.4)
-      params.sunDirectionForWater.multiplyScalar(
-        lerp(0.97, 1, 1 - Math.abs(params.sunDirection.x))
-      )
-      params.sunShadowDirection.copy(params.sunDirection)
+      // sunDirectionForWater.copy(__sunDirectionForWaterFake)
+      // sunDirectionForWater.x += params.sunDirection.x * 0.4
+      // __tempVec3.copy(sunDirectionForWater).normalize()
+      // sunDirectionForWater.lerp(__tempVec3, 0.4)
+      // sunDirectionForWater.multiplyScalar(
+      //   lerp(0.97, 1, 1 - Math.abs(sunDirection.x))
+      // )
       // params.sunShadowDirection.multiplyScalar(params.pixelsPerTile*params.relativePixelSize*16)
       // params.sunShadowDirection.y = 0.1
       // params.sunShadowDirection.applyAxisAngle(axis, Math.PI * 0.5)
-      params.sunShadowDirection.x *= -1
       // params.sunDirection.y *= -1
       // params.sunDirection.applyAxisAngle(axis, Math.PI * -0.5)
       // params.sunDirection.multiplyScalar(-1)
-
-      params.sunShadowDirection.y = 0
-      params.sunShadowDirection.multiplyScalar(2)
-      params.fogScroll.x = performance.now() * 0.00001
-      const bDay = Math.max(0, Math.sin(a))
-      params.colorLightAmbient.lerpColors(
-        nightColorLightAmbient,
-        originalColorLightAmbient,
-        bDay
-      )
-      params.colorDarkAmbient.lerpColors(
-        nightColorDarkAmbient,
-        originalColorDarkAmbient,
-        bDay
-      )
-      params.colorSun.setRGB(
-        Math.pow(bDay, 0.5),
-        Math.pow(bDay, 1),
-        Math.pow(bDay, 2)
-      )
-      uWaterHeight.value = Math.sin(3 + performance.now() * 0.001) * 0.5 + 0.4
-      // params.sunShadowDirection.x = 1
-      // params.sunShadowDirection.z = 1
-      // params.sunShadowDirection.multiplyScalar(2)
+      // params.fogScroll.x = performance.now() * 0.00001
+      // uWaterHeight.value = Math.sin(3 + performance.now() * 0.001) * 0.5 + 0.4
     }, 50)
     const uniforms = {
       uUvST,
@@ -200,5 +171,28 @@ export class FauxelMaterial extends RawShaderMaterial {
       depthTest: true,
       side: DoubleSide
     })
+
+    this.setSunAngle = (sunAngle: number) => {
+      sunDirection.set(Math.cos(sunAngle), 0.75, Math.sin(sunAngle))
+      sunDirection.normalize()
+
+      sunShadowDirection.copy(sunDirection)
+      sunShadowDirection.x *= -1
+      sunShadowDirection.y = 0
+      sunShadowDirection.multiplyScalar(2)
+
+      const bDay = Math.max(0, Math.sin(sunAngle))
+      colorLightAmbient.lerpColors(
+        nightColorLightAmbient,
+        originalColorLightAmbient,
+        bDay
+      )
+      colorDarkAmbient.lerpColors(
+        nightColorDarkAmbient,
+        originalColorDarkAmbient,
+        bDay
+      )
+      colorSun.setRGB(Math.pow(bDay, 0.5), Math.pow(bDay, 1), Math.pow(bDay, 2))
+    }
   }
 }

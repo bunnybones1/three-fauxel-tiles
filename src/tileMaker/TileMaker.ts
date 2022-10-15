@@ -3,7 +3,6 @@ import {
   BoxBufferGeometry,
   BoxGeometry,
   Color,
-  CylinderBufferGeometry,
   DirectionalLight,
   HemisphereLight,
   LinearEncoding,
@@ -14,9 +13,7 @@ import {
   OrthographicCamera,
   Scene,
   SphereGeometry,
-  TorusBufferGeometry,
   TorusKnotBufferGeometry,
-  Vector3,
   Vector4,
   WebGLRenderer,
   WebGLRenderTarget
@@ -30,18 +27,8 @@ import {
   MaterialPassType
 } from '../helpers/materials/materialLib'
 import { getChamferedBoxGeometry } from '../utils/geometry'
-import {
-  assertPowerOfTwo,
-  longLatToXYZ,
-  pointOnSphereFibonacci,
-  rand2
-} from '../utils/math'
-import {
-  detRandGraphics,
-  detRandRocks,
-  detRandWoodPlanks
-} from '../utils/random'
-import Rocks from '../meshes/Rocks'
+import { assertPowerOfTwo } from '../utils/math'
+import { detRandRocks, detRandWoodPlanks } from '../utils/random'
 import { makeRocks } from '../meshes/factoryRocks'
 import { makeRockCrumbs } from '../meshes/factoryRockCrumbs'
 import {
@@ -60,6 +47,8 @@ import { makeGoldPile } from '../meshes/factoryGoldPile'
 import { makeLampPost } from '../meshes/factoryLampPost'
 import { verticalScale } from '../constants'
 import { BushProps, makeRecursiveBush } from '../meshes/factoryBush'
+import { memoize } from '../utils/memoizer'
+import { makeBrickWall } from '../meshes/factoryBrickWall'
 
 export default class TileMaker {
   public get passes(): MaterialPassType[] {
@@ -67,7 +56,7 @@ export default class TileMaker {
   }
   public set passes(value: MaterialPassType[]) {
     throw new Error('You cannot change passes during runtime.')
-    this._passes = value
+    // this._passes = value
   }
   private _renderQueue: number[] = []
   private _tileRegistry: Uint8Array[] = []
@@ -92,7 +81,8 @@ export default class TileMaker {
   private _cameraTopDown = new OrthographicCamera(-16, 16, 16, -16, -64, 64)
   private _renderTargets: Map<MaterialPassType, WebGLRenderTarget> = new Map()
   private _tileTexNeedsUpdate = true
-  private _indexedMeshes: Object3D[]
+  private _indexedMeshesVisibility: boolean[]
+  private _indexedMeshes: (() => Object3D)[]
   private _tilesPerEdge: number
   private _maxTiles: number
   constructor(
@@ -115,7 +105,10 @@ export default class TileMaker {
         })
       )
     }
+    console.log('performance.now', performance.now())
+
     const scene = this._scene
+
     scene.autoUpdate = false
     this._cameraTiltedBottom.rotateX(Math.PI * -0.25)
     this._cameraTiltedBottom.position.set(0, 32, 32)
@@ -134,6 +127,7 @@ export default class TileMaker {
     const light = new DirectionalLight(new Color(1, 0.9, 0.7), 1)
     light.position.set(-0.25, 1, 0.25).normalize()
     scene.add(light)
+
     const brickMat = getMaterial('brick')
     const mortarMat = getMaterial('mortar')
     const drywallMat = getMaterial('drywall')
@@ -148,143 +142,191 @@ export default class TileMaker {
     const ball = new Mesh(new SphereGeometry(16, 32, 16), ballMat)
     ball.scale.y = Math.SQRT1_2
     // ball.position.y = Math.SQRT1_2 * 14
-    const floorBoard = new Mesh(getChamferedBoxGeometry(8, 4, 32, 1), floorMat)
-    const floorBoardPair = new Object3D()
-    floorBoardPair.add(floorBoard)
-    const floorBoard2 = floorBoard.clone()
-    floorBoardPair.add(floorBoard2)
-    floorBoard.position.z = -16
-    floorBoard2.position.z = 16
 
-    const floor = new Mesh(new BoxBufferGeometry(32, 2, 32), floorMat)
-    detRandWoodPlanks()
-    for (let i = 0; i < 4; i++) {
-      const c = floorBoardPair.clone()
-      c.position.x = i * 8 - 12
-      c.position.z = ~~detRandWoodPlanks(-14, 14)
-      floor.add(c)
+    const floor = () => {
+      const floorBoard = new Mesh(
+        getChamferedBoxGeometry(8, 4, 32, 1),
+        floorMat
+      )
+      const floorBoardPair = new Object3D()
+      floorBoardPair.add(floorBoard)
+      const floorBoard2 = floorBoard.clone()
+      floorBoardPair.add(floorBoard2)
+      floorBoard.position.z = -16
+      floorBoard2.position.z = 16
+      const floor = new Mesh(new BoxBufferGeometry(32, 2, 32), floorMat)
+      detRandWoodPlanks()
+      for (let i = 0; i < 4; i++) {
+        const c = floorBoardPair.clone()
+        c.position.x = i * 8 - 12
+        c.position.z = ~~detRandWoodPlanks(-14, 14)
+        floor.add(c)
+      }
+      floor.position.y = -1
+      return floor
     }
 
-    const ground = new Mesh(new BoxBufferGeometry(32, 2, 32), groundMat)
+    const ground = () => {
+      const obj = new Mesh(new BoxBufferGeometry(32, 2, 32), groundMat)
+      obj.position.y = -1
+      return obj
+    }
 
     //brick walls
 
     const drywall = new Mesh(new BoxBufferGeometry(32, 32, 2), drywallMat)
-    const brickWidth = 7
-    const brickHeight = 3
-    const brickGap = 1
-    const brickSpacingX = brickWidth + brickGap
-    const brickSpacingY = brickHeight
-    const brickGeo = getChamferedBoxGeometry(brickWidth, brickHeight, 4.5, 1)
-    function makeBrickWall(colStart: number, colEnd: number) {
-      const brickWallRoot = new Object3D()
-      for (let iRow = 0; iRow < 11; iRow++) {
-        for (let iCol = -1; iCol < 1; iCol++) {
-          const budge = (iRow % 2) * 0.5 - 0.25
-          const brick = new Mesh(brickGeo, brickMat)
-          brick.position.set(
-            (iCol + budge) * brickSpacingX + brickWidth * 0.5,
-            (iRow + 0.5) * brickSpacingY,
-            0
-          )
-          brickWallRoot.add(brick)
-        }
-      }
-      const mortar = new Mesh(
-        new BoxBufferGeometry((colEnd - colStart) * brickSpacingX - 1, 32, 1),
-        mortarMat
-      )
-      mortar.position.x = -1
-      mortar.position.y = 16
-      mortar.position.z = -0.75
-      brickWallRoot.add(mortar)
-      return brickWallRoot
+    const getBrickWall = memoize(() =>
+      makeBrickWall(brickMat, mortarMat, -1, 1)
+    )
+    const brickWallSectionSC = memoize(() => {
+      const obj = getBrickWall().clone()
+      obj.position.z = 8
+      obj.position.x = 0
+      return obj
+    })
+    const brickWallSectionEC = memoize(() => {
+      const obj = getBrickWall().clone()
+      obj.position.x = 8
+      obj.rotation.y = Math.PI * 0.5
+      return obj
+    })
+    const brickWallSectionNC = memoize(() => {
+      const obj = getBrickWall().clone()
+      obj.position.z = -8
+      obj.rotation.y = Math.PI
+      return obj
+    })
+    const brickWallSectionWC = memoize(() => {
+      const obj = getBrickWall().clone()
+      obj.position.x = -8
+      obj.rotation.y = Math.PI * -0.5
+      return obj
+    })
+    const moveRelX = (brickWall: Object3D, amt: number) => {
+      brickWall.position.x += Math.cos(brickWall.rotation.y) * amt
+      brickWall.position.z += Math.sin(brickWall.rotation.y) * amt
     }
-    const brickWallSectionSC = makeBrickWall(-1, 1)
-    const brickWallSectionEC = brickWallSectionSC.clone(true)
-    const brickWallSectionNC = brickWallSectionSC.clone(true)
-    const brickWallSectionWC = brickWallSectionSC.clone(true)
-    brickWallSectionSC.position.z = 8
-    brickWallSectionSC.position.x = 0
-    brickWallSectionEC.position.x = 8
-    brickWallSectionEC.rotation.y = Math.PI * 0.5
-    brickWallSectionWC.position.x = -8
-    brickWallSectionWC.rotation.y = Math.PI * -0.5
-    brickWallSectionNC.position.z = -8
-    brickWallSectionNC.rotation.y = Math.PI
-    function makeBrickWallSectionsLR(brickWallC: Object3D) {
+    // const makeBrickWallSectionsLR = (brickWallC: Object3D) => {
+    //   const brickWallL = brickWallC.clone(true)
+    //   const brickWallR = brickWallC.clone(true)
+
+    //   moveRelX(brickWallL, -16)
+    //   moveRelX(brickWallR, 16)
+    //   return { brickWallL, brickWallR }
+    // }
+    const makeBrickWallSectionsL = (brickWallC: Object3D) => {
+      brickWallC.updateMatrixWorld()
       const brickWallL = brickWallC.clone(true)
-      const brickWallR = brickWallC.clone(true)
-      function moveRelX(brickWall: Object3D, amt: number) {
-        brickWall.position.x += Math.cos(brickWall.rotation.y) * amt
-        brickWall.position.z += Math.sin(brickWall.rotation.y) * amt
-      }
       moveRelX(brickWallL, -16)
-      moveRelX(brickWallR, 16)
-      return { brickWallL, brickWallR }
+      return brickWallL
     }
-    const { brickWallL: brickWallSectionSL, brickWallR: brickWallSectionSR } =
-      makeBrickWallSectionsLR(brickWallSectionSC)
-    const { brickWallL: brickWallSectionWL, brickWallR: brickWallSectionWR } =
-      makeBrickWallSectionsLR(brickWallSectionWC)
-    const { brickWallL: brickWallSectionNL, brickWallR: brickWallSectionNR } =
-      makeBrickWallSectionsLR(brickWallSectionNC)
-    const { brickWallL: brickWallSectionEL, brickWallR: brickWallSectionER } =
-      makeBrickWallSectionsLR(brickWallSectionEC)
+    const makeBrickWallSectionsR = (brickWallC: Object3D) => {
+      const brickWallR = brickWallC.clone(true)
+      moveRelX(brickWallR, 16)
+      return brickWallR
+    }
+    const brickWallSectionSL = () =>
+      makeBrickWallSectionsL(brickWallSectionSC())
+    const brickWallSectionSR = () =>
+      makeBrickWallSectionsR(brickWallSectionSC())
+    const brickWallSectionWL = () =>
+      makeBrickWallSectionsL(brickWallSectionWC())
+    const brickWallSectionWR = () =>
+      makeBrickWallSectionsR(brickWallSectionWC())
+    const brickWallSectionNL = () =>
+      makeBrickWallSectionsL(brickWallSectionNC())
+    const brickWallSectionNR = () =>
+      makeBrickWallSectionsR(brickWallSectionNC())
+    const brickWallSectionEL = () =>
+      makeBrickWallSectionsL(brickWallSectionEC())
+    const brickWallSectionER = () =>
+      makeBrickWallSectionsR(brickWallSectionEC())
 
     //wooden beams, struts and studs
 
-    const woodPlateGeo = getChamferedBoxGeometry(36, 3, 6, 1)
-    const bottomPlate = new Mesh(woodPlateGeo, woodMat)
-    bottomPlate.position.y = 1.5
-    const topPlate = new Mesh(woodPlateGeo, woodMat)
-    topPlate.position.y = 32 - 1.5
     const woodBeamGeo = getChamferedBoxGeometry(6, 32, 6, 1)
-    const beamCenter = new Mesh(woodBeamGeo, woodMat)
-    beamCenter.position.y = 16
+    const beamCenter = () => {
+      const beamCenter = new Mesh(woodBeamGeo, woodMat)
+      beamCenter.position.y = 16
+      return beamCenter
+    }
 
-    const woodStudGeo = getChamferedBoxGeometry(4, 32 - 6, 6, 1)
-    const stud = new Mesh(woodStudGeo, woodMat)
-    const beamFullSectionEW = new Object3D()
-    beamFullSectionEW.add(bottomPlate)
-    beamFullSectionEW.add(topPlate)
-    beamFullSectionEW.add(stud)
-    stud.position.y = 16
-    const stud2 = stud.clone()
-    stud2.position.x -= 16
-    const stud3 = stud.clone()
-    stud3.position.x += 16
-    beamFullSectionEW.add(stud2)
-    beamFullSectionEW.add(stud3)
-    const beamFullSectionNS = beamFullSectionEW.clone(true)
-    beamFullSectionNS.rotation.y = Math.PI * 0.5
+    const makeStud = memoize(() => {
+      const woodStudGeo = getChamferedBoxGeometry(4, 32 - 6, 6, 1)
+      const stud = new Mesh(woodStudGeo, woodMat)
+      stud.position.y = 16
+      return stud
+    })
+    const makeBeamFullSectionEW = () => {
+      const woodPlateGeo = getChamferedBoxGeometry(36, 3, 6, 1)
+      const bottomPlate = new Mesh(woodPlateGeo, woodMat)
+      bottomPlate.position.y = 1.5
+      const topPlate = new Mesh(woodPlateGeo, woodMat)
+      topPlate.position.y = 32 - 1.5
+      const beamFullSectionEW = new Object3D()
+      beamFullSectionEW.add(bottomPlate)
+      beamFullSectionEW.add(topPlate)
+      const stud = makeStud().clone()
+      beamFullSectionEW.add(stud)
+      const stud2 = stud.clone()
+      stud2.position.x -= 16
+      beamFullSectionEW.add(stud2)
+      const stud3 = stud.clone()
+      stud3.position.x += 16
+      beamFullSectionEW.add(stud3)
+      return beamFullSectionEW
+    }
+    const beamFullSectionEW = makeBeamFullSectionEW
 
-    const woodPlateShortGeo = getChamferedBoxGeometry(15, 3, 6, 1)
-    const bottomShortPlate = new Mesh(woodPlateShortGeo, woodMat)
-    bottomShortPlate.position.x = 1
-    bottomShortPlate.position.y = 1.5
-    const topShortPlate = new Mesh(woodPlateShortGeo, woodMat)
-    topShortPlate.position.x = 1
-    topShortPlate.position.y = 32 - 1.5
+    const beamFullSectionNS = () => {
+      const obj = beamFullSectionEW().clone(true)
+      obj.rotation.y = Math.PI * 0.5
+      return obj
+    }
 
-    const beamW = new Object3D()
-    const shortBeam = new Object3D()
-    shortBeam.add(topShortPlate)
-    shortBeam.add(bottomShortPlate)
-    const stud4 = stud.clone()
-    stud4.position.x = -4.5
-    const stud5 = stud.clone()
-    stud5.position.x = 6.5
-    shortBeam.add(stud4)
-    shortBeam.add(stud5)
-    shortBeam.position.x = 16 - 13 * 0.5
-    beamW.add(shortBeam)
-    const beamS = beamW.clone()
-    beamS.rotation.y = Math.PI * 0.5
-    const beamE = beamW.clone()
-    beamW.rotation.y = Math.PI
-    const beamN = beamW.clone()
-    beamN.rotation.y = Math.PI * -0.5
+    const makeShortBeam = memoize(() => {
+      const woodPlateShortGeo = getChamferedBoxGeometry(15, 3, 6, 1)
+      const bottomShortPlate = new Mesh(woodPlateShortGeo, woodMat)
+      bottomShortPlate.position.x = 1
+      bottomShortPlate.position.y = 1.5
+      const topShortPlate = new Mesh(woodPlateShortGeo, woodMat)
+      topShortPlate.position.x = 1
+      topShortPlate.position.y = 32 - 1.5
+      const shortBeam = new Object3D()
+      shortBeam.add(topShortPlate)
+      shortBeam.add(bottomShortPlate)
+      const stud4 = makeStud().clone()
+      stud4.position.x = -4.5
+      const stud5 = makeStud().clone()
+      stud5.position.x = 6.5
+      shortBeam.add(stud4)
+      shortBeam.add(stud5)
+      shortBeam.position.x = 16 - 13 * 0.5
+      return shortBeam
+    })
+    const beamE = () => {
+      const obj = new Object3D()
+      obj.add(makeShortBeam().clone())
+      return obj
+    }
+    const beamS = () => {
+      const obj = new Object3D()
+      obj.add(makeShortBeam().clone())
+      obj.rotation.y = Math.PI * 0.5
+      return obj
+    }
+    const beamW = () => {
+      const obj = new Object3D()
+      obj.add(makeShortBeam().clone())
+      obj.rotation.y = Math.PI
+      return obj
+    }
+    const beamN = () => {
+      const obj = new Object3D()
+      obj.add(makeShortBeam().clone())
+      obj.rotation.y = Math.PI * -0.5
+      return obj
+    }
 
     // brick.rotation.y = Math.PI * 0.25
     drywall.position.y = 16
@@ -292,219 +334,258 @@ export default class TileMaker {
     // ball.position.y = 14
     // this._camera.position.y = 16
     // this._camera.rotateY(Math.PI * -0.25)
-    scene.add(brickWallSectionNC)
-    scene.add(brickWallSectionWC)
-    scene.add(brickWallSectionSC)
-    scene.add(brickWallSectionEC)
-    scene.add(brickWallSectionNL)
-    scene.add(brickWallSectionWL)
-    scene.add(brickWallSectionSL)
-    scene.add(brickWallSectionEL)
-    scene.add(brickWallSectionNR)
-    scene.add(brickWallSectionWR)
-    scene.add(brickWallSectionSR)
-    scene.add(brickWallSectionER)
-    scene.add(beamCenter)
-    scene.add(beamW)
-    scene.add(beamS)
-    scene.add(beamE)
-    scene.add(beamN)
-    scene.add(beamFullSectionEW)
-    scene.add(beamFullSectionNS)
     // pivot.add(drywall)
-    floor.position.y = -1
-    scene.add(floor)
-    ground.position.y = -1
-    scene.add(ground)
     // scene.add(ball)
 
-    const grassGeoA = new GrassGeometry()
-    const grassGeoH = new GrassGeometry()
-    const grassGeoV = new GrassGeometry()
-    const grassGeoCorner = new GrassGeometry()
+    const grassGeoA = memoize(() => new GrassGeometry())
+    const grassGeoH = memoize(() => new GrassGeometry())
+    const grassGeoV = memoize(() => new GrassGeometry())
+    const grassGeoCorner = memoize(() => new GrassGeometry())
     //grass
-    const grassC = new Mesh(grassGeoA, grassMat)
-    scene.add(grassC)
-    const grassN = new Mesh(grassGeoV, grassMat)
-    scene.add(grassN)
-    grassN.position.set(0, 0, 16)
-    const grassNE = new Mesh(grassGeoCorner, grassMat)
-    scene.add(grassNE)
-    grassNE.position.set(16, 0, 16)
-    const grassE = new Mesh(grassGeoH, grassMat)
-    scene.add(grassE)
-    grassE.position.set(16, 0, 0)
-    const grassSE = new Mesh(grassGeoCorner, grassMat)
-    scene.add(grassSE)
-    grassSE.position.set(16, 0, -16)
-    const grassS = new Mesh(grassGeoV, grassMat)
-    scene.add(grassS)
-    grassS.position.set(0, 0, -16)
-    const grassSW = new Mesh(grassGeoCorner, grassMat)
-    scene.add(grassSW)
-    grassSW.position.set(-16, 0, -16)
-    const grassW = new Mesh(grassGeoH, grassMat)
-    scene.add(grassW)
-    grassW.position.set(-16, 0, 0)
-    const grassNW = new Mesh(grassGeoCorner, grassMat)
-    scene.add(grassNW)
-    grassNW.position.set(-16, 0, 16)
+    const grassC = () => new Mesh(grassGeoA(), grassMat)
+    const grassN = () => {
+      const obj = new Mesh(grassGeoV(), grassMat)
+      obj.position.set(0, 0, 16)
+      return obj
+    }
+    const grassNE = () => {
+      const obj = new Mesh(grassGeoCorner(), grassMat)
+      obj.position.set(16, 0, 16)
+      return obj
+    }
+    const grassE = () => {
+      const obj = new Mesh(grassGeoH(), grassMat)
+      obj.position.set(16, 0, 0)
+      return obj
+    }
+    const grassSE = () => {
+      const obj = new Mesh(grassGeoCorner(), grassMat)
+      obj.position.set(16, 0, -16)
+      return obj
+    }
+    const grassS = () => {
+      const obj = new Mesh(grassGeoV(), grassMat)
+      obj.position.set(0, 0, -16)
+      return obj
+    }
+    const grassSW = () => {
+      const obj = new Mesh(grassGeoCorner(), grassMat)
+      obj.position.set(-16, 0, -16)
+      return obj
+    }
+    const grassW = () => {
+      const obj = new Mesh(grassGeoH(), grassMat)
+      obj.position.set(-16, 0, 0)
+      return obj
+    }
+    const grassNW = () => {
+      const obj = new Mesh(grassGeoCorner(), grassMat)
+      obj.position.set(-16, 0, 16)
+      return obj
+    }
 
-    // bushC.material.visible = false
-    const bushC = makeRecursiveBush(bushMat, berryMat)
-    const bushVProto = makeRecursiveBush(bushMat, berryMat)
-    const bushHProto = makeRecursiveBush(bushMat, berryMat)
-    const bushCornerProto = makeRecursiveBush(
-      bushMat,
-      berryMat,
-      new BushProps(16, 8, 24, 60, 22)
+    const bushC = () => makeRecursiveBush(bushMat, berryMat)
+    const bushVProto = memoize(() => makeRecursiveBush(bushMat, berryMat))
+    const bushHProto = memoize(() => makeRecursiveBush(bushMat, berryMat))
+    const bushCornerProto = memoize(() =>
+      makeRecursiveBush(bushMat, berryMat, new BushProps(16, 8, 24, 60, 22))
     )
-    scene.add(bushC)
-    const bushN = bushVProto.clone(true)
-    scene.add(bushN)
-    bushN.position.set(0, 0, 16)
-    const bushNE = bushCornerProto.clone(true)
-    scene.add(bushNE)
-    bushNE.position.set(16, 0, 16)
-    const bushE = bushHProto.clone(true)
-    scene.add(bushE)
-    bushE.position.set(16, 0, 0)
-    const bushSE = bushNE.clone(true)
-    scene.add(bushSE)
-    bushSE.position.set(16, 0, -16)
-    const bushS = bushN.clone(true)
-    scene.add(bushS)
-    bushS.position.set(0, 0, -16)
-    const bushSW = bushNE.clone(true)
-    scene.add(bushSW)
-    bushSW.position.set(-16, 0, -16)
-    const bushW = bushHProto.clone(true)
-    scene.add(bushW)
-    bushW.position.set(-16, 0, 0)
-    const bushNW = bushNE.clone(true)
-    scene.add(bushNW)
-    bushNW.position.set(-16, 0, 16)
+    const bushN = () => {
+      const obj = bushVProto().clone(true)
+      obj.position.set(0, 0, 16)
+      return obj
+    }
+    const bushNE = () => {
+      const obj = bushCornerProto().clone(true)
+      obj.position.set(16, 0, 16)
+      return obj
+    }
+    const bushE = () => {
+      const obj = bushHProto().clone(true)
+      obj.position.set(16, 0, 0)
+      return obj
+    }
+    const bushSE = () => {
+      const obj = bushNE().clone(true)
+      obj.position.set(16, 0, -16)
+      return obj
+    }
+    const bushS = () => {
+      const obj = bushN().clone(true)
+      obj.position.set(0, 0, -16)
+      return obj
+    }
+    const bushSW = () => {
+      const obj = bushNE().clone(true)
+      obj.position.set(-16, 0, -16)
+      return obj
+    }
+    const bushW = () => {
+      const obj = bushHProto().clone(true)
+      obj.position.set(-16, 0, 0)
+      return obj
+    }
+    const bushNW = () => {
+      const obj = bushNE().clone(true)
+      obj.position.set(-16, 0, 16)
+      return obj
+    }
 
     const goldMat = getMaterial('gold')
     const goldChunkGeo = new FibonacciSphereGeometry(4, 17)
-    const goldPile = makeGoldPile(goldChunkGeo, goldMat)
-    scene.add(goldPile)
+    const goldPile = () => makeGoldPile(goldChunkGeo, goldMat)
 
     const ironBlackMat = getMaterial('ironBlack')
 
-    const lampPost = makeLampPost(ironBlackMat)
-    scene.add(lampPost)
+    const lampPost = () => makeLampPost(ironBlackMat)
 
-    const testObject = new Mesh(
-      new TorusKnotBufferGeometry(10, 2, 48, 8),
-      getMaterial('plastic')
-    )
-    testObject.position.y = 12
-    testObject.rotation.x = Math.PI * 0.5
-    testObject.scale.y *= verticalScale
-    scene.add(testObject)
-
-    const pyramidGeo = new PyramidGeometry()
-
-    const pyramid = new Mesh(pyramidGeo, getMaterial('floor'))
-    const pyramidTop = new Mesh(pyramidGeo, getMaterial('gold'))
-    pyramid.add(pyramidTop)
-    pyramidTop.scale.setScalar(0.2)
-    pyramidTop.position.y = 0.82
-    pyramid.scale.set(30, 16, 30)
-    scene.add(pyramid)
-
-    const rockyGroundProto = new Mesh(pyramidGeo, getMaterial('ground'))
-
-    const rockyGround = new Object3D()
-    for (let i = 0; i < 12; i++) {
-      const rocky = rockyGroundProto.clone()
-      rockyGround.add(rocky)
-      rocky.scale.set(
-        detRandRocks(3, 10),
-        detRandRocks(0.25, 0.5),
-        detRandRocks(3, 10)
+    const testObject = () => {
+      const obj = new Mesh(
+        new TorusKnotBufferGeometry(10, 2, 48, 8),
+        getMaterial('plastic')
       )
-      rocky.rotation.y = detRandRocks(0, Math.PI * 2)
-      rocky.position.set(detRandRocks(-12, 12), 0, detRandRocks(-12, 12))
+      obj.position.y = 12
+      obj.rotation.x = Math.PI * 0.5
+      obj.scale.y *= verticalScale
+      return obj
     }
-    scene.add(rockyGround)
 
-    const rocksA = makeRocks(rocksMat, 0)
-    const rocksABig = makeRocks(rocksMat, 0)
-    const rocksH = makeRocks(rocksMat, 4)
-    const rocksV = makeRocks(rocksMat, 4)
-    const rocksCorner = makeRocks(rocksMat, 8)
+    const pyramid = () => {
+      const pyramidGeo = new PyramidGeometry()
+      const obj = new Mesh(pyramidGeo, getMaterial('floor'))
+      const pyramidTop = new Mesh(pyramidGeo, getMaterial('gold'))
+      obj.add(pyramidTop)
+      pyramidTop.scale.setScalar(0.2)
+      pyramidTop.position.y = 0.82
+      obj.scale.set(30, 16, 30)
+      return obj
+    }
+
+    const rockyGround = () => {
+      const pyramidGeo = new PyramidGeometry()
+      const rockyGroundProto = new Mesh(pyramidGeo, getMaterial('ground'))
+      const obj = new Object3D()
+      for (let i = 0; i < 12; i++) {
+        const rocky = rockyGroundProto.clone()
+        obj.add(rocky)
+        rocky.scale.set(
+          detRandRocks(3, 10),
+          detRandRocks(0.25, 0.5),
+          detRandRocks(3, 10)
+        )
+        rocky.rotation.y = detRandRocks(0, Math.PI * 2)
+        rocky.position.set(detRandRocks(-12, 12), 0, detRandRocks(-12, 12))
+      }
+      return obj
+    }
+
+    const rocksA = memoize(() => makeRocks(rocksMat, 0))
+    const rocksABig = memoize(() => makeRocks(rocksMat, 0))
+    const rocksH = memoize(() => makeRocks(rocksMat, 4))
+    const rocksV = memoize(() => makeRocks(rocksMat, 4))
+    const rocksCorner = memoize(() => makeRocks(rocksMat, 8))
     //rocks
 
-    const rocksC = rocksA.clone()
-    scene.add(rocksC)
-    const rocksN = rocksV.clone()
-    scene.add(rocksN)
-    rocksN.position.set(0, 0, 16)
-    const rocksNE = rocksCorner.clone()
-    scene.add(rocksNE)
-    rocksNE.position.set(16, 0, 16)
-    const rocksE = rocksH.clone()
-    scene.add(rocksE)
-    rocksE.position.set(16, 0, 0)
-    const rocksSE = rocksCorner.clone()
-    scene.add(rocksSE)
-    rocksSE.position.set(16, 0, -16)
-    const rocksS = rocksV.clone()
-    scene.add(rocksS)
-    rocksS.position.set(0, 0, -16)
-    const rocksSW = rocksCorner.clone()
-    scene.add(rocksSW)
-    rocksSW.position.set(-16, 0, -16)
-    const rocksW = rocksH.clone()
-    scene.add(rocksW)
-    rocksW.position.set(-16, 0, 0)
-    const rocksNW = rocksCorner.clone()
-    scene.add(rocksNW)
-    rocksNW.position.set(-16, 0, 16)
+    const rocksC = () => rocksA()
+    const rocksN = () => {
+      const obj = rocksV().clone()
+      obj.position.set(0, 0, 16)
+      return obj
+    }
+    const rocksNE = () => {
+      const obj = rocksCorner().clone()
+      obj.position.set(16, 0, 16)
+      return obj
+    }
+    const rocksE = () => {
+      const obj = rocksH().clone()
+      obj.position.set(16, 0, 0)
+      return obj
+    }
+    const rocksSE = () => {
+      const obj = rocksCorner().clone()
+      obj.position.set(16, 0, -16)
+      return obj
+    }
+    const rocksS = () => {
+      const obj = rocksV().clone()
+      obj.position.set(0, 0, -16)
+      return obj
+    }
+    const rocksSW = () => {
+      const obj = rocksCorner().clone()
+      obj.position.set(-16, 0, -16)
+      return obj
+    }
+    const rocksW = () => {
+      const obj = rocksH().clone()
+      obj.position.set(-16, 0, 0)
+      return obj
+    }
+    const rocksNW = () => {
+      const obj = rocksCorner().clone()
+      obj.position.set(-16, 0, 16)
+      return obj
+    }
+    const rocksCBig = () => {
+      const obj = rocksABig().clone()
+      obj.position.y += 12
+      return obj
+    }
 
-    const rocksCBig = rocksABig.clone()
-    rocksCBig.position.y += 12
-    scene.add(rocksCBig)
+    const goldOreForRocks = () => makeRocks(goldMat, 0, 2)
+    const goldOreForBigRocks = () => makeRocks(goldMat, 10, 2)
 
-    const goldOreForRocks = makeRocks(goldMat, 0, 2)
-    scene.add(goldOreForRocks)
-    const goldOreForBigRocks = makeRocks(goldMat, 10, 2)
-    scene.add(goldOreForBigRocks)
-
-    const rockCrumbsA = makeRockCrumbs(rocksMat)
-    const rockCrumbsH = makeRockCrumbs(rocksMat)
-    const rockCrumbsV = makeRockCrumbs(rocksMat)
-    const rockCrumbsCorner = makeRockCrumbs(rocksMat)
+    const rockCrumbsA = memoize(() => makeRockCrumbs(rocksMat))
+    const rockCrumbsH = memoize(() => makeRockCrumbs(rocksMat))
+    const rockCrumbsV = memoize(() => makeRockCrumbs(rocksMat))
+    const rockCrumbsCorner = memoize(() => makeRockCrumbs(rocksMat))
     //rockCrumbs
 
-    const rockCrumbsC = rockCrumbsA.clone()
-    scene.add(rockCrumbsC)
-    const rockCrumbsN = rockCrumbsV.clone()
-    scene.add(rockCrumbsN)
-    rockCrumbsN.position.set(0, 0, 16)
-    const rockCrumbsNE = rockCrumbsCorner.clone()
-    scene.add(rockCrumbsNE)
-    rockCrumbsNE.position.set(16, 0, 16)
-    const rockCrumbsE = rockCrumbsH.clone()
-    scene.add(rockCrumbsE)
-    rockCrumbsE.position.set(16, 0, 0)
-    const rockCrumbsSE = rockCrumbsCorner.clone()
-    scene.add(rockCrumbsSE)
-    rockCrumbsSE.position.set(16, 0, -16)
-    const rockCrumbsS = rockCrumbsV.clone()
-    scene.add(rockCrumbsS)
-    rockCrumbsS.position.set(0, 0, -16)
-    const rockCrumbsSW = rockCrumbsCorner.clone()
-    scene.add(rockCrumbsSW)
-    rockCrumbsSW.position.set(-16, 0, -16)
-    const rockCrumbsW = rockCrumbsH.clone()
-    scene.add(rockCrumbsW)
-    rockCrumbsW.position.set(-16, 0, 0)
-    const rockCrumbsNW = rockCrumbsCorner.clone()
-    scene.add(rockCrumbsNW)
-    rockCrumbsNW.position.set(-16, 0, 16)
+    const rockCrumbsC = () => {
+      const obj = rockCrumbsA().clone()
+      return obj
+    }
+    const rockCrumbsN = () => {
+      const obj = rockCrumbsV().clone()
+      obj.position.set(0, 0, 16)
+      return obj
+    }
+    const rockCrumbsNE = () => {
+      const obj = rockCrumbsCorner().clone()
+      obj.position.set(16, 0, 16)
+      return obj
+    }
+    const rockCrumbsE = () => {
+      const obj = rockCrumbsH().clone()
+      obj.position.set(16, 0, 0)
+      return obj
+    }
+    const rockCrumbsSE = () => {
+      const obj = rockCrumbsCorner().clone()
+      obj.position.set(16, 0, -16)
+      return obj
+    }
+    const rockCrumbsS = () => {
+      const obj = rockCrumbsV().clone()
+      obj.position.set(0, 0, -16)
+      return obj
+    }
+    const rockCrumbsSW = () => {
+      const obj = rockCrumbsCorner().clone()
+      obj.position.set(-16, 0, -16)
+      return obj
+    }
+    const rockCrumbsW = () => {
+      const obj = rockCrumbsH().clone()
+      obj.position.set(-16, 0, 0)
+      return obj
+    }
+    const rockCrumbsNW = () => {
+      const obj = rockCrumbsCorner().clone()
+      obj.position.set(-16, 0, 16)
+      return obj
+    }
 
     const zLimiter = new Mesh(
       new BoxGeometry(32, 32, 32),
@@ -512,182 +593,265 @@ export default class TileMaker {
     )
     zLimiter.position.y += 16
     scene.add(zLimiter)
-    const dummy = new Object3D()
+    const dummy = memoize(() => new Object3D())
 
-    const treePine = makeTreePine(
-      getMaterial('bark'),
-      getMaterial('pineNeedle')
+    const treePine = memoize(() =>
+      makeTreePine(getMaterial('bark'), getMaterial('pineNeedle'))
     )
 
-    const treePineC = treePine.clone()
-    scene.add(treePineC)
-    const treePineN = treePine.clone()
-    treePineN.position.set(0, 0, 32)
-    scene.add(treePineN)
-    const treePineS = treePine.clone()
-    treePineS.position.set(0, 0, -32)
-    scene.add(treePineS)
-    const treePineE = treePine.clone()
-    treePineE.position.set(32, 0, 0)
-    scene.add(treePineE)
-    const treePineW = treePine.clone()
-    treePineW.position.set(-32, 0, 0)
-    scene.add(treePineW)
-    const treePineNE = treePine.clone()
-    treePineNE.position.set(32, 0, 32)
-    scene.add(treePineNE)
-    const treePineSE = treePine.clone()
-    treePineSE.position.set(32, 0, -32)
-    scene.add(treePineSE)
-    const treePineNW = treePine.clone()
-    treePineNW.position.set(-32, 0, 32)
-    scene.add(treePineNW)
-    const treePineSW = treePine.clone()
-    treePineSW.position.set(-32, 0, -32)
-    scene.add(treePineSW)
+    const treePineC = () => {
+      const obj = treePine().clone()
+      return obj
+    }
+    const treePineN = () => {
+      const obj = treePine().clone()
+      obj.position.set(0, 0, 32)
+      return obj
+    }
+    const treePineS = () => {
+      const obj = treePine().clone()
+      obj.position.set(0, 0, -32)
+      return obj
+    }
+    const treePineE = () => {
+      const obj = treePine().clone()
+      obj.position.set(32, 0, 0)
+      return obj
+    }
+    const treePineW = () => {
+      const obj = treePine().clone()
+      obj.position.set(-32, 0, 0)
+      return obj
+    }
+    const treePineNE = () => {
+      const obj = treePine().clone()
+      obj.position.set(32, 0, 32)
+      return obj
+    }
+    const treePineSE = () => {
+      const obj = treePine().clone()
+      obj.position.set(32, 0, -32)
+      return obj
+    }
+    const treePineNW = () => {
+      const obj = treePine().clone()
+      obj.position.set(-32, 0, 32)
+      return obj
+    }
+    const treePineSW = () => {
+      const obj = treePine().clone()
+      obj.position.set(-32, 0, -32)
+      return obj
+    }
 
-    const treePineMature = makeTreePineMature(
-      getMaterial('bark'),
-      getMaterial('pineNeedle'),
-      getMaterial('wood')
+    const treePineMature = memoize(() =>
+      makeTreePineMature(
+        getMaterial('bark'),
+        getMaterial('pineNeedle'),
+        getMaterial('wood')
+      )
     )
-    const treePineMatureC = treePineMature.clone()
-    scene.add(treePineMatureC)
-    const treePineMatureN = treePineMature.clone()
-    treePineMatureN.position.set(0, 0, 32)
-    scene.add(treePineMatureN)
-    const treePineMatureS = treePineMature.clone()
-    treePineMatureS.position.set(0, 0, -32)
-    scene.add(treePineMatureS)
-    const treePineMatureE = treePineMature.clone()
-    treePineMatureE.position.set(32, 0, 0)
-    scene.add(treePineMatureE)
-    const treePineMatureW = treePineMature.clone()
-    treePineMatureW.position.set(-32, 0, 0)
-    scene.add(treePineMatureW)
-    const treePineMatureNE = treePineMature.clone()
-    treePineMatureNE.position.set(32, 0, 32)
-    scene.add(treePineMatureNE)
-    const treePineMatureSE = treePineMature.clone()
-    treePineMatureSE.position.set(32, 0, -32)
-    scene.add(treePineMatureSE)
-    const treePineMatureNW = treePineMature.clone()
-    treePineMatureNW.position.set(-32, 0, 32)
-    scene.add(treePineMatureNW)
-    const treePineMatureSW = treePineMature.clone()
-    treePineMatureSW.position.set(-32, 0, -32)
-    scene.add(treePineMatureSW)
+    const treePineMatureC = () => {
+      const obj = treePineMature().clone()
+      return obj
+    }
+    const treePineMatureN = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(0, 0, 32)
+      return obj
+    }
+    const treePineMatureS = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(0, 0, -32)
+      return obj
+    }
+    const treePineMatureE = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(32, 0, 0)
+      return obj
+    }
+    const treePineMatureW = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(-32, 0, 0)
+      return obj
+    }
+    const treePineMatureNE = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(32, 0, 32)
+      return obj
+    }
+    const treePineMatureSE = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(32, 0, -32)
+      return obj
+    }
+    const treePineMatureNW = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(-32, 0, 32)
+      return obj
+    }
+    const treePineMatureSW = () => {
+      const obj = treePineMature().clone()
+      obj.position.set(-32, 0, -32)
+      return obj
+    }
 
-    const treePineStump = makeTreePineStump(
-      getMaterial('bark'),
-      getMaterial('wood')
+    const treePineStump = memoize(() =>
+      makeTreePineStump(getMaterial('bark'), getMaterial('wood'))
     )
-    scene.add(treePineStump)
 
-    const treePineStumpMature = makeTreePineStumpMature(
-      getMaterial('bark'),
-      getMaterial('wood')
-    )
-    scene.add(treePineStumpMature)
-
-    const treeMaple = makeTreeMaple(
-      getMaterial('barkMaple'),
-      getMaterial('leafMaple')
+    const treePineStumpMature = memoize(() =>
+      makeTreePineStumpMature(getMaterial('bark'), getMaterial('wood'))
     )
 
-    const treeMapleC = treeMaple.clone()
-    scene.add(treeMapleC)
-    const treeMapleN = treeMaple.clone()
-    treeMapleN.position.set(0, 0, 32)
-    scene.add(treeMapleN)
-    const treeMapleS = treeMaple.clone()
-    treeMapleS.position.set(0, 0, -32)
-    scene.add(treeMapleS)
-    const treeMapleE = treeMaple.clone()
-    treeMapleE.position.set(32, 0, 0)
-    scene.add(treeMapleE)
-    const treeMapleW = treeMaple.clone()
-    treeMapleW.position.set(-32, 0, 0)
-    scene.add(treeMapleW)
-    const treeMapleNE = treeMaple.clone()
-    treeMapleNE.position.set(32, 0, 32)
-    scene.add(treeMapleNE)
-    const treeMapleSE = treeMaple.clone()
-    treeMapleSE.position.set(32, 0, -32)
-    scene.add(treeMapleSE)
-    const treeMapleNW = treeMaple.clone()
-    treeMapleNW.position.set(-32, 0, 32)
-    scene.add(treeMapleNW)
-    const treeMapleSW = treeMaple.clone()
-    treeMapleSW.position.set(-32, 0, -32)
-    scene.add(treeMapleSW)
-
-    const treeMapleMature = makeTreeMapleMature(
-      getMaterial('barkMaple'),
-      getMaterial('leafMaple'),
-      getMaterial('woodMaple')
+    const treeMaple = memoize(() =>
+      makeTreeMaple(getMaterial('barkMaple'), getMaterial('leafMaple'))
     )
-    const treeMapleMatureC = treeMapleMature.clone()
-    scene.add(treeMapleMatureC)
-    const treeMapleMatureN = treeMapleMature.clone()
-    treeMapleMatureN.position.set(0, 0, 32)
-    scene.add(treeMapleMatureN)
-    const treeMapleMatureS = treeMapleMature.clone()
-    treeMapleMatureS.position.set(0, 0, -32)
-    scene.add(treeMapleMatureS)
-    const treeMapleMatureE = treeMapleMature.clone()
-    treeMapleMatureE.position.set(32, 0, 0)
-    scene.add(treeMapleMatureE)
-    const treeMapleMatureW = treeMapleMature.clone()
-    treeMapleMatureW.position.set(-32, 0, 0)
-    scene.add(treeMapleMatureW)
-    const treeMapleMatureNE = treeMapleMature.clone()
-    treeMapleMatureNE.position.set(32, 0, 32)
-    scene.add(treeMapleMatureNE)
-    const treeMapleMatureSE = treeMapleMature.clone()
-    treeMapleMatureSE.position.set(32, 0, -32)
-    scene.add(treeMapleMatureSE)
-    const treeMapleMatureNW = treeMapleMature.clone()
-    treeMapleMatureNW.position.set(-32, 0, 32)
-    scene.add(treeMapleMatureNW)
-    const treeMapleMatureSW = treeMapleMature.clone()
-    treeMapleMatureSW.position.set(-32, 0, -32)
-    scene.add(treeMapleMatureSW)
 
-    const treeMapleStump = makeTreeMapleStump(
-      getMaterial('barkMaple'),
-      getMaterial('woodMaple')
+    const treeMapleC = () => {
+      const obj = treeMaple().clone()
+      return obj
+    }
+    const treeMapleN = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(0, 0, 32)
+      return obj
+    }
+    const treeMapleS = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(0, 0, -32)
+      return obj
+    }
+    const treeMapleE = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(32, 0, 0)
+      return obj
+    }
+    const treeMapleW = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(-32, 0, 0)
+      return obj
+    }
+    const treeMapleNE = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(32, 0, 32)
+      return obj
+    }
+    const treeMapleSE = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(32, 0, -32)
+      return obj
+    }
+    const treeMapleNW = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(-32, 0, 32)
+      return obj
+    }
+    const treeMapleSW = () => {
+      const obj = treeMaple().clone()
+      obj.position.set(-32, 0, -32)
+      return obj
+    }
+
+    const treeMapleMature = memoize(() =>
+      makeTreeMapleMature(
+        getMaterial('barkMaple'),
+        getMaterial('leafMaple'),
+        getMaterial('woodMaple')
+      )
     )
-    scene.add(treeMapleStump)
+    const treeMapleMatureC = () => {
+      const obj = treeMapleMature().clone()
+      return obj
+    }
+    const treeMapleMatureN = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(0, 0, 32)
+      return obj
+    }
+    const treeMapleMatureS = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(0, 0, -32)
+      return obj
+    }
+    const treeMapleMatureE = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(32, 0, 0)
+      return obj
+    }
+    const treeMapleMatureW = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(-32, 0, 0)
+      return obj
+    }
+    const treeMapleMatureNE = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(32, 0, 32)
+      return obj
+    }
+    const treeMapleMatureSE = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(32, 0, -32)
+      return obj
+    }
+    const treeMapleMatureNW = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(-32, 0, 32)
+      return obj
+    }
+    const treeMapleMatureSW = () => {
+      const obj = treeMapleMature().clone()
+      obj.position.set(-32, 0, -32)
+      return obj
+    }
 
-    const treeMapleStumpMature = makeTreeMapleStumpMature(
-      getMaterial('barkMaple'),
-      getMaterial('woodMaple')
-    )
-    scene.add(treeMapleStumpMature)
+    console.log('performance.now', performance.now())
+    scene.updateMatrixWorld(true)
+    console.log('performance.now', performance.now())
 
-    const indexedMeshes = [
+    const treeMapleStump = () =>
+      makeTreeMapleStump(getMaterial('barkMaple'), getMaterial('woodMaple'))
+
+    const treeMapleStumpMature = () =>
+      makeTreeMapleStumpMature(
+        getMaterial('barkMaple'),
+        getMaterial('woodMaple')
+      )
+
+    const memoScene = (generator: () => Object3D) => {
+      const memodGenerator = memoize(generator)
+      return function generatorAndAdder() {
+        const obj = memodGenerator()
+        if (!obj.parent) {
+          scene.add(obj)
+          obj.updateWorldMatrix(false, true)
+        }
+        return obj
+      }
+    }
+
+    const indexedMeshes: (() => Object3D)[] = [
       dummy,
       floor,
       beamCenter,
-      beamN, // 'beamN',
-      beamE, // 'beamE',
-      beamS, // 'beamS',
-      beamW, // 'beamW',
-      beamFullSectionNS, // 'beamNS',
-      beamFullSectionEW, // 'beamEW',
-      brickWallSectionWR, // 0
-      brickWallSectionEL, // 1
-      brickWallSectionNR, // 2
-      brickWallSectionSR, // 3
-      brickWallSectionER, // 4
-      brickWallSectionWL, // 5
-      brickWallSectionSL, // 6
-      brickWallSectionNL, // 7
-      brickWallSectionNC, // 8
-      brickWallSectionEC, // 9
-      brickWallSectionSC, // 10
-      brickWallSectionWC, // 11
+      beamN,
+      beamE,
+      beamS,
+      beamW,
+      beamFullSectionNS,
+      beamFullSectionEW,
+      brickWallSectionWR,
+      brickWallSectionEL,
+      brickWallSectionNR,
+      brickWallSectionSR,
+      brickWallSectionER,
+      brickWallSectionWL,
+      brickWallSectionSL,
+      brickWallSectionNL,
+      brickWallSectionNC,
+      brickWallSectionEC,
+      brickWallSectionSC,
+      brickWallSectionWC,
       ground,
       grassC,
       grassN,
@@ -775,7 +939,8 @@ export default class TileMaker {
       treeMapleStumpMature
     ]
 
-    this._indexedMeshes = indexedMeshes
+    this._indexedMeshes = indexedMeshes.map(memoScene)
+    this._indexedMeshesVisibility = new Array(indexedMeshes.length)
   }
 
   getTexture(pass: MaterialPassType = 'beauty') {
@@ -825,7 +990,13 @@ export default class TileMaker {
           for (let j = 0; j < this._indexedMeshes.length; j++) {
             const jb = ~~(j / 8)
             const j8 = j % 8
-            this._indexedMeshes[j].visible = !!(visualProps[jb] & (1 << j8))
+            const shouldShow = !!(visualProps[jb] & (1 << j8))
+            if (this._indexedMeshesVisibility[j] && !shouldShow) {
+              this._indexedMeshes[j]().visible = false
+            } else if (!this._indexedMeshesVisibility[j] && shouldShow) {
+              this._indexedMeshes[j]().visible = true
+            }
+            this._indexedMeshesVisibility[j] = shouldShow
           }
 
           renderer.setViewport(iCol * p, iRow * p, p, p)

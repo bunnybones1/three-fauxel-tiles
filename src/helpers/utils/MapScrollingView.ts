@@ -9,6 +9,7 @@ import JITTileSampler from '../../tileMaker/JITTileSampler'
 import JITSpriteSampler from '../../spriteMaker/JITSpriteSampler'
 import MapCacheRenderer from '../../mapCache/MapCacheRenderer'
 import TileMaker from '../../tileMaker/TileMaker'
+import { sunOffset, sunSpeed } from '../../constants'
 
 import MapWithSpritesCacheRenderer from '../../mapCache/MapWithSpritesCacheRenderer'
 import PointLightRenderer from '../../mapCache/PointLightRenderer'
@@ -27,6 +28,7 @@ export default class MapScrollingView {
   mapCacheFinalView: Mesh
   private _noiseReady: boolean
   areLightsVisible: boolean
+  private _mapScrollingViewMaterial: FauxelMaterial
   public get offsetX(): number {
     return this.jitTileSampler.offsetX
   }
@@ -141,8 +143,12 @@ export default class MapScrollingView {
     this.pointLightRenderer = pointLightRenderer
     this.mapCachePassViews = mapCachePassViews
     this.mapCacheFinalView = mapCacheFinalView
+    this._mapScrollingViewMaterial = mapScrollingViewMaterial
   }
   render(renderer: WebGLRenderer, dt: number) {
+    this._mapScrollingViewMaterial.setSunAngle(
+      0.1 + performance.now() * sunSpeed + sunOffset * Math.PI * 2
+    )
     if (!this._noiseReady) {
       this._noiseMaker.render(renderer)
       this._noiseReady = true
