@@ -10,9 +10,9 @@ import JITSpriteSampler from '../../spriteMaker/JITSpriteSampler'
 import MapCacheRenderer from '../../mapCache/MapCacheRenderer'
 import TileMaker from '../../tileMaker/TileMaker'
 
-import { createMapCacheViewPlane } from './createMapCacheViewPlane'
 import MapWithSpritesCacheRenderer from '../../mapCache/MapWithSpritesCacheRenderer'
 import PointLightRenderer from '../../mapCache/PointLightRenderer'
+import { getSharedRectangleGeometry } from '../../../test/utils/geometry'
 export default class MapScrollingView {
   tileMaker: TileMaker
   spriteMaker: SpriteMaker
@@ -98,7 +98,7 @@ export default class MapScrollingView {
         clipspaceMode
       })
       const mapCacheView = new Mesh(
-        createMapCacheViewPlane(viewWidth, viewHeight, clipspaceMode),
+        getSharedRectangleGeometry(),
         mapScrollingViewMaterial
       )
       mapCachePassViews.push(mapCacheView)
@@ -128,7 +128,7 @@ export default class MapScrollingView {
       textureFog: this._noiseMaker.texture
     })
     const mapCacheFinalView = new Mesh(
-      createMapCacheViewPlane(viewWidth, viewHeight, clipspaceMode),
+      getSharedRectangleGeometry(),
       mapScrollingViewMaterial
     )
 

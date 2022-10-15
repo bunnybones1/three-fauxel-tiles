@@ -1,12 +1,21 @@
 import {
   Color,
+  GammaEncoding,
+  LinearEncoding,
   Mesh,
   MeshBasicMaterial,
+  NearestFilter,
+  OrthographicCamera,
+  PlaneBufferGeometry,
   PlaneGeometry,
+  RepeatWrapping,
+  Scene,
+  SphereBufferGeometry,
   Vector2,
   Vector3,
   Vector4,
-  WebGLRenderer
+  WebGLRenderer,
+  WebGLRenderTarget
 } from 'three'
 import { clamp, lerp } from 'three/src/math/MathUtils'
 import { initOffset } from '~/constants'
@@ -19,6 +28,7 @@ import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelp
 import lib from '@lib/index'
 
 import BaseTestScene from './BaseTestScene'
+import { createMapCacheViewPlane } from '../../../src/helpers/utils/createMapCacheViewPlane'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
@@ -123,6 +133,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   private _lanternLights: lib.LightController[]
   private _lightControllers: DummyLightController[]
   private _lanternLightControllers: DummyLanternLightController[]
+  mapCacheFinalViewCache: WebGLRenderTarget
+  finalViewCacheScene: Scene
+  finalViewCacheCamera: OrthographicCamera
   constructor() {
     super()
 
@@ -330,6 +343,30 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
 
     this._lanternLights = lanternLights
     this._lanternLightControllers = lanternLightControllers
+
+    const mapCacheFinalViewCache = new WebGLRenderTarget(
+      viewWidth * pixelsPerTile,
+      viewHeight * pixelsPerTile,
+      {
+        minFilter: NearestFilter,
+        magFilter: NearestFilter,
+        encoding: GammaEncoding,
+        wrapS: RepeatWrapping,
+        wrapT: RepeatWrapping,
+        generateMipmaps: false
+      }
+    )
+    const finalViewCacheScene = new Scene()
+    const mapCacheFinalView = new Mesh(
+      createMapCacheViewPlane(viewWidth, viewHeight, true),
+      new MeshBasicMaterial({ map: mapCacheFinalViewCache.texture })
+    )
+    const finalViewCacheCamera = new OrthographicCamera(-1, 1, 1, -1, -1, 1)
+    finalViewCacheScene.add(mapCacheFinalView)
+    finalViewCacheScene.add(finalViewCacheCamera)
+    this.mapCacheFinalViewCache = mapCacheFinalViewCache
+    this.finalViewCacheScene = finalViewCacheScene
+    this.finalViewCacheCamera = finalViewCacheCamera
   }
   update(dt: number) {
     if (getUrlFlag('autoMove')) {
@@ -398,6 +435,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   }
   render(renderer: WebGLRenderer, dt: number) {
     this._mapScrollingView.render(renderer, dt)
+    renderer.setRenderTarget(this.mapCacheFinalViewCache)
     super.render(renderer, dt)
+    renderer.setRenderTarget(null)
+    renderer.render(this.finalViewCacheScene, this.finalViewCacheCamera)
   }
 }
