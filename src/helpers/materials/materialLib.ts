@@ -187,7 +187,7 @@ export const standardMaterialParamLib: {
 
 const materialCache = new Map<string, Material>()
 
-function __makeMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
+function __makeMeshMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
   const standardParams = standardMaterialParamLib[name]
   switch (pass) {
     case 'beauty':
@@ -236,13 +236,13 @@ function __makeMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
   }
   throw new Error('Unknown material pass requested')
 }
-export function getMaterial(
+export function getMeshMaterial(
   name: CuratedMaterialType,
   pass: MaterialPassType = 'beauty'
 ) {
   const key = `${name}:${pass}`
   if (!materialCache.has(key)) {
-    const mat = __makeMaterial(name, pass)
+    const mat = __makeMeshMaterial(name, pass)
     mat.name = name
     materialCache.set(key, mat)
   }
@@ -262,7 +262,7 @@ function __onBeforeRenderDoUpdateWorldNormals(
     .value as Matrix3
   modelNormalMatrix.getNormalMatrix(this.matrixWorld)
 }
-export function changeMaterials(
+export function changeMeshMaterials(
   node: Object3D,
   pass: MaterialPassType,
   visibleOnly = false
@@ -273,7 +273,7 @@ export function changeMaterials(
         if (node.material instanceof WorldNormalMeshMaterial) {
           node.onBeforeRender = NOOP
         }
-        const mat = getMaterial(node.material.name, pass)
+        const mat = getMeshMaterial(node.material.name, pass)
         node.material = mat
         if (node.material instanceof WorldNormalMeshMaterial) {
           node.onBeforeRender = __onBeforeRenderDoUpdateWorldNormals
@@ -281,7 +281,7 @@ export function changeMaterials(
       }
     }
     for (const child of node.children) {
-      changeMaterials(child, pass, visibleOnly)
+      changeMeshMaterials(child, pass, visibleOnly)
     }
   }
 }

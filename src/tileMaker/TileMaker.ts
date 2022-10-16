@@ -22,8 +22,8 @@ import FibonacciSphereGeometry from '../geometries/FibonacciSphereGeometry'
 import GrassGeometry from '../geometries/GrassGeometry'
 import PyramidGeometry from '../geometries/PyramidGeometry'
 import {
-  changeMaterials,
-  getMaterial,
+  changeMeshMaterials,
+  getMeshMaterial,
   MaterialPassType
 } from '../helpers/materials/materialLib'
 import { getChamferedBoxGeometry } from '../utils/geometry'
@@ -128,17 +128,17 @@ export default class TileMaker {
     light.position.set(-0.25, 1, 0.25).normalize()
     scene.add(light)
 
-    const brickMat = getMaterial('brick')
-    const mortarMat = getMaterial('mortar')
-    const drywallMat = getMaterial('drywall')
-    const floorMat = getMaterial('floor')
-    const groundMat = getMaterial('ground')
-    const ballMat = getMaterial('plastic')
-    const grassMat = getMaterial('grass')
-    const rocksMat = getMaterial('rock')
-    const bushMat = getMaterial('bush')
-    const berryMat = getMaterial('berry')
-    const woodMat = getMaterial('wood')
+    const brickMat = getMeshMaterial('brick')
+    const mortarMat = getMeshMaterial('mortar')
+    const drywallMat = getMeshMaterial('drywall')
+    const floorMat = getMeshMaterial('floor')
+    const groundMat = getMeshMaterial('ground')
+    const ballMat = getMeshMaterial('plastic')
+    const grassMat = getMeshMaterial('grass')
+    const rocksMat = getMeshMaterial('rock')
+    const bushMat = getMeshMaterial('bush')
+    const berryMat = getMeshMaterial('berry')
+    const woodMat = getMeshMaterial('wood')
     const ball = new Mesh(new SphereGeometry(16, 32, 16), ballMat)
     ball.scale.y = Math.SQRT1_2
     // ball.position.y = Math.SQRT1_2 * 14
@@ -431,18 +431,18 @@ export default class TileMaker {
       return obj
     }
 
-    const goldMat = getMaterial('gold')
+    const goldMat = getMeshMaterial('gold')
     const goldChunkGeo = new FibonacciSphereGeometry(4, 17)
     const goldPile = () => makeGoldPile(goldChunkGeo, goldMat)
 
-    const ironBlackMat = getMaterial('ironBlack')
+    const ironBlackMat = getMeshMaterial('ironBlack')
 
     const lampPost = () => makeLampPost(ironBlackMat)
 
     const testObject = () => {
       const obj = new Mesh(
         new TorusKnotBufferGeometry(10, 2, 48, 8),
-        getMaterial('plastic')
+        getMeshMaterial('plastic')
       )
       obj.position.y = 12
       obj.rotation.x = Math.PI * 0.5
@@ -452,8 +452,8 @@ export default class TileMaker {
 
     const pyramid = () => {
       const pyramidGeo = new PyramidGeometry()
-      const obj = new Mesh(pyramidGeo, getMaterial('floor'))
-      const pyramidTop = new Mesh(pyramidGeo, getMaterial('gold'))
+      const obj = new Mesh(pyramidGeo, getMeshMaterial('floor'))
+      const pyramidTop = new Mesh(pyramidGeo, getMeshMaterial('gold'))
       obj.add(pyramidTop)
       pyramidTop.scale.setScalar(0.2)
       pyramidTop.position.y = 0.82
@@ -463,7 +463,7 @@ export default class TileMaker {
 
     const rockyGround = () => {
       const pyramidGeo = new PyramidGeometry()
-      const rockyGroundProto = new Mesh(pyramidGeo, getMaterial('ground'))
+      const rockyGroundProto = new Mesh(pyramidGeo, getMeshMaterial('ground'))
       const obj = new Object3D()
       for (let i = 0; i < 12; i++) {
         const rocky = rockyGroundProto.clone()
@@ -596,7 +596,7 @@ export default class TileMaker {
     const dummy = memoize(() => new Object3D())
 
     const treePine = memoize(() =>
-      makeTreePine(getMaterial('bark'), getMaterial('pineNeedle'))
+      makeTreePine(getMeshMaterial('bark'), getMeshMaterial('pineNeedle'))
     )
 
     const treePineC = () => {
@@ -646,9 +646,9 @@ export default class TileMaker {
 
     const treePineMature = memoize(() =>
       makeTreePineMature(
-        getMaterial('bark'),
-        getMaterial('pineNeedle'),
-        getMaterial('wood')
+        getMeshMaterial('bark'),
+        getMeshMaterial('pineNeedle'),
+        getMeshMaterial('wood')
       )
     )
     const treePineMatureC = () => {
@@ -697,15 +697,15 @@ export default class TileMaker {
     }
 
     const treePineStump = memoize(() =>
-      makeTreePineStump(getMaterial('bark'), getMaterial('wood'))
+      makeTreePineStump(getMeshMaterial('bark'), getMeshMaterial('wood'))
     )
 
     const treePineStumpMature = memoize(() =>
-      makeTreePineStumpMature(getMaterial('bark'), getMaterial('wood'))
+      makeTreePineStumpMature(getMeshMaterial('bark'), getMeshMaterial('wood'))
     )
 
     const treeMaple = memoize(() =>
-      makeTreeMaple(getMaterial('barkMaple'), getMaterial('leafMaple'))
+      makeTreeMaple(getMeshMaterial('barkMaple'), getMeshMaterial('leafMaple'))
     )
 
     const treeMapleC = () => {
@@ -755,9 +755,9 @@ export default class TileMaker {
 
     const treeMapleMature = memoize(() =>
       makeTreeMapleMature(
-        getMaterial('barkMaple'),
-        getMaterial('leafMaple'),
-        getMaterial('woodMaple')
+        getMeshMaterial('barkMaple'),
+        getMeshMaterial('leafMaple'),
+        getMeshMaterial('woodMaple')
       )
     )
     const treeMapleMatureC = () => {
@@ -810,12 +810,15 @@ export default class TileMaker {
     console.log('performance.now', performance.now())
 
     const treeMapleStump = () =>
-      makeTreeMapleStump(getMaterial('barkMaple'), getMaterial('woodMaple'))
+      makeTreeMapleStump(
+        getMeshMaterial('barkMaple'),
+        getMeshMaterial('woodMaple')
+      )
 
     const treeMapleStumpMature = () =>
       makeTreeMapleStumpMature(
-        getMaterial('barkMaple'),
-        getMaterial('woodMaple')
+        getMeshMaterial('barkMaple'),
+        getMeshMaterial('woodMaple')
       )
 
     const memoScene = (generator: () => Object3D) => {
@@ -975,6 +978,22 @@ export default class TileMaker {
       renderer.getScissor(oldScissor)
       this._tileTexNeedsUpdate = false
       this._scene.updateMatrixWorld(true)
+
+      const uniqueVisuals = new Set()
+      for (const index of this._renderQueue) {
+        const visualProps = this._tileRegistry[index]
+        for (let j = 0; j < this._indexedMeshes.length; j++) {
+          const jb = ~~(j / 8)
+          const j8 = j % 8
+          const shouldShow = !!(visualProps[jb] & (1 << j8))
+          if (shouldShow) {
+            uniqueVisuals.add(j)
+          }
+        }
+      }
+      console.log('unique tiles:', this._renderQueue.length)
+      console.log('unique visual elements:', Array.from(uniqueVisuals).length)
+
       for (const pass of this._passes) {
         renderer.setRenderTarget(this._renderTargets.get(pass)!)
         const p = this._pixelsPerTile / renderer.getPixelRatio()
@@ -1001,7 +1020,7 @@ export default class TileMaker {
 
           renderer.setViewport(iCol * p, iRow * p, p, p)
           renderer.setScissor(iCol * p, iRow * p, p, p)
-          changeMaterials(this._scene, pass, true)
+          changeMeshMaterials(this._scene, pass, true)
           renderer.render(
             this._scene,
             layer2

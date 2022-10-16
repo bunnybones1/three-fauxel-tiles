@@ -7,7 +7,7 @@ import { BasicFullScreenMaterial } from './materials/BasicFullScreenMaterial'
 import { SimplexNoiseMaterial } from './materials/SimplexNoiseMaterial'
 import { BasicTextureMaterial } from './materials/BasicTextureMaterial'
 import FibonacciSphereGeometry from './geometries/FibonacciSphereGeometry'
-import { getMaterial } from './helpers/materials/materialLib'
+import { getMeshMaterial } from './helpers/materials/materialLib'
 import { LightController } from './mapCache/PointLightRenderer'
 import { SpriteController } from './spriteMaker/JITSpriteSampler'
 
@@ -21,7 +21,7 @@ export default {
   },
   LightController,
   SpriteController,
-  getMaterial,
+  getMeshMaterial,
   materials: {
     BasicFullScreenMaterial,
     SimplexNoiseMaterial,

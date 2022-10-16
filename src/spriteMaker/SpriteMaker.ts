@@ -17,8 +17,8 @@ import {
   WebGLRenderTarget
 } from 'three'
 import {
-  changeMaterials,
-  getMaterial,
+  changeMeshMaterials,
+  getMeshMaterial,
   MaterialPassType
 } from '../helpers/materials/materialLib'
 import { getChamferedBoxGeometry } from '../utils/geometry'
@@ -106,15 +106,15 @@ export default class SpriteMaker {
     light.position.set(-0.25, 1, 0.25).normalize()
     scene.add(light)
     const bodyGeo = getChamferedBoxGeometry(20, 14, 10, 3)
-    const body = new Mesh(bodyGeo, getMaterial('pants'))
+    const body = new Mesh(bodyGeo, getMeshMaterial('pants'))
     body.position.y = 17
     pivot.add(body)
     const headGeo = getChamferedBoxGeometry(16, 16 * scale, 16, 4)
-    const head = new Mesh(headGeo, getMaterial('skin'))
+    const head = new Mesh(headGeo, getMeshMaterial('skin'))
     head.position.y = 16
     body.add(head)
     const legGeo = getChamferedBoxGeometry(6, 12 * scale, 6, 2)
-    const leg = new Mesh(legGeo, getMaterial('pants'))
+    const leg = new Mesh(legGeo, getMeshMaterial('pants'))
     leg.position.x = -6
     leg.position.y = -12
     body.add(leg)
@@ -123,7 +123,7 @@ export default class SpriteMaker {
     body.add(leg2)
 
     const armGeo = getChamferedBoxGeometry(4, 20 * scale, 4, 1.25)
-    const arm = new Mesh(armGeo, getMaterial('pants'))
+    const arm = new Mesh(armGeo, getMeshMaterial('pants'))
     arm.position.x = -12
     arm.rotation.z = Math.PI * -0.125
     arm.position.y = -1
@@ -140,14 +140,14 @@ export default class SpriteMaker {
         node.material instanceof Material &&
         node.material.name === 'pants'
       ) {
-        node.material = getMaterial('pantsRed')
+        node.material = getMeshMaterial('pantsRed')
       }
     })
     pivot.add(body2)
 
     const hat = new Mesh(
       getChamferedBoxGeometry(18, 16 * scale, 16, 3),
-      getMaterial('gold')
+      getMeshMaterial('gold')
     )
     hat.position.z = -4
     hat.position.y = 35
@@ -156,7 +156,7 @@ export default class SpriteMaker {
 
     const sword = new Mesh(
       getChamferedBoxGeometry(2, 4, 16, 2),
-      getMaterial('gold')
+      getMeshMaterial('gold')
     )
     sword.position.x = -14
     sword.position.z = 10
@@ -165,7 +165,7 @@ export default class SpriteMaker {
 
     const shield = new Mesh(
       getChamferedBoxGeometry(12, 12, 2, 2),
-      getMaterial('gold')
+      getMeshMaterial('gold')
     )
     shield.position.x = 12
     shield.position.y = 16
@@ -245,7 +245,7 @@ export default class SpriteMaker {
           }
           renderer.setViewport(iCol * p, iRow * p, p, p)
           renderer.setScissor(iCol * p, iRow * p, p, p)
-          changeMaterials(this._scene, pass, true)
+          changeMeshMaterials(this._scene, pass, true)
           renderer.render(
             this._scene,
             layer2

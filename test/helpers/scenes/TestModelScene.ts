@@ -1,5 +1,5 @@
 import { makeTreeMaple } from '../../../src/meshes/factoryTreeMaple'
-import { getMaterial } from '../../../src/helpers/materials/materialLib'
+import { getMeshMaterial } from '../../../src/helpers/materials/materialLib'
 import TestLightingScene from './TestLighting'
 import UpdateManager from '../../utils/UpdateManager'
 import renderer from '../../renderer'
@@ -10,8 +10,8 @@ export default class TestModelScene extends TestLightingScene {
     renderer.shadowMap.enabled = true
 
     const tree = makeTreeMaple(
-      getMaterial('barkMaple'),
-      getMaterial('leafMaple')
+      getMeshMaterial('barkMaple'),
+      getMeshMaterial('leafMaple')
     )
     tree.traverse((n) => {
       n.castShadow = true
