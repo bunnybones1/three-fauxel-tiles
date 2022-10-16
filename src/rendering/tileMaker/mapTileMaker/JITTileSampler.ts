@@ -1,11 +1,11 @@
 import { BufferGeometry } from 'three'
-import { initOffset } from '../constants'
-import NoiseHelper2D from '../helpers/utils/NoiseHelper2D'
-import ThreshNoiseHelper2D from '../helpers/utils/ThreshNoiseHelper2D'
-import { getUrlFlag } from '../utils/location'
-import { wrap } from '../utils/math'
+import { initOffset } from '../../../constants'
+import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
+import ThreshNoiseHelper2D from '../../../helpers/utils/ThreshNoiseHelper2D'
+import { getUrlFlag } from '../../../utils/location'
+import { wrap } from '../../../utils/math'
 
-import TileMaker from './TileMaker'
+import MapTileMaker from './MapTileMaker'
 
 const masks32: number[] = []
 for (let i = 0; i < 32; i++) {
@@ -165,10 +165,10 @@ export default class JITTileSampler {
     this._offsetsDirty = true
     this._offsetY = value
   }
-  get tileMaker(): TileMaker {
+  get tileMaker(): MapTileMaker {
     return this._tileMaker
   }
-  set tileMaker(value: TileMaker) {
+  set tileMaker(value: MapTileMaker) {
     throw new Error('Cannot change tileMaker during runtime')
   }
   metaNoiseGenerators: ThreshNoiseHelper2D[]
@@ -191,7 +191,7 @@ export default class JITTileSampler {
   private _offsetXOld = initOffset.x
   private _offsetYOld = initOffset.y
   constructor(
-    private _tileMaker: TileMaker,
+    private _tileMaker: MapTileMaker,
     private _viewWidthInTiles: number,
     private _viewHeightInTiles: number
   ) {

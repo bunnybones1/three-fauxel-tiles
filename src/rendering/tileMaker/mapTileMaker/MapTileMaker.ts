@@ -1,132 +1,51 @@
 import {
-  BackSide,
   BoxBufferGeometry,
-  BoxGeometry,
-  Color,
-  DirectionalLight,
-  HemisphereLight,
-  LinearEncoding,
   Mesh,
-  MeshDepthMaterial,
-  NearestFilter,
   Object3D,
-  OrthographicCamera,
-  Scene,
   SphereGeometry,
   TorusKnotBufferGeometry,
   Vector4,
-  WebGLRenderer,
-  WebGLRenderTarget
+  WebGLRenderer
 } from 'three'
-import FibonacciSphereGeometry from '../geometries/FibonacciSphereGeometry'
-import GrassGeometry from '../geometries/GrassGeometry'
-import PyramidGeometry from '../geometries/PyramidGeometry'
+import FibonacciSphereGeometry from '../../../geometries/FibonacciSphereGeometry'
+import GrassGeometry from '../../../geometries/GrassGeometry'
+import PyramidGeometry from '../../../geometries/PyramidGeometry'
 import {
   changeMeshMaterials,
   getMeshMaterial,
   MaterialPassType
-} from '../helpers/materials/materialLib'
-import { getChamferedBoxGeometry } from '../utils/geometry'
-import { assertPowerOfTwo } from '../utils/math'
-import { detRandRocks, detRandWoodPlanks } from '../utils/random'
-import { makeRocks } from '../meshes/factoryRocks'
-import { makeRockCrumbs } from '../meshes/factoryRockCrumbs'
+} from '../../../helpers/materials/materialLib'
+import { getChamferedBoxGeometry } from '../../../utils/geometry'
+import { detRandRocks, detRandWoodPlanks } from '../../../utils/random'
+import { makeRocks } from '../../../meshes/factoryRocks'
+import { makeRockCrumbs } from '../../../meshes/factoryRockCrumbs'
 import {
   makeTreePine,
   makeTreePineMature,
   makeTreePineStump,
   makeTreePineStumpMature
-} from '../meshes/factoryTreePine'
+} from '../../../meshes/factoryTreePine'
 import {
   makeTreeMaple,
   makeTreeMapleMature,
   makeTreeMapleStump,
   makeTreeMapleStumpMature
-} from '../meshes/factoryTreeMaple'
-import { makeGoldPile } from '../meshes/factoryGoldPile'
-import { makeLampPost } from '../meshes/factoryLampPost'
-import { verticalScale } from '../constants'
-import { BushProps, makeRecursiveBush } from '../meshes/factoryBush'
-import { memoize } from '../utils/memoizer'
-import { makeBrickWall } from '../meshes/factoryBrickWall'
+} from '../../../meshes/factoryTreeMaple'
+import { makeGoldPile } from '../../../meshes/factoryGoldPile'
+import { makeLampPost } from '../../../meshes/factoryLampPost'
+import { verticalScale } from '../../../constants'
+import { BushProps, makeRecursiveBush } from '../../../meshes/factoryBush'
+import { memoize } from '../../../utils/memoizer'
+import { makeBrickWall } from '../../../meshes/factoryBrickWall'
+import TileMaker from '../TileMaker'
 
-export default class TileMaker {
-  public get passes(): MaterialPassType[] {
-    return this._passes
-  }
-  public set passes(value: MaterialPassType[]) {
-    throw new Error('You cannot change passes during runtime.')
-    // this._passes = value
-  }
-  private _renderQueue: number[] = []
-  private _tileRegistry: Uint8Array[] = []
-  private _tileHashRegistry: string[] = []
-  private _scene = new Scene()
-  private _cameraTiltedBottom = new OrthographicCamera(
-    -16,
-    16,
-    (0 * 32 + 16) * verticalScale,
-    (0 * 32 - 16) * verticalScale,
-    0,
-    64
-  )
-  private _cameraTiltedTop = new OrthographicCamera(
-    -16,
-    16,
-    (1 * 32 + 16) * verticalScale,
-    (1 * 32 - 16) * verticalScale,
-    0,
-    64
-  )
-  private _cameraTopDown = new OrthographicCamera(-16, 16, 16, -16, -64, 64)
-  private _renderTargets: Map<MaterialPassType, WebGLRenderTarget> = new Map()
-  private _tileTexNeedsUpdate = true
-  private _indexedMeshesVisibility: boolean[]
-  private _indexedMeshes: (() => Object3D)[]
-  private _tilesPerEdge: number
-  private _maxTiles: number
+export default class MapTileMaker extends TileMaker {
   constructor(
-    private _pixelsPerTile = 32,
+    pixelsPerTile = 32,
     pixelsPerCacheEdge = 2048,
-    private _passes: MaterialPassType[] = ['beauty']
+    passes: MaterialPassType[] = ['beauty']
   ) {
-    assertPowerOfTwo(_pixelsPerTile)
-    assertPowerOfTwo(pixelsPerCacheEdge)
-    this._tilesPerEdge = pixelsPerCacheEdge / _pixelsPerTile
-    this._maxTiles = Math.pow(this._tilesPerEdge, 2)
-    for (const pass of _passes) {
-      this._renderTargets.set(
-        pass,
-        new WebGLRenderTarget(pixelsPerCacheEdge, pixelsPerCacheEdge, {
-          minFilter: NearestFilter,
-          magFilter: NearestFilter,
-          encoding: LinearEncoding,
-          generateMipmaps: false
-        })
-      )
-    }
-    console.log('performance.now', performance.now())
-
-    const scene = this._scene
-
-    scene.autoUpdate = false
-    this._cameraTiltedBottom.rotateX(Math.PI * -0.25)
-    this._cameraTiltedBottom.position.set(0, 32, 32)
-    scene.add(this._cameraTiltedBottom)
-    this._cameraTiltedTop.rotateX(Math.PI * -0.25)
-    this._cameraTiltedTop.position.set(0, 32, 32)
-    scene.add(this._cameraTiltedTop)
-    this._cameraTopDown.rotateX(Math.PI * -0.5)
-    this._cameraTopDown.position.set(0, 0, 0)
-    scene.add(this._cameraTopDown)
-    const ambient = new HemisphereLight(
-      new Color(0.4, 0.6, 0.9),
-      new Color(0.6, 0.25, 0)
-    )
-    scene.add(ambient)
-    const light = new DirectionalLight(new Color(1, 0.9, 0.7), 1)
-    light.position.set(-0.25, 1, 0.25).normalize()
-    scene.add(light)
+    const dummy = memoize(() => new Object3D())
 
     const brickMat = getMeshMaterial('brick')
     const mortarMat = getMeshMaterial('mortar')
@@ -587,14 +506,6 @@ export default class TileMaker {
       return obj
     }
 
-    const zLimiter = new Mesh(
-      new BoxGeometry(32, 32, 32),
-      new MeshDepthMaterial({ side: BackSide, colorWrite: false })
-    )
-    zLimiter.position.y += 16
-    scene.add(zLimiter)
-    const dummy = memoize(() => new Object3D())
-
     const treePine = memoize(() =>
       makeTreePine(getMeshMaterial('bark'), getMeshMaterial('pineNeedle'))
     )
@@ -805,10 +716,6 @@ export default class TileMaker {
       return obj
     }
 
-    console.log('performance.now', performance.now())
-    scene.updateMatrixWorld(true)
-    console.log('performance.now', performance.now())
-
     const treeMapleStump = () =>
       makeTreeMapleStump(
         getMeshMaterial('barkMaple'),
@@ -820,18 +727,6 @@ export default class TileMaker {
         getMeshMaterial('barkMaple'),
         getMeshMaterial('woodMaple')
       )
-
-    const memoScene = (generator: () => Object3D) => {
-      const memodGenerator = memoize(generator)
-      return function generatorAndAdder() {
-        const obj = memodGenerator()
-        if (!obj.parent) {
-          scene.add(obj)
-          obj.updateWorldMatrix(false, true)
-        }
-        return obj
-      }
-    }
 
     const indexedMeshes: (() => Object3D)[] = [
       dummy,
@@ -942,34 +837,9 @@ export default class TileMaker {
       treeMapleStumpMature
     ]
 
-    this._indexedMeshes = indexedMeshes.map(memoScene)
-    this._indexedMeshesVisibility = new Array(indexedMeshes.length)
+    super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)
   }
 
-  getTexture(pass: MaterialPassType = 'beauty') {
-    if (this._renderTargets.has(pass)) {
-      return this._renderTargets.get(pass)!.texture
-    } else {
-      debugger
-      throw new Error(`pass "${pass}" not supported`)
-    }
-  }
-  getTileId(tileDescription: Uint8Array) {
-    // const hash = Buffer.from(tileDescription).toString('utf-8')
-    const hash = tileDescription.toString()
-    let index = this._tileHashRegistry.indexOf(hash)
-    if (index === -1) {
-      index = this._tileRegistry.length
-      if (index >= this._maxTiles) {
-        console.error(`no more room for tiles! (${index})`)
-      }
-      this._tileRegistry.push(tileDescription)
-      this._tileHashRegistry.push(hash)
-      this._renderQueue.push(index)
-      this._tileTexNeedsUpdate = true
-    }
-    return index
-  }
   render(renderer: WebGLRenderer) {
     if (this._tileTexNeedsUpdate) {
       const oldViewport = new Vector4()

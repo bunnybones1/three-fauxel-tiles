@@ -3,19 +3,19 @@ import { BasicTextureMaterial } from '../../materials/BasicTextureMaterial'
 import { FauxelMaterial } from '../../materials/FauxelMaterial'
 import { MaterialPassType } from '../materials/materialLib'
 import NoiseTextureMaker from '../NoiseTextureMaker'
-import SpriteMaker from '../../spriteMaker/SpriteMaker'
+import SpriteMaker from '../../rendering/tileMaker/spriteMaker/SpriteMaker'
 
-import JITTileSampler from '../../tileMaker/JITTileSampler'
-import JITSpriteSampler from '../../spriteMaker/JITSpriteSampler'
+import JITTileSampler from '../../rendering/tileMaker/mapTileMaker/JITTileSampler'
+import JITSpriteSampler from '../../rendering/tileMaker/spriteMaker/JITSpriteSampler'
 import MapCacheRenderer from '../../mapCache/MapCacheRenderer'
-import TileMaker from '../../tileMaker/TileMaker'
+import MapTileMaker from '../../rendering/tileMaker/mapTileMaker/MapTileMaker'
 import { sunOffset, sunSpeed } from '../../constants'
 
 import MapWithSpritesCacheRenderer from '../../mapCache/MapWithSpritesCacheRenderer'
 import PointLightRenderer from '../../mapCache/PointLightRenderer'
 import { getSharedRectangleGeometry } from '../../../test/utils/geometry'
 export default class MapScrollingView {
-  tileMaker: TileMaker
+  tileMaker: MapTileMaker
   spriteMaker: SpriteMaker
   jitTileSampler: JITTileSampler
   jitSpriteSampler: JITSpriteSampler
@@ -55,7 +55,11 @@ export default class MapScrollingView {
     clipspaceMode = true,
     passes?: MaterialPassType[]
   ) {
-    const tileMaker = new TileMaker(pixelsPerTile, pixelsPerCacheEdge, passes)
+    const tileMaker = new MapTileMaker(
+      pixelsPerTile,
+      pixelsPerCacheEdge,
+      passes
+    )
     const spriteMaker = new SpriteMaker(
       pixelsPerTile,
       pixelsPerCacheEdge,

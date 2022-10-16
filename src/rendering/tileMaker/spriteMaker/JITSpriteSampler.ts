@@ -1,7 +1,7 @@
 import { BufferGeometry } from 'three'
-import NoiseHelper2D from '../helpers/utils/NoiseHelper2D'
-import ThreshNoiseHelper2D from '../helpers/utils/ThreshNoiseHelper2D'
-import { wrap } from '../utils/math'
+import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
+import ThreshNoiseHelper2D from '../../../helpers/utils/ThreshNoiseHelper2D'
+import { wrap } from '../../../utils/math'
 
 import SpriteMaker from './SpriteMaker'
 
@@ -176,10 +176,10 @@ export default class JITTileSampler {
     if (this.localMetaBitsHas('shield')) {
       this.myVisualBitsEnable('shield')
     }
-    const idBottom = this._spriteMaker.getTileId(this.visProps, angle)
+    const idBottom = this._spriteMaker.getTileIdAtAngle(this.visProps, angle)
     const visProps2 = this.visProps.slice()
     visProps2[0] |= 1
-    const idTop = this._spriteMaker.getTileId(visProps2, angle)
+    const idTop = this._spriteMaker.getTileIdAtAngle(visProps2, angle)
     // const indexBottomX = (idBottom * 8) % 256
     // const indexBottomY = ~~(idBottom / 32) * 8
     // const indexTopX = (idTop * 8) % 256

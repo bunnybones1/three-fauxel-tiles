@@ -1,5 +1,5 @@
-import JITTileSampler from './tileMaker/JITTileSampler'
-import TileMaker from './tileMaker/TileMaker'
+import JITTileSampler from './rendering/tileMaker/mapTileMaker/JITTileSampler'
+import MapTileMaker from './rendering/tileMaker/mapTileMaker/MapTileMaker'
 import MapScrollingView from './helpers/utils/MapScrollingView'
 import TextureCachingScroller from './rendering/TextureCachingScroller'
 
@@ -9,10 +9,10 @@ import { BasicTextureMaterial } from './materials/BasicTextureMaterial'
 import FibonacciSphereGeometry from './geometries/FibonacciSphereGeometry'
 import { getMeshMaterial } from './helpers/materials/materialLib'
 import { LightController } from './mapCache/PointLightRenderer'
-import { SpriteController } from './spriteMaker/JITSpriteSampler'
+import { SpriteController } from './rendering/tileMaker/spriteMaker/JITSpriteSampler'
 
 export default {
-  TileMaker,
+  MapTileMaker,
   JITTileSampler,
   MapScrollingView,
   TextureCachingScroller,
