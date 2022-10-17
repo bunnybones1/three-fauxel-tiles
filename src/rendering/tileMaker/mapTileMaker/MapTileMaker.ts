@@ -38,8 +38,117 @@ import { BushProps, makeRecursiveBush } from '../../../meshes/factoryBush'
 import { memoize } from '../../../utils/memoizer'
 import { makeBrickWall } from '../../../meshes/factoryBrickWall'
 import TileMaker from '../TileMaker'
+import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
 
-export default class MapTileMaker extends TileMaker {
+export default class MapTileMaker extends DoubleCachedTileMaker {
+  visualPropertyLookupStrings = [
+    'layer2',
+    'floor',
+    'beamCenter',
+    'beamN',
+    'beamE',
+    'beamS',
+    'beamW',
+    'beamNS',
+    'beamEW',
+    'bricks0',
+    'bricks1',
+    'bricks2',
+    'bricks3',
+    'bricks4',
+    'bricks5',
+    'bricks6',
+    'bricks7',
+    'bricks8',
+    'bricks9',
+    'bricks10',
+    'bricks11',
+    'ground',
+    'grassC',
+    'grassN',
+    'grassNE',
+    'grassE',
+    'grassSE',
+    'grassS',
+    'grassSW',
+    'grassW',
+    'grassNW',
+    'bushC',
+    'bushN',
+    'bushNE',
+    'bushE',
+    'bushSE',
+    'bushS',
+    'bushSW',
+    'bushW',
+    'bushNW',
+    'goldPile',
+    'lampPost',
+    'testObject',
+    'pyramid',
+    'rockyGround',
+    'rocksC',
+    'rocksCBig',
+    'rocksN',
+    'rocksNE',
+    'rocksE',
+    'rocksSE',
+    'rocksS',
+    'rocksSW',
+    'rocksW',
+    'rocksNW',
+    'goldOreForRocks',
+    'goldOreForBigRocks',
+    'rockCrumbsC',
+    'rockCrumbsN',
+    'rockCrumbsNE',
+    'rockCrumbsE',
+    'rockCrumbsSE',
+    'rockCrumbsS',
+    'rockCrumbsSW',
+    'rockCrumbsW',
+    'rockCrumbsNW',
+    'treePineC',
+    'treePineN',
+    'treePineNE',
+    'treePineE',
+    'treePineSE',
+    'treePineS',
+    'treePineSW',
+    'treePineW',
+    'treePineNW',
+    'treePineMatureC',
+    'treePineMatureN',
+    'treePineMatureNE',
+    'treePineMatureE',
+    'treePineMatureSE',
+    'treePineMatureS',
+    'treePineMatureSW',
+    'treePineMatureW',
+    'treePineMatureNW',
+    'treePineStump',
+    'treePineStumpMature',
+    'treeMapleC',
+    'treeMapleN',
+    'treeMapleNE',
+    'treeMapleE',
+    'treeMapleSE',
+    'treeMapleS',
+    'treeMapleSW',
+    'treeMapleW',
+    'treeMapleNW',
+    'treeMapleMatureC',
+    'treeMapleMatureN',
+    'treeMapleMatureNE',
+    'treeMapleMatureE',
+    'treeMapleMatureSE',
+    'treeMapleMatureS',
+    'treeMapleMatureSW',
+    'treeMapleMatureW',
+    'treeMapleMatureNW',
+    'treeMapleStump',
+    'treeMapleStumpMature'
+  ] as const
   constructor(
     pixelsPerTile = 32,
     pixelsPerCacheEdge = 2048,
@@ -848,21 +957,6 @@ export default class MapTileMaker extends TileMaker {
       renderer.getScissor(oldScissor)
       this._tileTexNeedsUpdate = false
       this._scene.updateMatrixWorld(true)
-
-      const uniqueVisuals = new Set()
-      for (const index of this._renderQueue) {
-        const visualProps = this._tileRegistry[index]
-        for (let j = 0; j < this._indexedMeshes.length; j++) {
-          const jb = ~~(j / 8)
-          const j8 = j % 8
-          const shouldShow = !!(visualProps[jb] & (1 << j8))
-          if (shouldShow) {
-            uniqueVisuals.add(j)
-          }
-        }
-      }
-      console.log('unique tiles:', this._renderQueue.length)
-      console.log('unique visual elements:', Array.from(uniqueVisuals).length)
 
       for (const pass of this._passes) {
         renderer.setRenderTarget(this._renderTargets.get(pass)!)

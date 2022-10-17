@@ -1,16 +1,13 @@
 import { BufferGeometry } from 'three'
 import { initOffset } from '../../../constants'
+import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
+import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
 import ThreshNoiseHelper2D from '../../../helpers/utils/ThreshNoiseHelper2D'
 import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
 
 import MapTileMaker from './MapTileMaker'
-
-const masks32: number[] = []
-for (let i = 0; i < 32; i++) {
-  masks32[i] = 1 << i
-}
 
 const metaTileStrings = [
   'floor',
@@ -34,121 +31,7 @@ const metaTileStrings = [
 
 type MetaTile = typeof metaTileStrings[number]
 
-const visualPropertyLookupStrings = [
-  'layer2',
-  'floor',
-  'beamCenter',
-  'beamN',
-  'beamE',
-  'beamS',
-  'beamW',
-  'beamNS',
-  'beamEW',
-  'bricks0',
-  'bricks1',
-  'bricks2',
-  'bricks3',
-  'bricks4',
-  'bricks5',
-  'bricks6',
-  'bricks7',
-  'bricks8',
-  'bricks9',
-  'bricks10',
-  'bricks11',
-  'ground',
-  'grassC',
-  'grassN',
-  'grassNE',
-  'grassE',
-  'grassSE',
-  'grassS',
-  'grassSW',
-  'grassW',
-  'grassNW',
-  'bushC',
-  'bushN',
-  'bushNE',
-  'bushE',
-  'bushSE',
-  'bushS',
-  'bushSW',
-  'bushW',
-  'bushNW',
-  'goldPile',
-  'lampPost',
-  'testObject',
-  'pyramid',
-  'rockyGround',
-  'rocksC',
-  'rocksCBig',
-  'rocksN',
-  'rocksNE',
-  'rocksE',
-  'rocksSE',
-  'rocksS',
-  'rocksSW',
-  'rocksW',
-  'rocksNW',
-  'goldOreForRocks',
-  'goldOreForBigRocks',
-  'rockCrumbsC',
-  'rockCrumbsN',
-  'rockCrumbsNE',
-  'rockCrumbsE',
-  'rockCrumbsSE',
-  'rockCrumbsS',
-  'rockCrumbsSW',
-  'rockCrumbsW',
-  'rockCrumbsNW',
-  'treePineC',
-  'treePineN',
-  'treePineNE',
-  'treePineE',
-  'treePineSE',
-  'treePineS',
-  'treePineSW',
-  'treePineW',
-  'treePineNW',
-  'treePineMatureC',
-  'treePineMatureN',
-  'treePineMatureNE',
-  'treePineMatureE',
-  'treePineMatureSE',
-  'treePineMatureS',
-  'treePineMatureSW',
-  'treePineMatureW',
-  'treePineMatureNW',
-  'treePineStump',
-  'treePineStumpMature',
-  'treeMapleC',
-  'treeMapleN',
-  'treeMapleNE',
-  'treeMapleE',
-  'treeMapleSE',
-  'treeMapleS',
-  'treeMapleSW',
-  'treeMapleW',
-  'treeMapleNW',
-  'treeMapleMatureC',
-  'treeMapleMatureN',
-  'treeMapleMatureNE',
-  'treeMapleMatureE',
-  'treeMapleMatureSE',
-  'treeMapleMatureS',
-  'treeMapleMatureSW',
-  'treeMapleMatureW',
-  'treeMapleMatureNW',
-  'treeMapleStump',
-  'treeMapleStumpMature'
-] as const
-
-type VisualPropertyLookup = typeof visualPropertyLookupStrings[number]
-
-const masks8: number[] = []
-for (let i = 0; i < 8; i++) {
-  masks8[i] = 1 << i
-}
+type NamedMetaBits = NamedBitsInNumber<typeof metaTileStrings>
 
 export default class JITTileSampler {
   get offsetX(): number {
@@ -173,10 +56,9 @@ export default class JITTileSampler {
   }
   metaNoiseGenerators: ThreshNoiseHelper2D[]
   bytesPerTile: number
-  localMetaProps: number
-  visProps: Uint8Array
-  metaCache: Map<string, number> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
-  metaPropertyMasks: number[]
+  // localMetaProps: number
+  // visProps: Uint8Array
+  metaCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   dirtyMeta: Set<string> = new Set()
   dirtyVis: Set<string> = new Set()
   private _offsetX = initOffset.x
@@ -195,7 +77,9 @@ export default class JITTileSampler {
     private _viewWidthInTiles: number,
     private _viewHeightInTiles: number
   ) {
-    this.bytesPerTile = Math.ceil(visualPropertyLookupStrings.length / 8)
+    this.bytesPerTile = Math.ceil(
+      _tileMaker.visualPropertyLookupStrings.length / 8
+    )
 
     const seed = 1
     const floorNoise = ThreshNoiseHelper2D.simple(0.1, 0, 0, 0.5, seed)
@@ -265,188 +149,174 @@ export default class JITTileSampler {
       treeMapleNoise
     ]
   }
-  flipMeta(x: number, y: number, meta: MetaTile, validate = true) {
-    this.writeMeta(x, y, this.metaBitsFlip(this.sampleMeta(x, y), meta))
-    if (validate) {
-      this.validateLocalMeta(x, y)
-    }
-  }
-  metaBitsHas(val: number, maskName: MetaTile) {
-    return val & masks32[metaTileStrings.indexOf(maskName)]
-  }
+  // flipMeta(x: number, y: number, meta: MetaTile, validate = true) {
+  //   this.writeMeta(x, y, this.metaBitsFlip(this.sampleMeta(x, y), meta))
+  //   if (validate) {
+  //     this.validateLocalMeta(x, y)
+  //   }
+  // }
+  // metaBitsHas(val: number, maskName: MetaTile) {
+  //   return val & masks32[metaTileStrings.indexOf(maskName)]
+  // }
 
-  metaBitsFlip(val: number, maskName: MetaTile) {
-    return val ^ masks32[metaTileStrings.indexOf(maskName)]
-  }
+  // metaBitsFlip(val: number, maskName: MetaTile) {
+  //   return val ^ masks32[metaTileStrings.indexOf(maskName)]
+  // }
 
-  visualBitsEnable(val: Uint8Array, maskName: VisualPropertyLookup) {
-    const i = visualPropertyLookupStrings.indexOf(maskName)
-    const ib = ~~(i / 8)
-    const i8 = i % 8
-    val[ib] |= masks8[i8]
-  }
-  localMetaBitsFlip(maskName: MetaTile) {
-    this.localMetaProps = this.metaBitsFlip(this.localMetaProps, maskName)
-  }
-  localMetaBitsHas(maskName: MetaTile) {
-    return this.metaBitsHas(this.localMetaProps, maskName)
-  }
-  writeMeta(x: number, y: number, meta: number) {
+  // localMetaBitsFlip(maskName: MetaTile) {
+  //   this.localMetaProps = this.metaBitsFlip(this.localMetaProps, maskName)
+  // }
+  // localMetaBitsHas(maskName: MetaTile) {
+  //   return this.metaBitsHas(this.localMetaProps, maskName)
+  // }
+  writeMeta(x: number, y: number, meta: NamedMetaBits) {
     const key = x + ':' + y
     if (this.metaCache.has(key) && this.metaCache.get(key)) {
       this.metaCache.set(key, meta)
     }
     this.dirtyMeta.add(key)
-    this.localMetaProps = meta
   }
   sampleMeta(x: number, y: number) {
     const key = x + ':' + y
     if (this.metaCache.has(key)) {
       return this.metaCache.get(key)!
     }
-    this.localMetaProps = this.metaNoiseGenerators.reduce((accum, noise, j) => {
-      return accum + (noise.getTreshold(x, y) << j)
-    }, 0)
-    return this.validateLocalMeta(x, y)
+    const metaProps = new NamedBitsInNumber(
+      this.metaNoiseGenerators.reduce((accum, noise, j) => {
+        return accum + (noise.getTreshold(x, y) << j)
+      }, 0),
+      metaTileStrings
+    )
+    this.validateLocalMeta(metaProps, x, y)
+    return metaProps
   }
-  validateLocalMeta(x: number, y: number) {
+  validateLocalMeta(val: NamedMetaBits, x: number, y: number) {
     const key = x + ':' + y
 
     // this.localMetaProps = this.metaNoiseGenerators[2].getTreshold(x, y, 0.5) << 4
 
-    if (!this.localMetaBitsHas('floor') && this.localMetaBitsHas('beam')) {
-      this.localMetaBitsFlip('beam')
+    if (!val.has('floor') && val.has('beam')) {
+      val.flipBit('beam')
     }
-    if (this.localMetaBitsHas('beam') && this.localMetaBitsHas('grass')) {
-      this.localMetaBitsFlip('grass')
+    if (val.has('beam') && val.has('grass')) {
+      val.flipBit('grass')
     }
-    if (!this.localMetaBitsHas('beam') && this.localMetaBitsHas('bricks')) {
-      this.localMetaBitsFlip('bricks')
+    if (!val.has('beam') && val.has('bricks')) {
+      val.flipBit('bricks')
     }
-    if (this.localMetaBitsHas('floor') && this.localMetaBitsHas('grass')) {
-      this.localMetaBitsFlip('grass')
+    if (val.has('floor') && val.has('grass')) {
+      val.flipBit('grass')
     }
-    if (this.localMetaBitsHas('floor') && this.localMetaBitsHas('bush')) {
-      this.localMetaBitsFlip('bush')
+    if (val.has('floor') && val.has('bush')) {
+      val.flipBit('bush')
     }
-    if (!this.localMetaBitsHas('grass') && this.localMetaBitsHas('bush')) {
-      this.localMetaBitsFlip('bush')
+    if (!val.has('grass') && val.has('bush')) {
+      val.flipBit('bush')
     }
-    if (
-      this.localMetaBitsHas('testObject') &&
-      (this.localMetaBitsHas('bush') || this.localMetaBitsHas('pyramid'))
-    ) {
-      this.localMetaBitsFlip('testObject')
+    if (val.has('testObject') && (val.has('bush') || val.has('pyramid'))) {
+      val.flipBit('testObject')
     }
     if (
-      this.localMetaBitsHas('lampPost') &&
-      (this.localMetaBitsHas('beam') ||
-        this.localMetaBitsHas('bush') ||
-        this.localMetaBitsHas('bricks') ||
-        this.localMetaBitsHas('goldPile') ||
-        this.localMetaBitsHas('testObject'))
+      val.has('lampPost') &&
+      (val.has('beam') ||
+        val.has('bush') ||
+        val.has('bricks') ||
+        val.has('goldPile') ||
+        val.has('testObject'))
     ) {
-      this.localMetaBitsFlip('lampPost')
+      val.flipBit('lampPost')
     }
 
     if (
-      this.localMetaBitsHas('pyramid') &&
-      (this.localMetaBitsHas('bush') ||
-        this.localMetaBitsHas('beam') ||
-        this.localMetaBitsHas('lampPost') ||
-        this.localMetaBitsHas('lampPost') ||
-        this.localMetaBitsHas('grass') ||
-        !this.localMetaBitsHas('floor') ||
-        this.localMetaBitsHas('goldPile'))
+      val.has('pyramid') &&
+      (val.has('bush') ||
+        val.has('beam') ||
+        val.has('lampPost') ||
+        val.has('lampPost') ||
+        val.has('grass') ||
+        !val.has('floor') ||
+        val.has('goldPile'))
     ) {
-      this.localMetaBitsFlip('pyramid')
+      val.flipBit('pyramid')
     }
 
     if (
-      this.localMetaBitsHas('rockyGround') &&
-      (this.localMetaBitsHas('beam') ||
-        this.localMetaBitsHas('bush') ||
-        this.localMetaBitsHas('floor') ||
-        this.localMetaBitsHas('grass') ||
-        this.localMetaBitsHas('bricks') ||
-        this.localMetaBitsHas('goldPile') ||
-        this.localMetaBitsHas('testObject'))
+      val.has('rockyGround') &&
+      (val.has('beam') ||
+        val.has('bush') ||
+        val.has('floor') ||
+        val.has('grass') ||
+        val.has('bricks') ||
+        val.has('goldPile') ||
+        val.has('testObject'))
     ) {
-      this.localMetaBitsFlip('rockyGround')
+      val.flipBit('rockyGround')
     }
 
-    if (this.localMetaBitsHas('rocks')) {
-      const wasHarvested = this.localMetaBitsHas('harvested')
-      const hasGold = this.localMetaBitsHas('goldOreForRocks')
-      this.localMetaProps = 0
-      this.localMetaBitsFlip('rocks')
+    if (val.has('rocks')) {
+      const wasHarvested = val.has('harvested')
+      const hasGold = val.has('goldOreForRocks')
+      val.value = 0
+      val.flipBit('rocks')
       if (hasGold) {
-        this.localMetaBitsFlip('goldOreForRocks')
+        val.flipBit('goldOreForRocks')
       }
       if (wasHarvested) {
-        this.localMetaBitsFlip('harvested')
+        val.flipBit('harvested')
       }
     }
 
-    const hasAnyTree =
-      this.localMetaBitsHas('treePine') || this.localMetaBitsHas('treeMaple')
+    const hasAnyTree = val.has('treePine') || val.has('treeMaple')
 
-    if (hasAnyTree && this.localMetaBitsHas('bush')) {
-      this.localMetaBitsFlip('bush')
+    if (hasAnyTree && val.has('bush')) {
+      val.flipBit('bush')
     }
-    if (hasAnyTree && this.localMetaBitsHas('goldPile')) {
-      this.localMetaBitsFlip('goldPile')
+    if (hasAnyTree && val.has('goldPile')) {
+      val.flipBit('goldPile')
     }
-    if (hasAnyTree && this.localMetaBitsHas('testObject')) {
-      this.localMetaBitsFlip('testObject')
+    if (hasAnyTree && val.has('testObject')) {
+      val.flipBit('testObject')
     }
-    if (this.localMetaBitsHas('lampPost') || !this.localMetaBitsHas('grass')) {
-      if (this.localMetaBitsHas('treePine')) {
-        this.localMetaBitsFlip('treePine')
+    if (val.has('lampPost') || !val.has('grass')) {
+      if (val.has('treePine')) {
+        val.flipBit('treePine')
       }
-      if (this.localMetaBitsHas('treeMaple')) {
-        this.localMetaBitsFlip('treeMaple')
+      if (val.has('treeMaple')) {
+        val.flipBit('treeMaple')
       }
     }
 
-    if (
-      this.localMetaBitsHas('treePine') &&
-      this.localMetaBitsHas('treeMaple')
-    ) {
-      this.localMetaBitsFlip('treeMaple')
+    if (val.has('treePine') && val.has('treeMaple')) {
+      val.flipBit('treeMaple')
     }
 
     //TEST SIMPLER MAP
     if (getUrlFlag('simple')) {
-      // const item = this.localMetaBitsHas('testObject')
-      // const keepGrass = this.localMetaBitsHas('grass')
+      // const item = val.has('testObject')
+      // const keepGrass = val.has('grass')
       // this.localMetaProps = 0
       // if (keepGrass) {
-      //   this.localMetaBitsFlip('grass')
+      //   val.flipBit('grass')
       // }
       // if (keepGrass && item) {
-      //   this.localMetaBitsFlip('testObject')
+      //   val.flipBit('testObject')
       // }
-      const item = this.localMetaBitsHas('floor')
-      const item2 = this.localMetaBitsHas('beam')
-      const item3 = this.localMetaBitsHas('bricks')
-      this.localMetaProps = 0
+      const item = val.has('floor')
+      const item2 = val.has('beam')
+      const item3 = val.has('bricks')
       if (item) {
-        this.localMetaBitsFlip('floor')
+        val.flipBit('floor')
       }
       if (item2) {
-        this.localMetaBitsFlip('beam')
+        val.flipBit('beam')
       }
       if (item3) {
-        this.localMetaBitsFlip('bricks')
+        val.flipBit('bricks')
       }
     }
 
-    this.metaCache.set(key, this.localMetaProps)
-    return this.localMetaProps
-  }
-  myVisualBitsEnable(maskName: VisualPropertyLookup) {
-    this.visualBitsEnable(this.visProps, maskName)
+    this.metaCache.set(key, val)
+    return val
   }
   sampleVis(x: number, y: number) {
     const metaPropsN = this.sampleMeta(x, y - 1)
@@ -459,248 +329,250 @@ export default class JITTileSampler {
     const metaPropsNW = this.sampleMeta(x - 1, y - 1)
 
     const metaProps = this.sampleMeta(x, y)
-    this.localMetaProps = metaProps
 
-    this.visProps = new Uint8Array(this.bytesPerTile)
+    const visProps = new NamedBitsInBytes(
+      new Uint8Array(this.bytesPerTile),
+      this.tileMaker.visualPropertyLookupStrings
+    )
 
-    this.myVisualBitsEnable(this.localMetaBitsHas('floor') ? 'floor' : 'ground')
+    visProps.enableBit(metaProps.has('floor') ? 'floor' : 'ground')
 
-    const propMaskGrass = masks32[metaTileStrings.indexOf('grass')]
-    if (this.localMetaBitsHas('grass')) {
-      this.myVisualBitsEnable('grassC')
-      if (metaPropsN & propMaskGrass) {
-        this.myVisualBitsEnable('grassN')
+    const propMaskGrass = metaProps.makeFastMask('grass')
+    if (metaProps.hasFast(propMaskGrass)) {
+      visProps.enableBit('grassC')
+      if (metaPropsN.has('grass')) {
+        visProps.enableBit('grassN')
       }
-      if (metaPropsE & propMaskGrass) {
-        this.myVisualBitsEnable('grassE')
+      if (metaPropsE.hasFast(propMaskGrass)) {
+        visProps.enableBit('grassE')
       }
-      if (metaPropsS & propMaskGrass) {
-        this.myVisualBitsEnable('grassS')
+      if (metaPropsS.hasFast(propMaskGrass)) {
+        visProps.enableBit('grassS')
       }
-      if (metaPropsW & propMaskGrass) {
-        this.myVisualBitsEnable('grassW')
-      }
-      if (
-        metaPropsNE & propMaskGrass &&
-        metaPropsN & propMaskGrass &&
-        metaPropsE & propMaskGrass
-      ) {
-        this.myVisualBitsEnable('grassNE')
+      if (metaPropsW.hasFast(propMaskGrass)) {
+        visProps.enableBit('grassW')
       }
       if (
-        metaPropsNW & propMaskGrass &&
-        metaPropsN & propMaskGrass &&
-        metaPropsW & propMaskGrass
+        metaPropsNE.hasFast(propMaskGrass) &&
+        metaPropsN.hasFast(propMaskGrass) &&
+        metaPropsE.hasFast(propMaskGrass)
       ) {
-        this.myVisualBitsEnable('grassNW')
+        visProps.enableBit('grassNE')
       }
       if (
-        metaPropsSE & propMaskGrass &&
-        metaPropsS & propMaskGrass &&
-        metaPropsE & propMaskGrass
+        metaPropsNW.hasFast(propMaskGrass) &&
+        metaPropsN.hasFast(propMaskGrass) &&
+        metaPropsW.hasFast(propMaskGrass)
       ) {
-        this.myVisualBitsEnable('grassSE')
+        visProps.enableBit('grassNW')
       }
       if (
-        metaPropsSW & propMaskGrass &&
-        metaPropsS & propMaskGrass &&
-        metaPropsW & propMaskGrass
+        metaPropsSE.hasFast(propMaskGrass) &&
+        metaPropsS.hasFast(propMaskGrass) &&
+        metaPropsE.hasFast(propMaskGrass)
       ) {
-        this.myVisualBitsEnable('grassSW')
+        visProps.enableBit('grassSE')
+      }
+      if (
+        metaPropsSW.hasFast(propMaskGrass) &&
+        metaPropsS.hasFast(propMaskGrass) &&
+        metaPropsW.hasFast(propMaskGrass)
+      ) {
+        visProps.enableBit('grassSW')
       }
     }
-    const propMaskBush = masks32[metaTileStrings.indexOf('bush')]
-    if (this.localMetaBitsHas('bush')) {
-      this.myVisualBitsEnable('bushC')
-      if (metaPropsN & propMaskBush) {
-        this.myVisualBitsEnable('bushN')
+    const propMaskBush = metaProps.makeFastMask('bush')
+    if (metaProps.hasFast(propMaskBush)) {
+      visProps.enableBit('bushC')
+      if (metaPropsN.hasFast(propMaskBush)) {
+        visProps.enableBit('bushN')
       }
-      if (metaPropsE & propMaskBush) {
-        this.myVisualBitsEnable('bushE')
+      if (metaPropsE.hasFast(propMaskBush)) {
+        visProps.enableBit('bushE')
       }
-      if (metaPropsS & propMaskBush) {
-        this.myVisualBitsEnable('bushS')
+      if (metaPropsS.hasFast(propMaskBush)) {
+        visProps.enableBit('bushS')
       }
-      if (metaPropsW & propMaskBush) {
-        this.myVisualBitsEnable('bushW')
-      }
-      if (
-        metaPropsNE & propMaskBush &&
-        metaPropsN & propMaskBush &&
-        metaPropsE & propMaskBush
-      ) {
-        this.myVisualBitsEnable('bushNE')
+      if (metaPropsW.hasFast(propMaskBush)) {
+        visProps.enableBit('bushW')
       }
       if (
-        metaPropsNW & propMaskBush &&
-        metaPropsN & propMaskBush &&
-        metaPropsW & propMaskBush
+        metaPropsNE.hasFast(propMaskBush) &&
+        metaPropsN.hasFast(propMaskBush) &&
+        metaPropsE.hasFast(propMaskBush)
       ) {
-        this.myVisualBitsEnable('bushNW')
+        visProps.enableBit('bushNE')
       }
       if (
-        metaPropsSE & propMaskBush &&
-        metaPropsS & propMaskBush &&
-        metaPropsE & propMaskBush
+        metaPropsNW.hasFast(propMaskBush) &&
+        metaPropsN.hasFast(propMaskBush) &&
+        metaPropsW.hasFast(propMaskBush)
       ) {
-        this.myVisualBitsEnable('bushSE')
+        visProps.enableBit('bushNW')
       }
       if (
-        metaPropsSW & propMaskBush &&
-        metaPropsS & propMaskBush &&
-        metaPropsW & propMaskBush
+        metaPropsSE.hasFast(propMaskBush) &&
+        metaPropsS.hasFast(propMaskBush) &&
+        metaPropsE.hasFast(propMaskBush)
       ) {
-        this.myVisualBitsEnable('bushSW')
+        visProps.enableBit('bushSE')
+      }
+      if (
+        metaPropsSW.hasFast(propMaskBush) &&
+        metaPropsS.hasFast(propMaskBush) &&
+        metaPropsW.hasFast(propMaskBush)
+      ) {
+        visProps.enableBit('bushSW')
       }
     }
-    const propMaskBeam = masks32[metaTileStrings.indexOf('beam')]
-    const beamC = metaProps & propMaskBeam
-    const beamN = metaPropsN & propMaskBeam
-    const beamE = metaPropsE & propMaskBeam
-    const beamS = metaPropsS & propMaskBeam
-    const beamW = metaPropsW & propMaskBeam
+    const propMaskBeam = metaProps.makeFastMask('beam')
+    const beamC = metaProps.hasFast(propMaskBeam)
+    const beamN = metaPropsN.hasFast(propMaskBeam)
+    const beamE = metaPropsE.hasFast(propMaskBeam)
+    const beamS = metaPropsS.hasFast(propMaskBeam)
+    const beamW = metaPropsW.hasFast(propMaskBeam)
     if (beamC) {
       if (beamE && beamW && !beamS && !beamN) {
-        this.myVisualBitsEnable('beamEW')
+        visProps.enableBit('beamEW')
       } else if (!beamE && !beamW && beamS && beamN) {
-        this.myVisualBitsEnable('beamNS')
+        visProps.enableBit('beamNS')
       } else {
-        this.myVisualBitsEnable('beamCenter')
+        visProps.enableBit('beamCenter')
         if (beamE) {
-          this.myVisualBitsEnable('beamE')
+          visProps.enableBit('beamE')
         }
         if (beamW) {
-          this.myVisualBitsEnable('beamW')
+          visProps.enableBit('beamW')
         }
         if (beamN) {
-          this.myVisualBitsEnable('beamN')
+          visProps.enableBit('beamN')
         }
         if (beamS) {
-          this.myVisualBitsEnable('beamS')
+          visProps.enableBit('beamS')
         }
       }
     }
-    const propMaskBricks = masks32[metaTileStrings.indexOf('bricks')]
-    if (metaProps & propMaskBricks) {
-      const bricksS = metaPropsN & propMaskBricks
-      const bricksE = metaPropsE & propMaskBricks
-      const bricksN = metaPropsS & propMaskBricks
-      const bricksW = metaPropsW & propMaskBricks
+    const propMaskBricks = metaProps.makeFastMask('bricks')
+    if (metaProps.hasFast(propMaskBricks)) {
+      const bricksS = metaPropsN.hasFast(propMaskBricks)
+      const bricksE = metaPropsE.hasFast(propMaskBricks)
+      const bricksN = metaPropsS.hasFast(propMaskBricks)
+      const bricksW = metaPropsW.hasFast(propMaskBricks)
       if (bricksN) {
-        this.myVisualBitsEnable('bricks0')
-        this.myVisualBitsEnable('bricks1')
+        visProps.enableBit('bricks0')
+        visProps.enableBit('bricks1')
       } else if (!(beamC && beamS)) {
-        this.myVisualBitsEnable('bricks8')
+        visProps.enableBit('bricks8')
       }
       if (bricksE) {
-        this.myVisualBitsEnable('bricks2')
-        this.myVisualBitsEnable('bricks3')
+        visProps.enableBit('bricks2')
+        visProps.enableBit('bricks3')
       } else if (!(beamC && beamE)) {
-        this.myVisualBitsEnable('bricks9')
+        visProps.enableBit('bricks9')
       }
       if (bricksW) {
-        this.myVisualBitsEnable('bricks7')
-        this.myVisualBitsEnable('bricks6')
+        visProps.enableBit('bricks7')
+        visProps.enableBit('bricks6')
       } else if (!(beamC && beamW)) {
-        this.myVisualBitsEnable('bricks11')
+        visProps.enableBit('bricks11')
       }
       if (bricksS) {
-        this.myVisualBitsEnable('bricks4')
-        this.myVisualBitsEnable('bricks5')
+        visProps.enableBit('bricks4')
+        visProps.enableBit('bricks5')
       } else if (!(beamC && beamN)) {
-        this.myVisualBitsEnable('bricks10')
+        visProps.enableBit('bricks10')
       }
     }
-    const propMaskGold = masks32[metaTileStrings.indexOf('goldPile')]
-    if (metaProps & propMaskGold) {
-      this.myVisualBitsEnable('goldPile')
+    const propMaskGold = metaProps.makeFastMask('goldPile')
+    if (metaProps.hasFast(propMaskGold)) {
+      visProps.enableBit('goldPile')
     }
-    const propMaskLampPost = masks32[metaTileStrings.indexOf('lampPost')]
-    if (metaProps & propMaskLampPost) {
-      this.myVisualBitsEnable('lampPost')
+    const propMaskLampPost = metaProps.makeFastMask('lampPost')
+    if (metaProps.hasFast(propMaskLampPost)) {
+      visProps.enableBit('lampPost')
     }
-    const propMaskTestObject = masks32[metaTileStrings.indexOf('testObject')]
-    if (metaProps & propMaskTestObject) {
-      this.myVisualBitsEnable('testObject')
+    const propMaskTestObject = metaProps.makeFastMask('testObject')
+    if (metaProps.hasFast(propMaskTestObject)) {
+      visProps.enableBit('testObject')
     }
-    const propMaskPyramid = masks32[metaTileStrings.indexOf('pyramid')]
-    if (metaProps & propMaskPyramid) {
-      this.myVisualBitsEnable('pyramid')
+    const propMaskPyramid = metaProps.makeFastMask('pyramid')
+    if (metaProps.hasFast(propMaskPyramid)) {
+      visProps.enableBit('pyramid')
     }
-    const propMaskRockyGround = masks32[metaTileStrings.indexOf('rockyGround')]
-    if (metaProps & propMaskRockyGround) {
-      this.myVisualBitsEnable('rockyGround')
+    const propMaskRockyGround = metaProps.makeFastMask('rockyGround')
+    if (metaProps.hasFast(propMaskRockyGround)) {
+      visProps.enableBit('rockyGround')
     }
 
-    const propMaskRocks = masks32[metaTileStrings.indexOf('rocks')]
-    const propMaskHarvested = masks32[metaTileStrings.indexOf('harvested')]
+    const propMaskRocks = metaProps.makeFastMask('rocks')
+    const propMaskHarvested = metaProps.makeFastMask('harvested')
 
-    const isRocksC = metaProps & propMaskRocks
-    const isHarvestedC = metaProps & propMaskHarvested
-    const isGoldOre = this.localMetaBitsHas('goldOreForRocks')
+    const isRocksC = metaProps.hasFast(propMaskRocks)
+    const isHarvestedC = metaProps.hasFast(propMaskHarvested)
+    const isGoldOre = metaProps.has('goldOreForRocks')
     if (isRocksC) {
-      const isRocksN = metaPropsN & propMaskRocks
-      const isHarvestedN = metaPropsN & propMaskHarvested
-      const isRocksE = metaPropsE & propMaskRocks
-      const isHarvestedE = metaPropsE & propMaskHarvested
-      const isRocksS = metaPropsS & propMaskRocks
-      const isHarvestedS = metaPropsS & propMaskHarvested
-      const isRocksW = metaPropsW & propMaskRocks
-      const isHarvestedW = metaPropsW & propMaskHarvested
-      const isRocksNE = metaPropsNE & propMaskRocks
-      const isHarvestedNE = metaPropsNE & propMaskHarvested
-      const isRocksSE = metaPropsSE & propMaskRocks
-      const isHarvestedSE = metaPropsSE & propMaskHarvested
-      const isRocksSW = metaPropsSW & propMaskRocks
-      const isHarvestedSW = metaPropsSW & propMaskHarvested
-      const isRocksNW = metaPropsNW & propMaskRocks
-      const isHarvestedNW = metaPropsNW & propMaskHarvested
+      const isRocksN = metaPropsN.hasFast(propMaskRocks)
+      const isHarvestedN = metaPropsN.hasFast(propMaskHarvested)
+      const isRocksE = metaPropsE.hasFast(propMaskRocks)
+      const isHarvestedE = metaPropsE.hasFast(propMaskHarvested)
+      const isRocksS = metaPropsS.hasFast(propMaskRocks)
+      const isHarvestedS = metaPropsS.hasFast(propMaskHarvested)
+      const isRocksW = metaPropsW.hasFast(propMaskRocks)
+      const isHarvestedW = metaPropsW.hasFast(propMaskHarvested)
+      const isRocksNE = metaPropsNE.hasFast(propMaskRocks)
+      const isHarvestedNE = metaPropsNE.hasFast(propMaskHarvested)
+      const isRocksSE = metaPropsSE.hasFast(propMaskRocks)
+      const isHarvestedSE = metaPropsSE.hasFast(propMaskHarvested)
+      const isRocksSW = metaPropsSW.hasFast(propMaskRocks)
+      const isHarvestedSW = metaPropsSW.hasFast(propMaskHarvested)
+      const isRocksNW = metaPropsNW.hasFast(propMaskRocks)
+      const isHarvestedNW = metaPropsNW.hasFast(propMaskHarvested)
 
-      this.myVisualBitsEnable(isHarvestedC ? 'rockCrumbsC' : 'rocksC')
+      visProps.enableBit(isHarvestedC ? 'rockCrumbsC' : 'rocksC')
       if (isRocksN) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedN || isHarvestedC ? 'rockCrumbsN' : 'rocksN'
         )
       }
       if (isRocksS) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedS || isHarvestedC ? 'rockCrumbsS' : 'rocksS'
         )
       }
       if (isRocksE) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedE || isHarvestedC ? 'rockCrumbsE' : 'rocksE'
         )
       }
       if (isRocksW) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedW || isHarvestedC ? 'rockCrumbsW' : 'rocksW'
         )
       }
 
       if (isRocksW && isRocksN && isRocksNW) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedW || isHarvestedN || isHarvestedNW || isHarvestedC
             ? 'rockCrumbsNW'
             : 'rocksNW'
         )
       }
       if (isRocksE && isRocksN && isRocksNE) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedE || isHarvestedN || isHarvestedNE || isHarvestedC
             ? 'rockCrumbsNE'
             : 'rocksNE'
         )
       }
       if (isRocksW && isRocksS && isRocksSW) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedW || isHarvestedS || isHarvestedSW || isHarvestedC
             ? 'rockCrumbsSW'
             : 'rocksSW'
         )
       }
       if (isRocksE && isRocksS && isRocksSE) {
-        this.myVisualBitsEnable(
+        visProps.enableBit(
           isHarvestedE || isHarvestedS || isHarvestedSE || isHarvestedC
             ? 'rockCrumbsSE'
             : 'rocksSE'
@@ -718,130 +590,195 @@ export default class JITTileSampler {
           !isHarvestedS &&
           !isHarvestedW
         ) {
-          this.myVisualBitsEnable('rocksCBig')
+          visProps.enableBit('rocksCBig')
           if (isGoldOre) {
-            this.myVisualBitsEnable('goldOreForBigRocks')
+            visProps.enableBit('goldOreForBigRocks')
           }
         } else {
           if (isGoldOre) {
-            this.myVisualBitsEnable('goldOreForRocks')
+            visProps.enableBit('goldOreForRocks')
           }
         }
       }
     }
 
-    const propMaskMaturePlant = masks32[metaTileStrings.indexOf('maturePlant')]
+    const propMaskMaturePlant = metaProps.makeFastMask('maturePlant')
 
-    const propMaskTreePine = masks32[metaTileStrings.indexOf('treePine')]
-    if (metaProps & propMaskTreePine && !(metaProps & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaProps & propMaskMaturePlant ? 'Mature' : ''}C`
+    const propMaskTreePine = metaProps.makeFastMask('treePine')
+    if (
+      metaProps.hasFast(propMaskTreePine) &&
+      !metaProps.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaProps.hasFast(propMaskMaturePlant) ? 'Mature' : ''}C`
       )
     }
-    if (metaPropsE & propMaskTreePine && !(metaPropsE & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsE & propMaskMaturePlant ? 'Mature' : ''}E`
+    if (
+      metaPropsE.hasFast(propMaskTreePine) &&
+      !metaPropsE.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsE.hasFast(propMaskMaturePlant) ? 'Mature' : ''}E`
       )
     }
-    if (metaPropsW & propMaskTreePine && !(metaPropsW & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsW & propMaskMaturePlant ? 'Mature' : ''}W`
+    if (
+      metaPropsW.hasFast(propMaskTreePine) &&
+      !metaPropsW.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsW.hasFast(propMaskMaturePlant) ? 'Mature' : ''}W`
       )
     }
-    if (metaPropsN & propMaskTreePine && !(metaPropsN & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsN & propMaskMaturePlant ? 'Mature' : ''}N`
+    if (
+      metaPropsN.hasFast(propMaskTreePine) &&
+      !metaPropsN.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsN.hasFast(propMaskMaturePlant) ? 'Mature' : ''}N`
       )
     }
-    if (metaPropsS & propMaskTreePine && !(metaPropsS & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsS & propMaskMaturePlant ? 'Mature' : ''}S`
+    if (
+      metaPropsS.hasFast(propMaskTreePine) &&
+      !metaPropsS.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsS.hasFast(propMaskMaturePlant) ? 'Mature' : ''}S`
       )
     }
-    if (metaPropsNE & propMaskTreePine && !(metaPropsNE & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsNE & propMaskMaturePlant ? 'Mature' : ''}NE`
+    if (
+      metaPropsNE.hasFast(propMaskTreePine) &&
+      !metaPropsNE.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsNE.hasFast(propMaskMaturePlant) ? 'Mature' : ''}NE`
       )
     }
-    if (metaPropsSW & propMaskTreePine && !(metaPropsSW & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsSW & propMaskMaturePlant ? 'Mature' : ''}SW`
+    if (
+      metaPropsSW.hasFast(propMaskTreePine) &&
+      !metaPropsSW.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsSW.hasFast(propMaskMaturePlant) ? 'Mature' : ''}SW`
       )
     }
-    if (metaPropsNW & propMaskTreePine && !(metaPropsNW & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsNW & propMaskMaturePlant ? 'Mature' : ''}NW`
+    if (
+      metaPropsNW.hasFast(propMaskTreePine) &&
+      !metaPropsNW.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsNW.hasFast(propMaskMaturePlant) ? 'Mature' : ''}NW`
       )
     }
-    if (metaPropsSE & propMaskTreePine && !(metaPropsSE & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treePine${metaPropsSE & propMaskMaturePlant ? 'Mature' : ''}SE`
-      )
-    }
-
-    if (metaProps & propMaskTreePine && metaProps & propMaskHarvested) {
-      this.myVisualBitsEnable(
-        `treePineStump${metaProps & propMaskMaturePlant ? 'Mature' : ''}`
-      )
-    }
-
-    const propMaskTreeMaple = masks32[metaTileStrings.indexOf('treeMaple')]
-    if (metaProps & propMaskTreeMaple && !(metaProps & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaProps & propMaskMaturePlant ? 'Mature' : ''}C`
-      )
-    }
-    if (metaPropsE & propMaskTreeMaple && !(metaPropsE & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsE & propMaskMaturePlant ? 'Mature' : ''}E`
-      )
-    }
-    if (metaPropsW & propMaskTreeMaple && !(metaPropsW & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsW & propMaskMaturePlant ? 'Mature' : ''}W`
-      )
-    }
-    if (metaPropsN & propMaskTreeMaple && !(metaPropsN & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsN & propMaskMaturePlant ? 'Mature' : ''}N`
-      )
-    }
-    if (metaPropsS & propMaskTreeMaple && !(metaPropsS & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsS & propMaskMaturePlant ? 'Mature' : ''}S`
-      )
-    }
-    if (metaPropsNE & propMaskTreeMaple && !(metaPropsNE & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsNE & propMaskMaturePlant ? 'Mature' : ''}NE`
-      )
-    }
-    if (metaPropsSW & propMaskTreeMaple && !(metaPropsSW & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsSW & propMaskMaturePlant ? 'Mature' : ''}SW`
-      )
-    }
-    if (metaPropsNW & propMaskTreeMaple && !(metaPropsNW & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsNW & propMaskMaturePlant ? 'Mature' : ''}NW`
-      )
-    }
-    if (metaPropsSE & propMaskTreeMaple && !(metaPropsSE & propMaskHarvested)) {
-      this.myVisualBitsEnable(
-        `treeMaple${metaPropsSE & propMaskMaturePlant ? 'Mature' : ''}SE`
+    if (
+      metaPropsSE.hasFast(propMaskTreePine) &&
+      !metaPropsSE.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePine${metaPropsSE.hasFast(propMaskMaturePlant) ? 'Mature' : ''}SE`
       )
     }
 
-    if (metaProps & propMaskTreeMaple && metaProps & propMaskHarvested) {
-      this.myVisualBitsEnable(
-        `treeMapleStump${metaProps & propMaskMaturePlant ? 'Mature' : ''}`
+    if (
+      metaProps.hasFast(propMaskTreePine) &&
+      metaProps.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treePineStump${metaProps.hasFast(propMaskMaturePlant) ? 'Mature' : ''}`
       )
     }
 
-    const idBottom = this._tileMaker.getTileId(this.visProps)
-    const visProps2 = this.visProps.slice()
+    const propMaskTreeMaple = metaProps.makeFastMask('treeMaple')
+    if (
+      metaProps.hasFast(propMaskTreeMaple) &&
+      !metaProps.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaProps.hasFast(propMaskMaturePlant) ? 'Mature' : ''}C`
+      )
+    }
+    if (
+      metaPropsE.hasFast(propMaskTreeMaple) &&
+      !metaPropsE.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsE.hasFast(propMaskMaturePlant) ? 'Mature' : ''}E`
+      )
+    }
+    if (
+      metaPropsW.hasFast(propMaskTreeMaple) &&
+      !metaPropsW.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsW.hasFast(propMaskMaturePlant) ? 'Mature' : ''}W`
+      )
+    }
+    if (
+      metaPropsN.hasFast(propMaskTreeMaple) &&
+      !metaPropsN.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsN.hasFast(propMaskMaturePlant) ? 'Mature' : ''}N`
+      )
+    }
+    if (
+      metaPropsS.hasFast(propMaskTreeMaple) &&
+      !metaPropsS.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsS.hasFast(propMaskMaturePlant) ? 'Mature' : ''}S`
+      )
+    }
+    if (
+      metaPropsNE.hasFast(propMaskTreeMaple) &&
+      !metaPropsNE.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsNE.hasFast(propMaskMaturePlant) ? 'Mature' : ''}NE`
+      )
+    }
+    if (
+      metaPropsSW.hasFast(propMaskTreeMaple) &&
+      !metaPropsSW.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsSW.hasFast(propMaskMaturePlant) ? 'Mature' : ''}SW`
+      )
+    }
+    if (
+      metaPropsNW.hasFast(propMaskTreeMaple) &&
+      !metaPropsNW.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsNW.hasFast(propMaskMaturePlant) ? 'Mature' : ''}NW`
+      )
+    }
+    if (
+      metaPropsSE.hasFast(propMaskTreeMaple) &&
+      !metaPropsSE.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMaple${metaPropsSE.hasFast(propMaskMaturePlant) ? 'Mature' : ''}SE`
+      )
+    }
+
+    if (
+      metaProps.hasFast(propMaskTreeMaple) &&
+      metaProps.hasFast(propMaskHarvested)
+    ) {
+      visProps.enableBit(
+        `treeMapleStump${
+          metaProps.hasFast(propMaskMaturePlant) ? 'Mature' : ''
+        }`
+      )
+    }
+
+    const idBottom = this._tileMaker.getTileId(visProps.bytes)
+    const visProps2 = visProps.bytes.slice()
     visProps2[0] |= 1
     const idTop = this._tileMaker.getTileId(visProps2)
+
+    // console.log(visProps.toString())
+
     // const indexBottomX = (idBottom * 8) % 256
     // const indexBottomY = ~~(idBottom / 32) * 8
     // const indexTopX = (idTop * 8) % 256

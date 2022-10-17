@@ -200,9 +200,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     for (let iy = -40; iy < 40; iy++) {
       for (let ix = -40; ix < 40; ix++) {
         const metaProps = mapScrollingView.jitTileSampler.sampleMeta(ix, iy)
-        if (
-          mapScrollingView.jitTileSampler.metaBitsHas(metaProps, 'lampPost')
-        ) {
+        if (metaProps.has('lampPost')) {
           const color = new Color()
             .setHSL(
               detRandLights(0, 1) > 0.5 ? 0.04 : 0.5,
