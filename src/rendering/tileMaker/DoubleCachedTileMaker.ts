@@ -29,7 +29,7 @@ export default class DoubleCachedTileMaker extends TileMaker {
         uniqueVisuals.add(j)
       }
     }
-    console.log('unique visual elements:', Array.from(uniqueVisuals).length)
+    // console.log('unique visual elements:', Array.from(uniqueVisuals).length)
 
     //prep precacher
     return super.getTileId(tileDescription)

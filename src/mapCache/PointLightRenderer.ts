@@ -86,6 +86,8 @@ export default class PointLightRenderer {
       viewWidth: pixelsWidth,
       viewHeight: pixelsHeight,
       pixelsPerTile,
+      relativeTileSize: 1 / width,
+      relativePixelSize: 1 / width / pixelsPerTile,
       mapCacheColorsTexture:
         this._mapCacheRenderer.mapCache.get('customColor')!.texture,
       mapCacheNormalsTexture:

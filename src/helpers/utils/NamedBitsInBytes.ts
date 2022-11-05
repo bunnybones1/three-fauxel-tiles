@@ -27,6 +27,12 @@ export default class NamedBitsInBytes<T extends readonly string[]> {
     const i8 = i % 8
     this.bytes[ib] ^= __masks8[i8]
   }
+  has(name: T[number]) {
+    const i = this._names.indexOf(name)
+    const ib = ~~(i / 8)
+    const i8 = i % 8
+    return (this.bytes[ib] & __masks8[i8]) !== 0
+  }
   toString() {
     return this.bytes.reduce((memo, i) => memo + i2hex(i), '')
   }
