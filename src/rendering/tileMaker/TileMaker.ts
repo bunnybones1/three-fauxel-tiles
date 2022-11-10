@@ -46,7 +46,6 @@ export default class TileMaker {
   )
   protected _cameraTopDown = new OrthographicCamera(-16, 16, 16, -16, -64, 64)
   protected _renderTargets: Map<MaterialPassType, WebGLRenderTarget> = new Map()
-  protected _tileTexNeedsUpdate = true
   protected _indexedMeshesVisibility: boolean[]
   protected _indexedMeshes: (() => Object3D)[]
   protected _tilesPerEdge: number
@@ -135,7 +134,6 @@ export default class TileMaker {
       this._tileRegistry.push(tileDescription)
       this._tileHashRegistry.push(hash)
       this._renderQueue.push(index)
-      this._tileTexNeedsUpdate = true
     }
     return index
   }

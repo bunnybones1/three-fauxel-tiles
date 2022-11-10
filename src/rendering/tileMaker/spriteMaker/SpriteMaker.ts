@@ -123,17 +123,15 @@ export default class SpriteMaker extends TileMaker {
       this._angleRegistry.push(angle)
       this._tileHashRegistry.push(hash)
       this._renderQueue.push(index)
-      this._tileTexNeedsUpdate = true
     }
     return index
   }
   render(renderer: WebGLRenderer) {
-    if (this._tileTexNeedsUpdate) {
+    if (this._renderQueue.length > 0) {
       const oldViewport = new Vector4()
       const oldScissor = new Vector4()
       renderer.getViewport(oldViewport)
       renderer.getScissor(oldScissor)
-      this._tileTexNeedsUpdate = false
       this._scene.updateMatrixWorld(true)
       for (const pass of this._passes) {
         renderer.setRenderTarget(this._renderTargets.get(pass)!)

@@ -301,17 +301,34 @@ export default class JITTileSampler {
       // if (keepGrass && item) {
       //   val.flipBit('testObject')
       // }
-      const item = val.has('floor')
-      const item2 = val.has('beam')
-      const item3 = val.has('bricks')
+
+
+      // const item = val.has('floor')
+      // const item2 = val.has('beam')
+      // const item3 = val.has('bricks')
+      // val.value = 0
+      // if (item) {
+      //   val.flipBit('floor')
+      // }
+      // if (item2) {
+      //   val.flipBit('beam')
+      // }
+      // if (item3) {
+      //   val.flipBit('bricks')
+      // }
+
+      const item = val.has('treeMaple')
+      const item2 = val.has('treePine')
+      const item3 = val.has('bush')
+      // val.value = 0
       if (item) {
-        val.flipBit('floor')
+        val.flipBit('treeMaple')
       }
       if (item2) {
-        val.flipBit('beam')
+        val.flipBit('treePine')
       }
       if (item3) {
-        val.flipBit('bricks')
+        val.flipBit('bush')
       }
     }
 
@@ -870,6 +887,7 @@ export default class JITTileSampler {
           }
         }
       }
+      
 
       if (this._offsetY !== this._offsetYOld) {
         let yMin =
@@ -891,6 +909,15 @@ export default class JITTileSampler {
       }
       this._offsetXOld = this._offsetX
       this._offsetYOld = this._offsetY
+    }
+
+    for (let iCol = 0; iCol < this._viewWidthInTiles; iCol++) {
+      for (let iRow = 0; iRow < this._viewHeightInTiles; iRow++) {
+        const x = this._offsetX + iCol
+        const y = this._offsetY + iRow
+        const key = `${x}:${y}`
+        this.dirtyVis.add(key)
+      }
     }
 
     if (this.dirtyVis.size > 0) {

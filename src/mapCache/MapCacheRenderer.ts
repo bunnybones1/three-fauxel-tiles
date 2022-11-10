@@ -16,9 +16,12 @@ import { MaterialPassType } from '../helpers/materials/materialLib'
 import { TileCacheWriterPointMaterial } from '../materials/TileCacheWriterPointMaterial'
 import { wrap } from '../utils/math'
 
-import JITTileSampler from '../tileMaker/JITTileSampler'
+import JITTileSampler from '../rendering/tileMaker/mapTileMaker/JITTileSampler'
 
 export default class MapCacheRenderer {
+  onTileUpdated = (index: number) => {
+    //
+  }
   mapCache: Map<MaterialPassType, WebGLRenderTarget> = new Map()
   mapCacheScene: Scene
   mapCacheCamera: OrthographicCamera
@@ -34,7 +37,7 @@ export default class MapCacheRenderer {
     pixelsPerTile = 32,
     pixelsPerCacheEdge = 1024
   ) {
-    const totalTiles = width * height
+    const totalTiles = width * height * 2
     const viewWidth = width * pixelsPerTile
     const viewHeight = height * pixelsPerTile
     const xyBottomArr = new Uint8Array(totalTiles * 2)

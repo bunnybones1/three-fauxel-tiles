@@ -80,6 +80,8 @@ export default class MapScrollingView {
       pixelsPerCacheEdge
     )
 
+    tileMaker.listenForUpdatedTiles(mapCacheRenderer.onTileUpdated)
+
     const mapWithSpritesCacheRenderer = new MapWithSpritesCacheRenderer(
       mapCacheRenderer,
       viewWidth,
@@ -160,14 +162,14 @@ export default class MapScrollingView {
     if (
       this.jitTileSampler.updateMeta() ||
       this._dirty ||
-      this.jitTileSampler.offsetsDirty
+      this.jitTileSampler.offsetsDirty || true
     ) {
       this._dirty = false
+      this.tileMaker.render(renderer)
       this.jitTileSampler.updateVis(
         this.mapCacheRenderer.tileBottomPointsGeo,
         this.mapCacheRenderer.tileTopPointsGeo
       )
-      this.tileMaker.render(renderer)
       this.mapCacheRenderer.render(renderer)
       this.mapCacheRenderer.tileBottomPointsGeo.drawRange.count = 0
       this.mapCacheRenderer.tileTopPointsGeo.drawRange.count = 0

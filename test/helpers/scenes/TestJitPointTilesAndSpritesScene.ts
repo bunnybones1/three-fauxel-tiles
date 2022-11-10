@@ -109,6 +109,8 @@ class DummyLanternLightController extends DummyLightController {
   }
 }
 
+const debugView = getUrlFlag('debugView')
+
 export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   mapCacheNeedsUpdate: boolean
   dirty = true
@@ -145,7 +147,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     const viewHeight = getUrlInt('viewTiles', 16)
     const pixelsPerTile = __pixelsPerTile
     const pixelsPerCacheEdge = 2048
-    const clipspaceMode = !getUrlFlag('debugView')
+    const clipspaceMode = !debugView
     const passes: lib.MaterialPassType[] = [
       // 'beauty',
       'customColor',
@@ -263,7 +265,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       )
     )
 
-    const allViews = clipspaceMode
+    const allViews = !debugView
       ? [mapScrollingView.mapCacheFinalView]
       : [mapScrollingView.mapCacheFinalView].concat(
           mapScrollingView.mapCachePassViews
@@ -277,7 +279,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       scene.add(mapCacheView)
     }
 
-    if (!clipspaceMode) {
+    if (debugView) {
       for (let i = 0; i < passes.length; i++) {
         const pass = passes[i]
         const mapCacheMaterial = new MeshBasicMaterial({
@@ -297,7 +299,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       for (let i = 0; i < passes.length; i++) {
         const pass = passes[i]
         const tileCacheMaterial = new MeshBasicMaterial({
-          map: mapScrollingView.spriteMaker.getTexture(pass)
+          // map: mapScrollingView.spriteMaker.getTexture(pass)
+          map: mapScrollingView.tileMaker.getTexture(pass)
         })
 
         const tileCachePreview = new Mesh(
@@ -310,9 +313,6 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
         tileCachePreview.scale.multiplyScalar(2)
         scene.add(tileCachePreview)
       }
-    }
-
-    if (!clipspaceMode) {
       const pointLightMaterial = new MeshBasicMaterial({
         map: mapScrollingView.pointLightRenderer.texture,
         transparent: true,
@@ -433,9 +433,13 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   }
   render(renderer: WebGLRenderer, dt: number) {
     this._mapScrollingView.render(renderer, dt)
-    renderer.setRenderTarget(this.mapCacheFinalViewCache)
+    if(!debugView) {
+      renderer.setRenderTarget(this.mapCacheFinalViewCache)
+    }
     super.render(renderer, dt)
-    renderer.setRenderTarget(null)
-    renderer.render(this.finalViewCacheScene, this.finalViewCacheCamera)
+    if(!debugView) {
+      renderer.setRenderTarget(null)
+      renderer.render(this.finalViewCacheScene, this.finalViewCacheCamera)
+    }
   }
 }

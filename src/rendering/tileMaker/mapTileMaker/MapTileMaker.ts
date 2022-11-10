@@ -149,6 +149,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'treeMapleStump',
     'treeMapleStumpMature'
   ] as const
+  private _listenersForUpdatedTiles: ((index: number) => void)[] = []
   constructor(
     pixelsPerTile = 32,
     pixelsPerCacheEdge = 2048,
@@ -950,19 +951,22 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
   }
 
   render(renderer: WebGLRenderer) {
-    if (this._tileTexNeedsUpdate) {
+    if (this._renderQueue.length > 0) {
       const oldViewport = new Vector4()
       const oldScissor = new Vector4()
       renderer.getViewport(oldViewport)
       renderer.getScissor(oldScissor)
-      this._tileTexNeedsUpdate = false
       this._scene.updateMatrixWorld(true)
 
-      for (const pass of this._passes) {
-        renderer.setRenderTarget(this._renderTargets.get(pass)!)
-        const p = this._pixelsPerTile / renderer.getPixelRatio()
-        const depthPass = pass === 'customTopDownHeight'
-        for (const index of this._renderQueue) {
+      let duration = 0
+      let count = 0
+      for (const index of this._renderQueue) {
+        count++
+        const startTime = performance.now()
+        for (const pass of this._passes) {
+          renderer.setRenderTarget(this._renderTargets.get(pass)!)
+          const p = this._pixelsPerTile / renderer.getPixelRatio()
+          const depthPass = pass === 'customTopDownHeight'
           const iCol = index % this._tilesPerEdge
           const iRow = ~~(index / this._tilesPerEdge)
           const visualProps = this._tileRegistry[index]
@@ -994,12 +998,26 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
               : this._cameraTiltedBottom
           )
         }
+        duration += performance.now() - startTime
+        if(duration > 100) {
+          break
+        }
+        // this.notifyThatTileIsReady(index)
       }
+      console.log(duration)
       renderer.setViewport(oldViewport)
       renderer.setScissor(oldScissor)
       renderer.setRenderTarget(null)
-      this._renderQueue.length = 0
+      this._renderQueue.splice(0, count)
     }
+  }
+  notifyThatTileIsReady(index: number) {
+    for (const l of this._listenersForUpdatedTiles) {
+      l(index)
+    }  
+  }
+  listenForUpdatedTiles(listener: (index:number) => void) {
+    this._listenersForUpdatedTiles.push(listener)
   }
   update(dt: number) {
     //
