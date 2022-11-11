@@ -80,7 +80,20 @@ export default class MapScrollingView {
       pixelsPerCacheEdge
     )
 
-    tileMaker.listenForUpdatedTiles(mapCacheRenderer.onTileUpdated)
+    tileMaker.listenForMadeTiles(jitTileSampler.onTileMade)
+    tileMaker.isIndexStillOnScreen = (index: number) => {
+      for (let iCol = 0; iCol < viewWidth; iCol++) {
+        for (let iRow = 0; iRow < viewHeight; iRow++) {
+          const x = this.offsetX + iCol
+          const y = this.offsetY + iRow
+          const sampledVis = jitTileSampler.sampleVisIds(x, y)
+          if (index === sampledVis.idBottom || index === sampledVis.idTop) {
+            return true
+          }
+        }
+      }
+      return false
+    }
 
     const mapWithSpritesCacheRenderer = new MapWithSpritesCacheRenderer(
       mapCacheRenderer,
@@ -159,13 +172,13 @@ export default class MapScrollingView {
       this._noiseMaker.render(renderer)
       this._noiseReady = true
     }
+    this.tileMaker.render(renderer)
     if (
       this.jitTileSampler.updateMeta() ||
       this._dirty ||
-      this.jitTileSampler.offsetsDirty || true
+      this.jitTileSampler.dirty
     ) {
       this._dirty = false
-      this.tileMaker.render(renderer)
       this.jitTileSampler.updateVis(
         this.mapCacheRenderer.tileBottomPointsGeo,
         this.mapCacheRenderer.tileTopPointsGeo

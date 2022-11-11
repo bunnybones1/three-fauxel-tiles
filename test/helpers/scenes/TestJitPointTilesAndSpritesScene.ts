@@ -433,11 +433,11 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   }
   render(renderer: WebGLRenderer, dt: number) {
     this._mapScrollingView.render(renderer, dt)
-    if(!debugView) {
+    if (!debugView) {
       renderer.setRenderTarget(this.mapCacheFinalViewCache)
     }
     super.render(renderer, dt)
-    if(!debugView) {
+    if (!debugView) {
       renderer.setRenderTarget(null)
       renderer.render(this.finalViewCacheScene, this.finalViewCacheCamera)
     }

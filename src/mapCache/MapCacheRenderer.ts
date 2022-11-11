@@ -17,11 +17,9 @@ import { TileCacheWriterPointMaterial } from '../materials/TileCacheWriterPointM
 import { wrap } from '../utils/math'
 
 import JITTileSampler from '../rendering/tileMaker/mapTileMaker/JITTileSampler'
+import NamedBitsInBytes from '../helpers/utils/NamedBitsInBytes'
 
 export default class MapCacheRenderer {
-  onTileUpdated = (index: number) => {
-    //
-  }
   mapCache: Map<MaterialPassType, WebGLRenderTarget> = new Map()
   mapCacheScene: Scene
   mapCacheCamera: OrthographicCamera
@@ -37,7 +35,7 @@ export default class MapCacheRenderer {
     pixelsPerTile = 32,
     pixelsPerCacheEdge = 1024
   ) {
-    const totalTiles = width * height * 2
+    const totalTiles = width * height
     const viewWidth = width * pixelsPerTile
     const viewHeight = height * pixelsPerTile
     const xyBottomArr = new Uint8Array(totalTiles * 2)
@@ -45,11 +43,23 @@ export default class MapCacheRenderer {
     const idBottomArr = new Uint16Array(totalTiles)
     const idTopArr = new Uint16Array(totalTiles)
 
+    //nothingness will be the default visuals for queued tiles
+    const nothingnessVisProps = new NamedBitsInBytes(
+      new Uint8Array(
+        Math.ceil(
+          _jitTileSampler.tileMaker.visualPropertyLookupStrings.length / 8
+        )
+      ),
+      _jitTileSampler.tileMaker.visualPropertyLookupStrings
+    )
+    nothingnessVisProps.enableBit('nothingness')
+    _jitTileSampler.sampleVisIdsByVisProps(nothingnessVisProps)
+
     for (let i = 0; i < totalTiles; i++) {
       const x = (i % width) + _jitTileSampler.offsetX
       const y = ~~(i / width) - _jitTileSampler.offsetY
       const i2 = i * 2
-      const sample = _jitTileSampler.sampleVis(x, y)
+      const sample = _jitTileSampler.sampleVisIds(x, y)
       xyBottomArr[i2] = wrap(x, 0, width)
       xyBottomArr[i2 + 1] = wrap(y, 0, height)
       xyTopArr[i2] = wrap(x, 0, width)

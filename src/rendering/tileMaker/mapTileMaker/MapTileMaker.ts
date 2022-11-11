@@ -43,6 +43,7 @@ import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
 export default class MapTileMaker extends DoubleCachedTileMaker {
   visualPropertyLookupStrings = [
     'layer2',
+    'nothingness',
     'floor',
     'beamCenter',
     'beamN',
@@ -150,12 +151,35 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'treeMapleStumpMature'
   ] as const
   private _listenersForUpdatedTiles: ((index: number) => void)[] = []
+  public isIndexStillOnScreen: ((index: number) => boolean) | undefined
   constructor(
     pixelsPerTile = 32,
     pixelsPerCacheEdge = 2048,
     passes: MaterialPassType[] = ['beauty']
   ) {
     const dummy = memoize(() => new Object3D())
+
+    const cyberGlowMat = getMeshMaterial('cyberGlow')
+    const cyberPanelMat = getMeshMaterial('cyberPanel')
+    const nothingness = () => {
+      const obj = new Mesh(new BoxBufferGeometry(32, 2, 32), cyberGlowMat)
+      obj.position.y = -1
+
+      const protoPanel = new Mesh(
+        getChamferedBoxGeometry(15, 4, 15, 1),
+        cyberPanelMat
+      )
+      for (let ix = -1; ix <= 1; ix += 2) {
+        for (let iy = -1; iy <= 1; iy += 2) {
+          const panel = protoPanel.clone()
+          obj.add(panel)
+          panel.position.x = 8 * ix + 0.5
+          panel.position.z = 8 * iy + 0.5
+        }
+      }
+
+      return obj
+    }
 
     const brickMat = getMeshMaterial('brick')
     const mortarMat = getMeshMaterial('mortar')
@@ -840,6 +864,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
 
     const indexedMeshes: (() => Object3D)[] = [
       dummy,
+      nothingness,
       floor,
       beamCenter,
       beamN,
@@ -956,21 +981,20 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       const oldScissor = new Vector4()
       renderer.getViewport(oldViewport)
       renderer.getScissor(oldScissor)
-      this._scene.updateMatrixWorld(true)
-
+      this._scene.updateMatrixWorld()
       let duration = 0
       let count = 0
       for (const index of this._renderQueue) {
         count++
         const startTime = performance.now()
+        const iCol = index % this._tilesPerEdge
+        const iRow = ~~(index / this._tilesPerEdge)
+        const visualProps = this._tileRegistry[index]
+        const layer2 = !!(visualProps[0] & 1)
         for (const pass of this._passes) {
           renderer.setRenderTarget(this._renderTargets.get(pass)!)
           const p = this._pixelsPerTile / renderer.getPixelRatio()
           const depthPass = pass === 'customTopDownHeight'
-          const iCol = index % this._tilesPerEdge
-          const iRow = ~~(index / this._tilesPerEdge)
-          const visualProps = this._tileRegistry[index]
-          const layer2 = !!(visualProps[0] & 1)
           if (layer2 && depthPass) {
             continue
           }
@@ -999,10 +1023,10 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
           )
         }
         duration += performance.now() - startTime
-        if(duration > 100) {
+        this.notifyThatNewTileIsMade(index)
+        if (duration > 100) {
           break
         }
-        // this.notifyThatTileIsReady(index)
       }
       console.log(duration)
       renderer.setViewport(oldViewport)
@@ -1011,12 +1035,12 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       this._renderQueue.splice(0, count)
     }
   }
-  notifyThatTileIsReady(index: number) {
+  notifyThatNewTileIsMade(index: number) {
     for (const l of this._listenersForUpdatedTiles) {
       l(index)
-    }  
+    }
   }
-  listenForUpdatedTiles(listener: (index:number) => void) {
+  listenForMadeTiles(listener: (index: number) => void) {
     this._listenersForUpdatedTiles.push(listener)
   }
   update(dt: number) {
