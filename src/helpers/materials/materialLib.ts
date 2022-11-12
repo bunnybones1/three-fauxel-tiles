@@ -26,6 +26,9 @@ const CuratedMaterialTypeStrings = [
   'ground',
   'brick',
   'gold',
+  'silver',
+  'iron',
+  'copper',
   'mortar',
   'drywall',
   'floor',
@@ -88,6 +91,24 @@ export const standardMaterialParamLib: {
     color: new Color(0.5, 0.4, 0),
     metalness: 1,
     emissive: new Color(0.05, 0, 0)
+  },
+  silver: {
+    roughness: 0.3,
+    color: new Color(0.5, 0.5, 0.5),
+    metalness: 1,
+    emissive: new Color(0, 0, 0)
+  },
+  iron: {
+    roughness: 0.9,
+    color: new Color(0.5, 0.1, 0),
+    metalness: 1,
+    emissive: new Color(0, 0, 0)
+  },
+  copper: {
+    roughness: 0.9,
+    color: new Color(0.1, 0.5, 0.2),
+    metalness: 1,
+    emissive: new Color(0, 0, 0)
   },
   ironBlack: {
     roughness: 0.1,

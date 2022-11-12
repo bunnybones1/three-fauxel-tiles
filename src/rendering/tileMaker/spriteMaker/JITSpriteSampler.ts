@@ -1,6 +1,6 @@
 import { BufferGeometry } from 'three'
-import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
-import ThreshNoiseHelper2D from '../../../helpers/utils/ThreshNoiseHelper2D'
+import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
+import StephHelper2D from '../../../helpers/utils/StepHelper2D'
 import { wrap } from '../../../utils/math'
 
 import SpriteMaker from './SpriteMaker'
@@ -49,7 +49,7 @@ export default class JITTileSampler {
   }
   metaPropertyLookup: MetaSprite[]
   visualPropertyLookup: string[]
-  metaNoiseGenerators: ThreshNoiseHelper2D[]
+  metaNoiseGenerators: StephHelper2D[]
   bytesPerTile: number
   localMetaProps: number
   visProps: Uint8Array
@@ -78,12 +78,12 @@ export default class JITTileSampler {
     this.bytesPerTile = Math.ceil(this.visualPropertyLookup.length / 8)
 
     const seed = 1
-    const bodyNoise = ThreshNoiseHelper2D.simple(0.1, 0, 0, 0, seed)
-    const body2Noise = ThreshNoiseHelper2D.simple(0.08, -100, -100, 0, seed)
-    const hatNoise = ThreshNoiseHelper2D.simple(0.06, -50, -50, 0.5, seed)
-    const goldNoise = ThreshNoiseHelper2D.simple(0.16, 50, -50, 0, seed)
-    const swordNoise = ThreshNoiseHelper2D.simple(0.26, 50, 50, 0, seed)
-    const shieldNoise = ThreshNoiseHelper2D.simple(0.36, 50, 150, 0, seed)
+    const bodyNoise = simpleThreshNoise(0.1, 0, 0, 0, seed)
+    const body2Noise = simpleThreshNoise(0.08, -100, -100, 0, seed)
+    const hatNoise = simpleThreshNoise(0.06, -50, -50, 0.5, seed)
+    const goldNoise = simpleThreshNoise(0.16, 50, -50, 0, seed)
+    const swordNoise = simpleThreshNoise(0.26, 50, 50, 0, seed)
+    const shieldNoise = simpleThreshNoise(0.36, 50, 150, 0, seed)
     this.metaNoiseGenerators = [
       bodyNoise,
       body2Noise,
@@ -102,8 +102,7 @@ export default class JITTileSampler {
     this.localMetaProps = this.metaNoiseGenerators.reduce((accum, noise, j) => {
       return (
         accum +
-        (noise.getTreshold(wrap(id * 37, -100, 100), wrap(id * 124, -70, 70)) <<
-          j)
+        (noise.getValue(wrap(id * 37, -100, 100), wrap(id * 124, -70, 70)) << j)
       )
     }, 0)
     return this.validateLocalMeta(id)

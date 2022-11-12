@@ -1,9 +1,12 @@
 import { BufferGeometry } from 'three'
 import { initOffset } from '../../../constants'
+import AdditiveGroupHelper2D from '../../../helpers/utils/AdditiveGroupHelper2D'
+import ClampHelper2D from '../../../helpers/utils/ClampHelper2D'
+import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
 import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
-import ThreshNoiseHelper2D from '../../../helpers/utils/ThreshNoiseHelper2D'
+import StephHelper2D from '../../../helpers/utils/StepHelper2D'
 import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
 
@@ -23,6 +26,9 @@ const metaTileStrings = [
   'rockyGround',
   'rocks',
   'goldOreForRocks',
+  'silverOreForRocks',
+  'ironOreForRocks',
+  'copperOreForRocks',
   'harvested',
   'treePine',
   'maturePlant',
@@ -68,7 +74,7 @@ export default class JITTileSampler {
   set tileMaker(value: MapTileMaker) {
     throw new Error('Cannot change tileMaker during runtime')
   }
-  metaNoiseGenerators: ThreshNoiseHelper2D[]
+  metaNoiseGenerators: StephHelper2D[]
   bytesPerTile: number
   // localMetaProps: number
   // visProps: Uint8Array
@@ -96,53 +102,60 @@ export default class JITTileSampler {
     )
 
     const seed = 1
-    const floorNoise = ThreshNoiseHelper2D.simple(0.1, 0, 0, 0.5, seed)
-    const beamNoise = ThreshNoiseHelper2D.simple(0.08, -100, -100, 0.4, seed)
-    const bricksNoise = ThreshNoiseHelper2D.simple(0.06, -50, -50, 0.5, seed)
-    const drywallNoise = ThreshNoiseHelper2D.simple(0.05, 20, 20, 0.5, seed)
-    const grassNoise = ThreshNoiseHelper2D.simple(0.15, 100, 200, -0.2, seed)
-    const bushNoise = ThreshNoiseHelper2D.simple(0.3, 300, 200, 0.25, seed)
-    const goldNoise = ThreshNoiseHelper2D.simple(3, -300, 200, 0.75, seed)
-    const lampPostNoise = ThreshNoiseHelper2D.simple(3, -1300, 200, 0.75, seed)
-    const testObjectNoise = ThreshNoiseHelper2D.simple(
-      3,
-      -100,
-      -300,
-      0.75,
-      seed
+    const floorNoise = simpleThreshNoise(0.1, 0, 0, 0.5, seed)
+    const beamNoise = simpleThreshNoise(0.08, -100, -100, 0.4, seed)
+    const bricksNoise = simpleThreshNoise(0.06, -50, -50, 0.5, seed)
+    const drywallNoise = simpleThreshNoise(0.05, 20, 20, 0.5, seed)
+    const grassNoise = new StephHelper2D(
+      new AdditiveGroupHelper2D([
+        new NoiseHelper2D(0.15, 100, 200, seed),
+        new NoiseHelper2D(0.01, 100, 200, seed)
+      ]),
+      -0.5
     )
-    const pyramidNoise = ThreshNoiseHelper2D.simple(3, -204, -121, 0.85, seed)
-    const rockyGroundNoise = ThreshNoiseHelper2D.simple(
-      3,
-      204,
-      -121,
-      0.25,
-      seed
+    const bushNoise = simpleThreshNoise(0.3, 300, 200, 0.25, seed)
+    const goldNoise = simpleThreshNoise(3, -300, 200, 0.75, seed)
+    const lampPostNoise = simpleThreshNoise(3, -1300, 200, 0.75, seed)
+    const testObjectNoise = simpleThreshNoise(3, -100, -300, 0.75, seed)
+    const pyramidNoise = simpleThreshNoise(3, -204, -121, 0.85, seed)
+    const rockyGroundNoise = simpleThreshNoise(3, 204, -121, 0.25, seed)
+    const rocksNoiseBase = new AdditiveGroupHelper2D([
+      new NoiseHelper2D(0.01, 604, -121, seed),
+      new NoiseHelper2D(0.05, 604, -121, seed, 0.5)
+    ])
+    const rocksNoise = new StephHelper2D(rocksNoiseBase, 0.7)
+    const goldOreForRocksNoise = new StephHelper2D(
+      new AdditiveGroupHelper2D([
+        new ClampHelper2D(rocksNoiseBase),
+        new NoiseHelper2D(0.8, 604, -121, seed, 0.2, -0.1)
+      ]),
+      1.07
     )
-    const rocksNoise = ThreshNoiseHelper2D.simple(0.05, 604, -121, 0.7, seed)
-    const goldOreForRocksNoise = new ThreshNoiseHelper2D(
-      [
-        new NoiseHelper2D(0.05, 604, -121, seed),
-        new NoiseHelper2D(0.8, 604, -121, seed, 0.2)
-      ],
+    const silverOreForRocksNoise = new StephHelper2D(
+      new AdditiveGroupHelper2D([
+        new ClampHelper2D(rocksNoiseBase),
+        new NoiseHelper2D(0.8, -604, -121, seed, 0.2, -0.1)
+      ]),
+      1.05
+    )
+    const ironOreForRocksNoise = new StephHelper2D(
+      new AdditiveGroupHelper2D([
+        new ClampHelper2D(rocksNoiseBase),
+        new NoiseHelper2D(0.8, 404, 121, seed, 0.2, -0.15)
+      ]),
+      0.95
+    )
+    const copperOreForRocksNoise = new StephHelper2D(
+      new AdditiveGroupHelper2D([
+        new ClampHelper2D(rocksNoiseBase),
+        new NoiseHelper2D(0.8, 504, 121, seed, 0.2, -0.15)
+      ]),
       0.97
     )
-    const harvestedNoise = ThreshNoiseHelper2D.simple(
-      0.08,
-      -500,
-      -100,
-      0.35,
-      seed
-    )
-    const treePineNoise = ThreshNoiseHelper2D.simple(0.3, -200, -400, 0.5, seed)
-    const plantMatureNoise = ThreshNoiseHelper2D.simple(
-      3,
-      -340,
-      -460,
-      0.25,
-      seed
-    )
-    const treeMapleNoise = ThreshNoiseHelper2D.simple(0.3, 200, 400, 0.6, seed)
+    const harvestedNoise = simpleThreshNoise(0.08, -500, -100, 0.35, seed)
+    const treePineNoise = simpleThreshNoise(0.3, -200, -400, 0.5, seed)
+    const plantMatureNoise = simpleThreshNoise(3, -340, -460, 0.25, seed)
+    const treeMapleNoise = simpleThreshNoise(0.3, 200, 400, 0.6, seed)
     this.metaNoiseGenerators = [
       floorNoise,
       beamNoise,
@@ -157,6 +170,9 @@ export default class JITTileSampler {
       rockyGroundNoise,
       rocksNoise,
       goldOreForRocksNoise,
+      silverOreForRocksNoise,
+      ironOreForRocksNoise,
+      copperOreForRocksNoise,
       harvestedNoise,
       treePineNoise,
       plantMatureNoise,
@@ -197,7 +213,7 @@ export default class JITTileSampler {
     }
     const metaProps = new NamedBitsInNumber(
       this.metaNoiseGenerators.reduce((accum, noise, j) => {
-        return accum + (noise.getTreshold(x, y) << j)
+        return accum + (noise.getValue(x, y) << j)
       }, 0),
       metaTileStrings
     )
@@ -208,6 +224,21 @@ export default class JITTileSampler {
     const key = x + ':' + y
 
     // this.localMetaProps = this.metaNoiseGenerators[2].getTreshold(x, y, 0.5) << 4
+
+    if (Math.abs(x) > 10 || Math.abs(y) > 10) {
+      val.disableBit('floor')
+      val.disableBit('bricks')
+      val.disableBit('beam')
+      val.disableBit('drywall')
+      val.disableBit('lampPost')
+      val.disableBit('pyramid')
+      val.disableBit('testObject')
+      val.disableBit('goldPile')
+    }
+
+    if (Math.abs(x) > 16 || Math.abs(y) > 16) {
+      val.disableBit('harvested')
+    }
 
     if (!val.has('floor') && val.has('beam')) {
       val.flipBit('beam')
@@ -270,10 +301,22 @@ export default class JITTileSampler {
     if (val.has('rocks')) {
       const wasHarvested = val.has('harvested')
       const hasGold = val.has('goldOreForRocks')
+      const hasSilver = val.has('silverOreForRocks')
+      const hasIron = val.has('ironOreForRocks')
+      const hasCopper = val.has('copperOreForRocks')
       val.value = 0
       val.flipBit('rocks')
-      if (hasGold) {
+      if (hasGold && !hasCopper && !hasIron) {
         val.flipBit('goldOreForRocks')
+      }
+      if (hasSilver && !hasCopper && !hasIron) {
+        val.flipBit('silverOreForRocks')
+      }
+      if (hasIron) {
+        val.flipBit('ironOreForRocks')
+      }
+      if (hasCopper) {
+        val.flipBit('copperOreForRocks')
       }
       if (wasHarvested) {
         val.flipBit('harvested')
@@ -554,6 +597,9 @@ export default class JITTileSampler {
       const isRocksC = metaProps.hasFast(propMaskRocks)
       const isHarvestedC = metaProps.hasFast(propMaskHarvested)
       const isGoldOre = metaProps.has('goldOreForRocks')
+      const isSilverOre = metaProps.has('silverOreForRocks')
+      const isIronOre = metaProps.has('ironOreForRocks')
+      const isCopperOre = metaProps.has('copperOreForRocks')
       if (isRocksC) {
         const isRocksN = metaPropsN.hasFast(propMaskRocks)
         const isHarvestedN = metaPropsN.hasFast(propMaskHarvested)
@@ -638,9 +684,27 @@ export default class JITTileSampler {
             if (isGoldOre) {
               visProps.enableBit('goldOreForBigRocks')
             }
+            if (isSilverOre) {
+              visProps.enableBit('silverOreForBigRocks')
+            }
+            if (isIronOre) {
+              visProps.enableBit('ironOreForBigRocks')
+            }
+            if (isCopperOre) {
+              visProps.enableBit('copperOreForBigRocks')
+            }
           } else {
             if (isGoldOre) {
               visProps.enableBit('goldOreForRocks')
+            }
+            if (isSilverOre) {
+              visProps.enableBit('silverOreForRocks')
+            }
+            if (isIronOre) {
+              visProps.enableBit('ironOreForRocks')
+            }
+            if (isCopperOre) {
+              visProps.enableBit('copperOreForRocks')
             }
           }
         }

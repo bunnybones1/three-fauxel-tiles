@@ -167,6 +167,10 @@ export default class PointLightRenderer {
       renderer.setRenderTarget(null)
       return true
     } else {
+      renderer.setRenderTarget(this._renderTarget)
+      renderer.setClearColor(COLOR_BLACK, 1)
+      renderer.clear(true, true, false)
+      renderer.setRenderTarget(null)
       return false
     }
   }

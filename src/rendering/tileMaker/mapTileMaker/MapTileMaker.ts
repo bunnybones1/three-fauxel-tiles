@@ -107,6 +107,12 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'rocksNW',
     'goldOreForRocks',
     'goldOreForBigRocks',
+    'silverOreForRocks',
+    'silverOreForBigRocks',
+    'ironOreForRocks',
+    'ironOreForBigRocks',
+    'copperOreForRocks',
+    'copperOreForBigRocks',
     'rockCrumbsC',
     'rockCrumbsN',
     'rockCrumbsNE',
@@ -535,6 +541,9 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     }
 
     const goldMat = getMeshMaterial('gold')
+    const silverMat = getMeshMaterial('silver')
+    const ironMat = getMeshMaterial('iron')
+    const copperMat = getMeshMaterial('copper')
     const goldChunkGeo = new FibonacciSphereGeometry(4, 17)
     const goldPile = () => makeGoldPile(goldChunkGeo, goldMat)
 
@@ -638,6 +647,15 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
 
     const goldOreForRocks = () => makeRocks(goldMat, 0, 2)
     const goldOreForBigRocks = () => makeRocks(goldMat, 10, 2)
+
+    const silverOreForRocks = () => makeRocks(silverMat, 0, 2)
+    const silverOreForBigRocks = () => makeRocks(silverMat, 10, 2)
+
+    const ironOreForRocks = () => makeRocks(ironMat, 0, 2)
+    const ironOreForBigRocks = () => makeRocks(ironMat, 10, 2)
+
+    const copperOreForRocks = () => makeRocks(copperMat, 0, 2)
+    const copperOreForBigRocks = () => makeRocks(copperMat, 10, 2)
 
     const rockCrumbsA = memoize(() => makeRockCrumbs(rocksMat))
     const rockCrumbsH = memoize(() => makeRockCrumbs(rocksMat))
@@ -971,6 +989,12 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       rocksNW,
       goldOreForRocks,
       goldOreForBigRocks,
+      silverOreForRocks,
+      silverOreForBigRocks,
+      ironOreForRocks,
+      ironOreForBigRocks,
+      copperOreForRocks,
+      copperOreForBigRocks,
       rockCrumbsC,
       rockCrumbsN,
       rockCrumbsNE,
