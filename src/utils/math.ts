@@ -190,6 +190,10 @@ export function pixelLengthOnScreen(a: Vector3, b: Vector3, camera: Camera) {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
 }
 
+export function length(x: number, y: number) {
+  return Math.sqrt(x * x + y * y)
+}
+
 const phi = (Math.sqrt(5) + 1) * 0.5 - 1
 const ga = phi * Math.PI * 2
 export function pointOnSphereFibonacci(

@@ -2,6 +2,7 @@ import {
   BoxBufferGeometry,
   Mesh,
   Object3D,
+  PlaneBufferGeometry,
   SphereGeometry,
   TorusKnotBufferGeometry,
   Vector4,
@@ -40,6 +41,11 @@ import { makeBrickWall } from '../../../meshes/factoryBrickWall'
 import TileMaker from '../TileMaker'
 import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
 import { mergeMeshes } from '../../../utils/mergeMeshes'
+import { Vector3 } from 'three'
+import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
+import { length } from '../../../utils/math'
+
+const __tempVec3 = new Vector3()
 
 export default class MapTileMaker extends DoubleCachedTileMaker {
   visualPropertyLookupStrings = [
@@ -221,9 +227,52 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     }
 
     const ground = () => {
-      const obj = new Mesh(new BoxBufferGeometry(32, 2, 32), groundMat)
-      obj.position.y = -1
-      return obj
+      const basis = 32
+      function makeProto(seed: number, scale: number, z = 0) {
+        const geo = new PlaneBufferGeometry(basis, basis, basis, basis)
+        const posAttr = geo.attributes.position
+        const posArr = posAttr.array
+        const noise = new NoiseHelper2D(scale, undefined, undefined, seed)
+        for (let i = 0; i < posAttr.count; i++) {
+          const i3 = i * 3
+          __tempVec3.fromArray(posArr, i3)
+          __tempVec3.z +=
+            noise.getValue(__tempVec3.x, __tempVec3.y) * 0.25 +
+            1 +
+            z -
+            length(__tempVec3.x, __tempVec3.y) / basis
+          __tempVec3.toArray(posArr, i3)
+        }
+        geo.computeVertexNormals()
+        const objProto = new Mesh(geo, groundMat)
+        objProto.rotation.x = -Math.PI * 0.5
+        return objProto
+      }
+      const objProto = makeProto(0, 0.2 + 0.15, 0.35)
+      const objProtoH = makeProto(1, 0.2 + 0.2, 0.15)
+      const objProtoV = makeProto(2, 0.2 + 0.2)
+      const objProtoC = makeProto(3, 0.2 + 0.15)
+      const pivot = new Object3D()
+      function addGround(proto: Mesh, x: number, y: number) {
+        const obj = proto.clone()
+        obj.position.set(16 * x, 0, 16 * y)
+        pivot.add(obj)
+      }
+      addGround(objProto, 0, 0)
+      addGround(objProtoH, -1, 0)
+      addGround(objProtoH, 1, 0)
+      addGround(objProtoV, 0, -1)
+      addGround(objProtoV, 0, 1)
+      addGround(objProtoC, -1, -1)
+      addGround(objProtoC, 1, -1)
+      addGround(objProtoC, -1, 1)
+      addGround(objProtoC, 1, 1)
+      // obj.position.y = -1
+      // for (let ix = -1; ix <= 1; ix++) {
+      //   for (let iy = -1; iy <= 1; iy++) {
+      //   }
+      // }
+      return pivot
     }
 
     //brick walls

@@ -37,7 +37,7 @@ export default class GrassGeometry extends BufferGeometry {
       )
       posA.copy(pos).add(offset)
       posB.copy(pos).sub(offset)
-      pos.y += detRandGrass(1, 3) * grassScale
+      pos.y += detRandGrass(3, 5) * grassScale
       posA.toArray(posArr, i9)
       pos.toArray(posArr, i9 + 3)
       posB.toArray(posArr, i9 + 6)
