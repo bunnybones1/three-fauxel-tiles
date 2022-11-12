@@ -39,6 +39,7 @@ import { memoize } from '../../../utils/memoizer'
 import { makeBrickWall } from '../../../meshes/factoryBrickWall'
 import TileMaker from '../TileMaker'
 import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
+import { mergeMeshes } from '../../../utils/mergeMeshes'
 
 export default class MapTileMaker extends DoubleCachedTileMaker {
   visualPropertyLookupStrings = [
@@ -970,7 +971,9 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       treeMapleMatureNW,
       treeMapleStump,
       treeMapleStumpMature
-    ]
+    ].map((f) => {
+      return () => mergeMeshes(f())
+    })
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)
   }

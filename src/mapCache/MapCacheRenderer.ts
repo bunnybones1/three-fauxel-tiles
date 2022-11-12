@@ -64,8 +64,8 @@ export default class MapCacheRenderer {
       xyBottomArr[i2 + 1] = wrap(y, 0, height)
       xyTopArr[i2] = wrap(x, 0, width)
       xyTopArr[i2 + 1] = wrap(y + 1, 0, height)
-      idBottomArr[i] = sample.idBottom
-      idTopArr[i] = sample.idTop
+      idBottomArr[i] = 0
+      idTopArr[i] = 1
     }
     const tileBottomPointsGeo = new BufferGeometry()
     const xyBottomAttr = new Uint8BufferAttribute(xyBottomArr, 2)

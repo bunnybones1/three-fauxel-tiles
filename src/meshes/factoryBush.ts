@@ -2,6 +2,7 @@ import { Material, Mesh, Object3D } from 'three'
 import { verticalScale } from '../constants'
 import FibonacciSphereGeometry from '../geometries/FibonacciSphereGeometry'
 import { longLatToXYZ, pointOnSphereFibonacci } from '../utils/math'
+import { mergeMeshes } from '../utils/mergeMeshes'
 import { detRandGraphics } from '../utils/random'
 
 let bushGeoA3: FibonacciSphereGeometry | undefined
@@ -86,5 +87,5 @@ export function makeRecursiveBush(
   bushBase.add(bushC)
   bushBase.scale.y *= verticalScale
   bushC.position.y += bushProps.y
-  return bushBase
+  return mergeMeshes(bushBase)
 }

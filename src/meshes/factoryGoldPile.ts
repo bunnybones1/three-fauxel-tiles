@@ -1,5 +1,6 @@
 import { BufferGeometry, Material, Mesh, Object3D, Vector3 } from 'three'
 import { longLatToXYZ, pointOnSphereFibonacci, rand2 } from '../utils/math'
+import { mergeMeshes } from '../utils/mergeMeshes'
 
 export function makeGoldPile(
   goldChunkGeo: BufferGeometry,
@@ -22,5 +23,5 @@ export function makeGoldPile(
     }
   }
   goldPile.position.y += y
-  return goldPile
+  return mergeMeshes(goldPile)
 }

@@ -10,6 +10,7 @@ import {
   getCachedChamferedBoxGeometry,
   getChamferedBoxGeometry
 } from '../utils/geometry'
+import { mergeMeshes } from '../utils/mergeMeshes'
 import { detRandTrees } from '../utils/random'
 
 export function makeTreePineStumpMature(matBark: Material, matWood: Material) {
@@ -45,7 +46,7 @@ export function makeTreePineStumpMature(matBark: Material, matWood: Material) {
     bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
     pivot.add(bark)
   }
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 export function makeTreePineStump(matBark: Material, matWood: Material) {
@@ -81,7 +82,7 @@ export function makeTreePineStump(matBark: Material, matWood: Material) {
     bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
     pivot.add(bark)
   }
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 export function makeTreePineMature(
@@ -161,7 +162,7 @@ export function makeTreePineMature(
       // branch.rotation.order = 'XZY'
     }
   }
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 export function makeTreePine(matBark: Material, matLeaf: Material) {
@@ -245,7 +246,7 @@ export function makeTreePine(matBark: Material, matLeaf: Material) {
     newTopper.scale.setScalar(0.5 + i * 0.3)
     topperPivot.add(newTopper)
   }
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 let __needleGeo: BufferGeometry | undefined

@@ -11,6 +11,7 @@ import {
   getCachedChamferedBoxGeometry,
   getChamferedBoxGeometry
 } from '../utils/geometry'
+import { mergeMeshes } from '../utils/mergeMeshes'
 import { detRandTreesMaple } from '../utils/random'
 
 export function makeTreeMapleStumpMature(matBark: Material, matWood: Material) {
@@ -47,7 +48,7 @@ export function makeTreeMapleStumpMature(matBark: Material, matWood: Material) {
     bark.rotation.z += detRandTreesMaple(-tiltRange, tiltRange)
     pivot.add(bark)
   }
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 export function makeTreeMapleStump(matBark: Material, matWood: Material) {
@@ -84,7 +85,7 @@ export function makeTreeMapleStump(matBark: Material, matWood: Material) {
     bark.rotation.z += detRandTreesMaple(-tiltRange, tiltRange)
     pivot.add(bark)
   }
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 export function makeTreeMapleMature(
@@ -127,7 +128,7 @@ export function makeTreeMapleMature(
     pivot.add(bark)
   }
 
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 export function makeTreeMaple(matBark: Material, matLeaf: Material) {
@@ -197,7 +198,7 @@ export function makeTreeMaple(matBark: Material, matLeaf: Material) {
   pivot.rotation.y = Math.PI * -0.4
   pivot.scale.multiplyScalar(0.75)
   pivot.scale.y *= 0.7
-  return pivot
+  return mergeMeshes(pivot)
 }
 
 const __twigGeos = new Map<string, CylinderBufferGeometry>()

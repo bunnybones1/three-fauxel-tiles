@@ -1045,9 +1045,10 @@ export default class JITTileSampler {
           ? sampleCenter.idTop
           : 0
 
-        if (idBottomArr[i] === 0) {
-          debugger
-        }
+        // todo find out why some tiles stay as cyberPanels AKA 0
+        // if (idBottomArr[i] === 0) {
+        //   debugger
+        // }
 
         bottomPointsGeo.drawRange.count += 2
         topPointsGeo.drawRange.count += 2

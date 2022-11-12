@@ -1,5 +1,6 @@
 import { Material, Mesh, Object3D, Vector3 } from 'three'
 import { getCachedChamferedBoxGeometry } from '../utils/geometry'
+import { mergeMeshes } from '../utils/mergeMeshes'
 import { detRandRocks } from '../utils/random'
 
 const tiltRange = 0.2
@@ -29,5 +30,5 @@ export function makeRocks(mat: Material, scale = 0, chamfer = 0.5) {
     pivot.add(rocks)
   }
   pivot.rotation.y = Math.PI * -0.1
-  return pivot
+  return mergeMeshes(pivot)
 }

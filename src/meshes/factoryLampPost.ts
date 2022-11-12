@@ -6,6 +6,7 @@ import {
   TorusBufferGeometry
 } from 'three'
 import { getChamferedBoxGeometry } from '../utils/geometry'
+import { mergeMeshes } from '../utils/mergeMeshes'
 
 export function makeLampPost(ironBlackMat: Material) {
   const lampPost = new Object3D()
@@ -58,5 +59,5 @@ export function makeLampPost(ironBlackMat: Material) {
   // const topper = new Mesh(new ConeBufferGeometry(10, 4, 6), ironBlackMat)
   // topper.position.y = 42
   // lampPost.add(topper)
-  return lampPost
+  return mergeMeshes(lampPost)
 }

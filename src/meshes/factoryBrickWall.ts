@@ -1,5 +1,6 @@
 import { BoxBufferGeometry, Material, Mesh, Object3D } from 'three'
 import { getChamferedBoxGeometry } from '../utils/geometry'
+import { mergeMeshes } from '../utils/mergeMeshes'
 
 export function makeBrickWall(
   brickMat: Material,
@@ -34,5 +35,5 @@ export function makeBrickWall(
   mortar.position.y = 16
   mortar.position.z = -0.75
   brickWallRoot.add(mortar)
-  return brickWallRoot
+  return mergeMeshes(brickWallRoot)
 }
