@@ -35,7 +35,7 @@ export default class MapCacheRenderer {
     pixelsPerTile = 32,
     pixelsPerCacheEdge = 1024
   ) {
-    const totalTiles = width * height
+    const totalTiles = width * height * 2
     const viewWidth = width * pixelsPerTile
     const viewHeight = height * pixelsPerTile
     const xyBottomArr = new Uint8Array(totalTiles * 2)

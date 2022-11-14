@@ -17,7 +17,9 @@ const __tempMat4 = new Matrix4()
 export function mergeMeshes(pivot: Object3D) {
   const pivotClone = new Object3D()
   const similarMeshesByMat: Map<Material, Mesh[]> = new Map()
-  pivot.updateMatrixWorld()
+  //   pivot.updateMatrix()
+  pivot.updateMatrixWorld(true)
+  //   pivot.updateWorldMatrix(false, true)
   pivot.traverse((n) => {
     if (n instanceof Mesh) {
       if (!similarMeshesByMat.has(n.material)) {
@@ -91,6 +93,7 @@ export function mergeMeshes(pivot: Object3D) {
       const mergedIndices = new Uint16BufferAttribute(indexArr, 1)
       mergedGeo.setIndex(mergedIndices)
     } catch (e) {
+      debugger
       //
     }
     const mesh = new Mesh(mergedGeo, mat)

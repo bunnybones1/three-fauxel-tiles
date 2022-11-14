@@ -2,6 +2,7 @@ import {
   BufferGeometry,
   Camera,
   Color,
+  ColorRepresentation,
   DoubleSide,
   Group,
   Material,
@@ -47,7 +48,8 @@ const CuratedMaterialTypeStrings = [
   'pantsRed',
   'rock',
   'cyberGlow',
-  'cyberPanel'
+  'cyberPanel',
+  'water'
 ] as const
 
 export type CuratedMaterialType = typeof CuratedMaterialTypeStrings[number]
@@ -79,7 +81,8 @@ export const standardMaterialParamLib: {
 } = {
   ground: {
     roughness: 1,
-    color: new Color(0.16, 0.14, 0.13)
+    color: new Color(1, 1, 1),
+    vertexColors: true
   },
   brick: {
     roughness: 1,
@@ -153,6 +156,12 @@ export const standardMaterialParamLib: {
     roughness: 0.5,
     color: new Color(0.2, 0.25, 0.4)
   },
+  water: {
+    roughness: 0.4,
+    metalness: 0.95,
+    color: new Color(1, 1, 1),
+    vertexColors: true
+  },
   rock: {
     roughness: 0.85,
     metalness: 0.95,
@@ -220,6 +229,11 @@ export const standardMaterialParamLib: {
 
 const materialCache = new Map<string, Material>()
 
+function __colorToVec4(color?: ColorRepresentation, opacity = 1) {
+  const c = new Color(color)
+  return new Vector4(c.r, c.g, c.b, opacity)
+}
+
 function __makeMeshMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
   const standardParams = standardMaterialParamLib[name]
   switch (pass) {
@@ -229,22 +243,19 @@ function __makeMeshMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
       return new WorldNormalMeshMaterial({
         wireframe: standardParams.wireframe
       })
-      break
     case 'depth':
       return new MeshDepthMaterial({
         wireframe: standardParams.wireframe
       })
-      break
     case 'customColor':
-      const c = new Color(standardParams.color)
       return new BasicVec4MeshMaterial({
-        data: new Vector4(c.r, c.g, c.b, standardParams.opacity),
-        wireframe: standardParams.wireframe
+        data: __colorToVec4(standardParams.color, standardParams.opacity),
+        wireframe: standardParams.wireframe,
+        vertexColors: standardParams.vertexColors
       })
     case 'customEmissive':
-      const e = new Color(standardParams.emissive || 0)
       return new BasicVec4MeshMaterial({
-        data: new Vector4(e.r, e.g, e.b, 1),
+        data: __colorToVec4(standardParams.emissive || 0, 1),
         wireframe: standardParams.wireframe
       })
     case 'customRoughnessMetalnessHeight':
@@ -267,7 +278,6 @@ function __makeMeshMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
     default:
       throw new Error(`Please add implementation for ${pass}`)
   }
-  throw new Error('Unknown material pass requested')
 }
 export function getMeshMaterial(
   name: CuratedMaterialType,

@@ -173,6 +173,10 @@ export default class MapScrollingView {
       this._noiseReady = true
     }
     this.tileMaker.render(renderer)
+    const time = performance.now() * 0.002
+    const pingPong = time % 1
+    // const pingPong = Math.abs((time % 2) - 1)
+    this.jitTileSampler.animFrame = ~~(pingPong * 4)
     if (
       this.jitTileSampler.updateMeta() ||
       this._dirty ||

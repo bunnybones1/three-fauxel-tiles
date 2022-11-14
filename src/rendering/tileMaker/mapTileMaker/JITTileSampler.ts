@@ -13,6 +13,7 @@ import { wrap } from '../../../utils/math'
 import MapTileMaker from './MapTileMaker'
 
 const metaTileStrings = [
+  'water',
   'floor',
   'beam',
   'bricks',
@@ -44,6 +45,8 @@ type BottomAndTopIds = {
 
 type NamedMetaBits = NamedBitsInNumber<typeof metaTileStrings>
 
+const __animFrameTimes = ['0', '1', '2', '3'] as const
+
 export default class JITTileSampler {
   onTileMade = (index: number) => {
     this.indicesOfNewlyMadeTiles.add(index)
@@ -52,6 +55,17 @@ export default class JITTileSampler {
   dirty: boolean
   indicesOfMadeTiles: Set<number> = new Set()
   indicesOfNewlyMadeTiles: Set<number> = new Set()
+  private _animFrame: number
+  public get animFrame(): number {
+    return this._animFrame
+  }
+  public set animFrame(value: number) {
+    if (value === this._animFrame) {
+      return
+    }
+    this.dirty = true
+    this._animFrame = value
+  }
   get offsetX(): number {
     return this._offsetX
   }
@@ -78,6 +92,7 @@ export default class JITTileSampler {
   bytesPerTile: number
   // localMetaProps: number
   // visProps: Uint8Array
+  metaRawCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   metaCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   dirtyMeta: Set<string> = new Set()
   dirtyVis: Set<string> = new Set()
@@ -103,6 +118,12 @@ export default class JITTileSampler {
 
     const seed = 1
     const floorNoise = simpleThreshNoise(0.1, 0, 0, 0.5, seed)
+    const waterNoise = new StephHelper2D(
+      new AdditiveGroupHelper2D([
+        new NoiseHelper2D(0.02, 0, 0, seed),
+        new NoiseHelper2D(0.08, 0, 0, seed, 0.5)
+      ])
+    )
     const beamNoise = simpleThreshNoise(0.08, -100, -100, 0.4, seed)
     const bricksNoise = simpleThreshNoise(0.06, -50, -50, 0.5, seed)
     const drywallNoise = simpleThreshNoise(0.05, 20, 20, 0.5, seed)
@@ -157,6 +178,7 @@ export default class JITTileSampler {
     const plantMatureNoise = simpleThreshNoise(3, -340, -460, 0.25, seed)
     const treeMapleNoise = simpleThreshNoise(0.3, 200, 400, 0.6, seed)
     this.metaNoiseGenerators = [
+      waterNoise,
       floorNoise,
       beamNoise,
       bricksNoise,
@@ -206,15 +228,27 @@ export default class JITTileSampler {
     }
     this.dirtyMeta.add(key)
   }
+  sampleMetaRaw(x: number, y: number) {
+    const key = x + ':' + y
+    if (this.metaRawCache.has(key)) {
+      return this.metaRawCache.get(key)!
+    }
+    const metaRaw = new NamedBitsInNumber(
+      this.metaNoiseGenerators.reduce((accum, noise, j) => {
+        return accum + (noise.getValue(x, y) << j)
+      }, 0),
+      metaTileStrings
+    )
+    this.metaRawCache.set(key, metaRaw)
+    return metaRaw
+  }
   sampleMeta(x: number, y: number) {
     const key = x + ':' + y
     if (this.metaCache.has(key)) {
       return this.metaCache.get(key)!
     }
     const metaProps = new NamedBitsInNumber(
-      this.metaNoiseGenerators.reduce((accum, noise, j) => {
-        return accum + (noise.getValue(x, y) << j)
-      }, 0),
+      this.sampleMetaRaw(x, y).value,
       metaTileStrings
     )
     this.validateLocalMeta(metaProps, x, y)
@@ -224,6 +258,30 @@ export default class JITTileSampler {
     const key = x + ':' + y
 
     // this.localMetaProps = this.metaNoiseGenerators[2].getTreshold(x, y, 0.5) << 4
+    const hasRocks = val.has('rocks')
+    const hasGold = val.has('goldOreForRocks')
+    const hasSilver = val.has('silverOreForRocks')
+    const hasIron = val.has('ironOreForRocks')
+    const hasCopper = val.has('copperOreForRocks')
+
+    if (val.has('water')) {
+      val.value = 0
+      if (hasRocks) {
+        val.enableBit('rocks')
+      }
+      if (
+        this.sampleMetaRaw(x + 1, y).has('water') &&
+        this.sampleMetaRaw(x - 1, y).has('water') &&
+        this.sampleMetaRaw(x, y + 1).has('water') &&
+        this.sampleMetaRaw(x, y - 1).has('water') &&
+        this.sampleMetaRaw(x + 1, y + 1).has('water') &&
+        this.sampleMetaRaw(x + 1, y - 1).has('water') &&
+        this.sampleMetaRaw(x - 1, y + 1).has('water') &&
+        this.sampleMetaRaw(x - 1, y - 1).has('water')
+      ) {
+        val.enableBit('water')
+      }
+    }
 
     if (Math.abs(x) > 10 || Math.abs(y) > 10) {
       val.disableBit('floor')
@@ -298,12 +356,8 @@ export default class JITTileSampler {
       val.flipBit('rockyGround')
     }
 
-    if (val.has('rocks')) {
+    if (hasRocks) {
       const wasHarvested = val.has('harvested')
-      const hasGold = val.has('goldOreForRocks')
-      const hasSilver = val.has('silverOreForRocks')
-      const hasIron = val.has('ironOreForRocks')
-      const hasCopper = val.has('copperOreForRocks')
       val.value = 0
       val.flipBit('rocks')
       if (hasGold && !hasCopper && !hasIron) {
@@ -399,8 +453,8 @@ export default class JITTileSampler {
 
   private _bottomAndTopIdsCache: Map<string, BottomAndTopIds> = new Map()
 
-  sampleVisProps(x: number, y: number) {
-    const key = `${x}:${y}`
+  sampleVisProps(x: number, y: number, time: '0' | '1' | '2' | '3' = '0') {
+    const key = `${x}:${y}:${time}`
     if (this._visPropsCache.has(key)) {
       return this._visPropsCache.get(key)!
     } else {
@@ -422,7 +476,13 @@ export default class JITTileSampler {
 
       this._visPropsCache.set(key, visProps)
 
-      visProps.enableBit(metaProps.has('floor') ? 'floor' : 'ground')
+      visProps.enableBit(
+        metaProps.has('floor')
+          ? 'floor'
+          : metaProps.has('water')
+          ? `water${time}`
+          : 'ground'
+      )
 
       const propMaskGrass = metaProps.makeFastMask('grass')
       if (metaProps.hasFast(propMaskGrass)) {
@@ -900,10 +960,10 @@ export default class JITTileSampler {
       return visProps
     }
   }
-  sampleVisIds(x: number, y: number) {
-    const key = `${x}:${y}`
+  sampleVisIds(x: number, y: number, time: '0' | '1' | '2' | '3' = '0') {
+    const key = `${x}:${y}:${time}`
     if (!this._bottomAndTopIdsCache.has(key)) {
-      const visProps = this.sampleVisProps(x, y)
+      const visProps = this.sampleVisProps(x, y, time)
       const bottomAndTopIds: BottomAndTopIds =
         this.sampleVisIdsByVisProps(visProps)
       this._bottomAndTopIdsCache.set(key, bottomAndTopIds)
@@ -1038,7 +1098,10 @@ export default class JITTileSampler {
         for (let iRow = 0; iRow < this._viewHeightInTiles; iRow++) {
           const x = this._offsetX + iCol
           const y = this._offsetY + iRow
-          const sampledVis = this.sampleVisIds(x, y)
+          const time = this.sampleMeta(x, y).has('water')
+            ? __animFrameTimes[this._animFrame % __animFrameTimes.length]
+            : undefined
+          const sampledVis = this.sampleVisIds(x, y, time)
           if (this.indicesOfNewlyMadeTiles.has(sampledVis.idBottom)) {
             // this.dirtyVis.add(`${x}:${y-1}`)
             this.indicesOfMadeTiles.add(sampledVis.idBottom)
@@ -1058,6 +1121,22 @@ export default class JITTileSampler {
       this.indicesOfNewlyMadeTiles.clear()
     }
 
+    for (let iCol = 0; iCol < this._viewWidthInTiles; iCol++) {
+      for (let iRow = 0; iRow < this._viewHeightInTiles; iRow++) {
+        const x = this._offsetX + iCol
+        const y = this._offsetY + iRow
+        const meta = this.sampleMeta(x, y)
+        if (meta.has('water')) {
+          this.dirtyVis.add(`${x}:${y}`)
+        }
+      }
+    }
+
+    this.indicesOfNewlyMadeTiles.forEach((index) =>
+      this.indicesOfMadeTiles.add(index)
+    )
+    this.indicesOfNewlyMadeTiles.clear()
+
     this.dirty = false
 
     if (this.dirtyVis.size > 0) {
@@ -1069,8 +1148,9 @@ export default class JITTileSampler {
       const xyTopArr = xyTopAttr.array as number[]
       const idTopAttr = topPointsGeo.getAttribute('id')
       const idTopArr = idTopAttr.array as number[]
+      const currentFrame =
+        __animFrameTimes[this._animFrame % __animFrameTimes.length]
       this.dirtyVis.forEach((v) => {
-        console.log(v)
         const coords = v.split(':').map((v) => parseInt(v))
         const i = bottomPointsGeo.drawRange.count
         const i2 = i * 2
@@ -1088,8 +1168,11 @@ export default class JITTileSampler {
         xyTopArr[i2 + 1] = yWrapped
         xyTopArr[i2 + 2] = xWrapped
         xyTopArr[i2 + 3] = yWrapped + 1
+        const frame = this.sampleMeta(x, y).has('water')
+          ? currentFrame
+          : undefined
         const sampleDown = this.sampleVisIds(x, y - 1)
-        const sampleCenter = this.sampleVisIds(x, y)
+        const sampleCenter = this.sampleVisIds(x, y, frame)
         const sampleUp = this.sampleVisIds(x, y + 1)
         // const sampleDown = this.sampleVis(rand(0, 1000), rand(0, 1000))
         // const sampleCenter = this.sampleVis(rand(0, 1000), rand(0, 1000))

@@ -11,7 +11,12 @@ import {
   getChamferedBoxGeometry
 } from '../utils/geometry'
 import { mergeMeshes } from '../utils/mergeMeshes'
-import { detRandTrees } from '../utils/random'
+import {
+  detRandTreesPine,
+  detRandTreesPineMature,
+  detRandTreesPineStump,
+  detRandTreesPineStumpMature
+} from '../utils/random'
 
 export function makeTreePineStumpMature(matBark: Material, matWood: Material) {
   const tiltRange = 0.1
@@ -27,13 +32,14 @@ export function makeTreePineStumpMature(matBark: Material, matWood: Material) {
   pivot.add(wood)
   wood.position.y = height * 0.5
   for (let i = 0; i < 80; i++) {
-    const size = ~~detRandTrees(6, 8)
+    const size = ~~detRandTreesPineStumpMature(6, 8)
     const bark = new Mesh(getCachedChamferedBoxGeometry(2, size, 4, 1), matBark)
     bark.rotation.order = 'YXZ'
-    const y = Math.pow(detRandTrees(), 2)
+    const y = Math.pow(detRandTreesPineStumpMature(), 2)
     const tiltAmt = Math.pow(1 - y, 4)
-    const radius = baseRadius + tiltAmt * 8 + Math.round(detRandTrees(0, 2))
-    const angle = detRandTrees(0, Math.PI * 2)
+    const radius =
+      baseRadius + tiltAmt * 8 + Math.round(detRandTreesPineStumpMature(0, 2))
+    const angle = detRandTreesPineStumpMature(0, Math.PI * 2)
     bark.position.set(
       Math.cos(angle) * radius,
       y * height,
@@ -41,9 +47,9 @@ export function makeTreePineStumpMature(matBark: Material, matWood: Material) {
     )
     bark.rotation.y = -angle
     bark.rotation.z = tiltAmt * 1
-    bark.rotation.x += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.y += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
+    bark.rotation.x += detRandTreesPineStumpMature(-tiltRange, tiltRange)
+    bark.rotation.y += detRandTreesPineStumpMature(-tiltRange, tiltRange)
+    bark.rotation.z += detRandTreesPineStumpMature(-tiltRange, tiltRange)
     pivot.add(bark)
   }
   return mergeMeshes(pivot)
@@ -63,13 +69,14 @@ export function makeTreePineStump(matBark: Material, matWood: Material) {
   pivot.add(wood)
   wood.position.y = height * 0.5
   for (let i = 0; i < 60; i++) {
-    const size = ~~detRandTrees(3, 5)
+    const size = ~~detRandTreesPineStump(3, 5)
     const bark = new Mesh(getCachedChamferedBoxGeometry(2, size, 4, 1), matBark)
     bark.rotation.order = 'YXZ'
-    const y = Math.pow(detRandTrees(), 2)
+    const y = Math.pow(detRandTreesPineStump(), 2)
     const tiltAmt = Math.pow(1 - y, 4)
-    const radius = baseRadius + tiltAmt * 8 + Math.round(detRandTrees(0, 2))
-    const angle = detRandTrees(0, Math.PI * 2)
+    const radius =
+      baseRadius + tiltAmt * 8 + Math.round(detRandTreesPineStump(0, 2))
+    const angle = detRandTreesPineStump(0, Math.PI * 2)
     bark.position.set(
       Math.cos(angle) * radius,
       y * height,
@@ -77,9 +84,9 @@ export function makeTreePineStump(matBark: Material, matWood: Material) {
     )
     bark.rotation.y = -angle
     bark.rotation.z = tiltAmt * 1
-    bark.rotation.x += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.y += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
+    bark.rotation.x += detRandTreesPineStump(-tiltRange, tiltRange)
+    bark.rotation.y += detRandTreesPineStump(-tiltRange, tiltRange)
+    bark.rotation.z += detRandTreesPineStump(-tiltRange, tiltRange)
     pivot.add(bark)
   }
   return mergeMeshes(pivot)
@@ -104,13 +111,14 @@ export function makeTreePineMature(
   pivot.add(wood)
   wood.position.y = height * 0.5
   for (let i = 0; i < 260; i++) {
-    const size = ~~detRandTrees(6, 8)
+    const size = ~~detRandTreesPineMature(6, 8)
     const bark = new Mesh(getCachedChamferedBoxGeometry(2, size, 4, 1), matBark)
     bark.rotation.order = 'YXZ'
-    const y = Math.pow(detRandTrees(), 2)
+    const y = Math.pow(detRandTreesPineMature(), 2)
     const tiltAmt = Math.pow(1 - y, 4)
-    const radius = baseRadius + tiltAmt * 8 + Math.round(detRandTrees(0, 2))
-    const angle = detRandTrees(0, Math.PI * 2)
+    const radius =
+      baseRadius + tiltAmt * 8 + Math.round(detRandTreesPineMature(0, 2))
+    const angle = detRandTreesPineMature(0, Math.PI * 2)
     bark.position.set(
       Math.cos(angle) * radius,
       y * height,
@@ -118,9 +126,9 @@ export function makeTreePineMature(
     )
     bark.rotation.y = -angle
     bark.rotation.z = tiltAmt * 1
-    bark.rotation.x += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.y += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
+    bark.rotation.x += detRandTreesPineMature(-tiltRange, tiltRange)
+    bark.rotation.y += detRandTreesPineMature(-tiltRange, tiltRange)
+    bark.rotation.z += detRandTreesPineMature(-tiltRange, tiltRange)
     pivot.add(bark)
   }
 
@@ -145,8 +153,8 @@ export function makeTreePineMature(
         const twigTilt = 0.05 * iTwig
         const newTwig = twigProto.clone()
         lastTwig.add(newTwig)
-        newTwig.rotation.x = detRandTrees(-twigTilt, twigTilt)
-        newTwig.rotation.z = detRandTrees(-twigTilt, twigTilt)
+        newTwig.rotation.x = detRandTreesPineMature(-twigTilt, twigTilt)
+        newTwig.rotation.z = detRandTreesPineMature(-twigTilt, twigTilt)
         newTwig.rotation.y = Math.PI
         newTwig.position.y = twigLength
         lastTwig = newTwig
@@ -173,13 +181,13 @@ export function makeTreePine(matBark: Material, matLeaf: Material) {
 
   const pivot = new Object3D()
   for (let i = 0; i < 160; i++) {
-    const size = ~~detRandTrees(6, 8)
+    const size = ~~detRandTreesPine(6, 8)
     const bark = new Mesh(getCachedChamferedBoxGeometry(2, size, 4, 1), matBark)
     bark.rotation.order = 'YXZ'
-    const y = Math.pow(detRandTrees(), 2)
+    const y = Math.pow(detRandTreesPine(), 2)
     const tiltAmt = Math.pow(1 - y, 4)
-    const radius = baseRadius + tiltAmt * 8 + Math.round(detRandTrees(0, 2))
-    const angle = detRandTrees(0, Math.PI * 2)
+    const radius = baseRadius + tiltAmt * 8 + Math.round(detRandTreesPine(0, 2))
+    const angle = detRandTreesPine(0, Math.PI * 2)
     bark.position.set(
       Math.cos(angle) * radius,
       y * height,
@@ -187,9 +195,9 @@ export function makeTreePine(matBark: Material, matLeaf: Material) {
     )
     bark.rotation.y = -angle
     bark.rotation.z = tiltAmt * 1
-    bark.rotation.x += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.y += detRandTrees(-tiltRange, tiltRange)
-    bark.rotation.z += detRandTrees(-tiltRange, tiltRange)
+    bark.rotation.x += detRandTreesPine(-tiltRange, tiltRange)
+    bark.rotation.y += detRandTreesPine(-tiltRange, tiltRange)
+    bark.rotation.z += detRandTreesPine(-tiltRange, tiltRange)
     pivot.add(bark)
   }
 
@@ -215,8 +223,8 @@ export function makeTreePine(matBark: Material, matLeaf: Material) {
         const twigTilt = 0.05 * iTwig
         const newTwig = twigProto.clone()
         lastTwig.add(newTwig)
-        newTwig.rotation.x = detRandTrees(-twigTilt, twigTilt)
-        newTwig.rotation.z = detRandTrees(-twigTilt, twigTilt)
+        newTwig.rotation.x = detRandTreesPine(-twigTilt, twigTilt)
+        newTwig.rotation.z = detRandTreesPine(-twigTilt, twigTilt)
         newTwig.rotation.y = Math.PI
         newTwig.position.y = twigLength
         lastTwig = newTwig

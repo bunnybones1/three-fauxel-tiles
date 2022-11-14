@@ -38,12 +38,12 @@ import { verticalScale } from '../../../constants'
 import { BushProps, makeRecursiveBush } from '../../../meshes/factoryBush'
 import { memoize } from '../../../utils/memoizer'
 import { makeBrickWall } from '../../../meshes/factoryBrickWall'
-import TileMaker from '../TileMaker'
 import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
-import { mergeMeshes } from '../../../utils/mergeMeshes'
 import { Vector3 } from 'three'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
 import { length } from '../../../utils/math'
+import { makeWater } from '../../../meshes/factoryWater'
+import { makeGround } from '../../../meshes/factoryGround'
 
 const __tempVec3 = new Vector3()
 
@@ -52,6 +52,10 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'layer2',
     'nothingness',
     'floor',
+    'water0',
+    'water1',
+    'water2',
+    'water3',
     'beamCenter',
     'beamN',
     'beamE',
@@ -199,13 +203,14 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     const drywallMat = getMeshMaterial('drywall')
     const floorMat = getMeshMaterial('floor')
     const groundMat = getMeshMaterial('ground')
-    const ballMat = getMeshMaterial('plastic')
+    const plasticMat = getMeshMaterial('plastic')
+    const waterMat = getMeshMaterial('water')
     const grassMat = getMeshMaterial('grass')
     const rocksMat = getMeshMaterial('rock')
     const bushMat = getMeshMaterial('bush')
     const berryMat = getMeshMaterial('berry')
     const woodMat = getMeshMaterial('wood')
-    const ball = new Mesh(new SphereGeometry(16, 32, 16), ballMat)
+    const ball = new Mesh(new SphereGeometry(16, 32, 16), plasticMat)
     ball.scale.y = Math.SQRT1_2
     // ball.position.y = Math.SQRT1_2 * 14
 
@@ -232,53 +237,26 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       return floor
     }
 
+    const variations = [0, 1, 2, 3].map((v) => v / 4)
+    const timeScale = 0.2
+    const water0 = () => {
+      return makeWater(waterMat, timeScale, variations[0])
+    }
+
+    const water1 = () => {
+      return makeWater(waterMat, timeScale, variations[1])
+    }
+
+    const water2 = () => {
+      return makeWater(waterMat, timeScale, variations[2])
+    }
+
+    const water3 = () => {
+      return makeWater(waterMat, timeScale, variations[3])
+    }
+
     const ground = () => {
-      const basis = 32
-      function makeProto(seed: number, scale: number, z = 0) {
-        const geo = new PlaneBufferGeometry(basis, basis, basis, basis)
-        const posAttr = geo.attributes.position
-        const posArr = posAttr.array
-        const noise = new NoiseHelper2D(scale, undefined, undefined, seed)
-        for (let i = 0; i < posAttr.count; i++) {
-          const i3 = i * 3
-          __tempVec3.fromArray(posArr, i3)
-          __tempVec3.z +=
-            noise.getValue(__tempVec3.x, __tempVec3.y) * 0.25 +
-            1 +
-            z -
-            length(__tempVec3.x, __tempVec3.y) / basis
-          __tempVec3.toArray(posArr, i3)
-        }
-        geo.computeVertexNormals()
-        const objProto = new Mesh(geo, groundMat)
-        objProto.rotation.x = -Math.PI * 0.5
-        return objProto
-      }
-      const objProto = makeProto(0, 0.2 + 0.15, 0.35)
-      const objProtoH = makeProto(1, 0.2 + 0.2, 0.15)
-      const objProtoV = makeProto(2, 0.2 + 0.2)
-      const objProtoC = makeProto(3, 0.2 + 0.15)
-      const pivot = new Object3D()
-      function addGround(proto: Mesh, x: number, y: number) {
-        const obj = proto.clone()
-        obj.position.set(16 * x, 0, 16 * y)
-        pivot.add(obj)
-      }
-      addGround(objProto, 0, 0)
-      addGround(objProtoH, -1, 0)
-      addGround(objProtoH, 1, 0)
-      addGround(objProtoV, 0, -1)
-      addGround(objProtoV, 0, 1)
-      addGround(objProtoC, -1, -1)
-      addGround(objProtoC, 1, -1)
-      addGround(objProtoC, -1, 1)
-      addGround(objProtoC, 1, 1)
-      // obj.position.y = -1
-      // for (let ix = -1; ix <= 1; ix++) {
-      //   for (let iy = -1; iy <= 1; iy++) {
-      //   }
-      // }
-      return pivot
+      return makeGround(groundMat)
     }
 
     //brick walls
@@ -574,21 +552,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     }
 
     const rockyGround = () => {
-      const pyramidGeo = new PyramidGeometry()
-      const rockyGroundProto = new Mesh(pyramidGeo, getMeshMaterial('ground'))
-      const obj = new Object3D()
-      for (let i = 0; i < 12; i++) {
-        const rocky = rockyGroundProto.clone()
-        obj.add(rocky)
-        rocky.scale.set(
-          detRandRocks(3, 10),
-          detRandRocks(0.25, 0.5),
-          detRandRocks(3, 10)
-        )
-        rocky.rotation.y = detRandRocks(0, Math.PI * 2)
-        rocky.position.set(detRandRocks(-12, 12), 0, detRandRocks(-12, 12))
-      }
-      return obj
+      return makeRockCrumbs(getMeshMaterial('rock'))
     }
 
     const rocksA = memoize(() => makeRocks(rocksMat, 0))
@@ -934,6 +898,10 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       dummy,
       nothingness,
       floor,
+      water0,
+      water1,
+      water2,
+      water3,
       beamCenter,
       beamN,
       beamE,
@@ -1044,9 +1012,10 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       treeMapleMatureNW,
       treeMapleStump,
       treeMapleStumpMature
-    ].map((f) => {
-      return () => mergeMeshes(f())
-    })
+    ]
+    // ].map((f) => {
+    //   return () => mergeMeshes(f())
+    // })
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)
   }
@@ -1057,7 +1026,6 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       const oldScissor = new Vector4()
       renderer.getViewport(oldViewport)
       renderer.getScissor(oldScissor)
-      this._scene.updateMatrixWorld()
       let duration = 0
       let count = 0
       for (const index of this._renderQueue) {
@@ -1067,6 +1035,20 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
         const iRow = ~~(index / this._tilesPerEdge)
         const visualProps = this._tileRegistry[index]
         const layer2 = !!(visualProps[0] & 1)
+
+        for (let j = 0; j < this._indexedMeshes.length; j++) {
+          const jb = ~~(j / 8)
+          const j8 = j % 8
+          const shouldShow = !!(visualProps[jb] & (1 << j8))
+          if (this._indexedMeshesVisibility[j] && !shouldShow) {
+            this._indexedMeshes[j]().visible = false
+          } else if (!this._indexedMeshesVisibility[j] && shouldShow) {
+            this._indexedMeshes[j]().visible = true
+          }
+          this._indexedMeshesVisibility[j] = shouldShow
+        }
+        // this._scene.updateMatrixWorld(true)
+
         for (const pass of this._passes) {
           renderer.setRenderTarget(this._renderTargets.get(pass)!)
           const p = this._pixelsPerTile / renderer.getPixelRatio()
@@ -1074,18 +1056,6 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
           if (layer2 && depthPass) {
             continue
           }
-          for (let j = 0; j < this._indexedMeshes.length; j++) {
-            const jb = ~~(j / 8)
-            const j8 = j % 8
-            const shouldShow = !!(visualProps[jb] & (1 << j8))
-            if (this._indexedMeshesVisibility[j] && !shouldShow) {
-              this._indexedMeshes[j]().visible = false
-            } else if (!this._indexedMeshesVisibility[j] && shouldShow) {
-              this._indexedMeshes[j]().visible = true
-            }
-            this._indexedMeshesVisibility[j] = shouldShow
-          }
-
           renderer.setViewport(iCol * p, iRow * p, p, p)
           renderer.setScissor(iCol * p, iRow * p, p, p)
           changeMeshMaterials(this._scene, pass, true)

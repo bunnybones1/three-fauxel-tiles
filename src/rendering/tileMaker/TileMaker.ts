@@ -93,10 +93,9 @@ export default class TileMaker {
       const memodGenerator = memoize(generator)
       return function generatorAndAdder() {
         const obj = memodGenerator()
-        if (!obj.parent) {
-          pivot.add(obj)
-          obj.updateWorldMatrix(false, true)
-        }
+        pivot.add(obj)
+        obj.updateMatrix()
+        obj.updateMatrixWorld(true)
         return obj
       }
     }
@@ -109,6 +108,9 @@ export default class TileMaker {
     )
     zLimiter.position.y += 16
     scene.add(zLimiter)
+
+    scene.updateMatrix()
+    scene.updateMatrixWorld(true)
 
     this._indexedMeshes = indexedMeshMakers.map(memoScene)
     this._indexedMeshesVisibility = new Array(indexedMeshMakers.length)

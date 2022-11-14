@@ -50,6 +50,41 @@ export function detRandTreesMaple(min = 0, max = 1) {
   return genTreesMaple() * (max - min) + min
 }
 
+const genTreesMapleStump = sfc32(100, 200, 300, 444)
+export function detRandTreesMapleStump(min = 0, max = 1) {
+  return genTreesMapleStump() * (max - min) + min
+}
+
+const genTreesMapleMature = sfc32(100, 200, 300, 444)
+export function detRandTreesMapleMature(min = 0, max = 1) {
+  return genTreesMapleMature() * (max - min) + min
+}
+
+const genTreesMapleStumpMature = sfc32(100, 200, 300, 444)
+export function detRandTreesMapleStumpMature(min = 0, max = 1) {
+  return genTreesMapleStumpMature() * (max - min) + min
+}
+
+const genTreesPine = sfc32(100, 200, 300, 444)
+export function detRandTreesPine(min = 0, max = 1) {
+  return genTreesPine() * (max - min) + min
+}
+
+const genTreesPineStump = sfc32(100, 200, 300, 444)
+export function detRandTreesPineStump(min = 0, max = 1) {
+  return genTreesPineStump() * (max - min) + min
+}
+
+const genTreesPineMature = sfc32(100, 200, 300, 444)
+export function detRandTreesPineMature(min = 0, max = 1) {
+  return genTreesPineMature() * (max - min) + min
+}
+
+const genTreesPineStumpMature = sfc32(100, 200, 300, 444)
+export function detRandTreesPineStumpMature(min = 0, max = 1) {
+  return genTreesPineStumpMature() * (max - min) + min
+}
+
 const genWoodPlanks = sfc32(100, 152, 353, 504)
 export function detRandWoodPlanks(min = 0, max = 1) {
   return genWoodPlanks() * (max - min) + min

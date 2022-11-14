@@ -7,6 +7,7 @@ import vertexShader from './vert.glsl'
 interface Parameters {
   data: Vector4
   wireframe?: boolean
+  vertexColors?: boolean
 }
 
 const __defaultParams: Parameters = {
@@ -20,7 +21,13 @@ export default class BasicVec4MeshMaterial extends RawShaderMaterial {
       color: new Uniform(params.data)
     }
 
+    const defines = {} as any
+    if (params.vertexColors) {
+      defines.USE_VERTEX_COLOR = true
+    }
+
     super({
+      defines,
       uniforms,
       vertexShader,
       fragmentShader,

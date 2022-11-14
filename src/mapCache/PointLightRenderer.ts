@@ -156,6 +156,10 @@ export default class PointLightRenderer {
       }
       lightPointsGeo.drawRange.count = j
       if (j === 0) {
+        renderer.setRenderTarget(this._renderTarget)
+        renderer.setClearColor(COLOR_BLACK, 1)
+        renderer.clear(true, true, false)
+        renderer.setRenderTarget(null)
         return false
       }
       xyzSizeAttr.needsUpdate = true

@@ -27,5 +27,6 @@ export function makeRockCrumbs(mat: Material, chamfer = 0.5) {
     pivot.add(rocks)
   }
   pivot.rotation.y = Math.PI * -0.1
+  pivot.position.y = 1
   return mergeMeshes(pivot)
 }
