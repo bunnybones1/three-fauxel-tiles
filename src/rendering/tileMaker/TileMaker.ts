@@ -14,6 +14,7 @@ import { MaterialPassType } from '../../helpers/materials/materialLib'
 import { assertPowerOfTwo } from '../../utils/math'
 import { verticalScale } from '../../constants'
 import { memoize } from '../../utils/memoizer'
+import { findClosestNumberIndex } from '../../../test/utils/arrayUtils'
 
 export default class TileMaker {
   protected _pivot: Object3D
@@ -27,6 +28,7 @@ export default class TileMaker {
   protected _renderQueue: number[] = []
   protected _tileRegistry: Uint8Array[] = []
   protected _tileHashRegistry: string[] = []
+  protected _tileHashBirthday: number[] = []
   protected _scene = new Scene()
   protected _cameraTiltedBottom = new OrthographicCamera(
     -16,
@@ -126,17 +128,27 @@ export default class TileMaker {
   }
   getTileId(tileDescription: Uint8Array) {
     // const hash = Buffer.from(tileDescription).toString('utf-8')
-    const hash = tileDescription.toString()
+    const hash = String.fromCharCode.apply(null, tileDescription)
     let index = this._tileHashRegistry.indexOf(hash)
     if (index === -1) {
       index = this._tileRegistry.length
       if (index >= this._maxTiles) {
-        console.error(`no more room for tiles! (${index})`)
+        // console.error(`no more room for tiles! (${index})`)
+        let oldestIndex = index - 1
+        let oldestTime = this._tileHashBirthday[index - 1]
+        for (let i = 1; i < index; i++) {
+          if (this._tileHashBirthday[i] < oldestTime) {
+            oldestIndex = i
+            oldestTime = this._tileHashBirthday[i]
+          }
+        }
+        index = oldestIndex
       }
-      this._tileRegistry.push(tileDescription)
-      this._tileHashRegistry.push(hash)
+      this._tileRegistry[index] = tileDescription
+      this._tileHashRegistry[index] = hash
       this._renderQueue.push(index)
     }
+    this._tileHashBirthday[index] = performance.now()
     return index
   }
 }

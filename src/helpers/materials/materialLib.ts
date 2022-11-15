@@ -157,8 +157,8 @@ export const standardMaterialParamLib: {
     color: new Color(0.2, 0.25, 0.4)
   },
   water: {
-    roughness: 0.4,
-    metalness: 0.95,
+    roughness: 0.1,
+    metalness: 0.05,
     color: new Color(1, 1, 1),
     vertexColors: true
   },

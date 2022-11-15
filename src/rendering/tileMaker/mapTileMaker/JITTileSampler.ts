@@ -7,6 +7,7 @@ import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
 import StephHelper2D from '../../../helpers/utils/StepHelper2D'
+import { CardinalStrings } from '../../../meshes/factoryGround'
 import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
 
@@ -106,7 +107,7 @@ export default class JITTileSampler {
     this._offsetsDirty = value
   }
   private _offsetXOld = initOffset.x
-  private _offsetYOld = initOffset.y
+  private _offsetYOld = -initOffset.y
   constructor(
     private _tileMaker: MapTileMaker,
     private _viewWidthInTiles: number,
@@ -476,13 +477,81 @@ export default class JITTileSampler {
 
       this._visPropsCache.set(key, visProps)
 
-      visProps.enableBit(
-        metaProps.has('floor')
-          ? 'floor'
-          : metaProps.has('water')
-          ? `water${time}`
-          : 'ground'
-      )
+      // visProps.enableBit(
+      //   metaProps.has('floor')
+      //     ? 'floor'
+      //     : metaProps.has('water')
+      //     ? `water${time}`
+      //     : 'ground511'
+      // )
+      const groundBits = new NamedBitsInNumber(0, CardinalStrings)
+      let needsWater = false
+      if (!metaProps.has('water')) {
+        groundBits.enableBit('c')
+        groundBits.enableBit('ne')
+        groundBits.enableBit('se')
+        groundBits.enableBit('nw')
+        groundBits.enableBit('sw')
+        groundBits.enableBit('n')
+        groundBits.enableBit('s')
+        groundBits.enableBit('e')
+        groundBits.enableBit('w')
+        if (metaPropsN.has('water') && metaPropsE.has('water')) {
+          groundBits.disableBit('ne')
+          needsWater = true
+        }
+        if (metaPropsS.has('water') && metaPropsE.has('water')) {
+          groundBits.disableBit('se')
+          needsWater = true
+        }
+        if (metaPropsN.has('water') && metaPropsW.has('water')) {
+          groundBits.disableBit('nw')
+          needsWater = true
+        }
+        if (metaPropsS.has('water') && metaPropsW.has('water')) {
+          groundBits.disableBit('sw')
+          needsWater = true
+        }
+      } else {
+        needsWater = true
+        const majorN = !metaPropsN.has('water')
+        if (majorN) {
+          groundBits.enableBit('n')
+        }
+        const majorS = !metaPropsS.has('water')
+        if (majorS) {
+          groundBits.enableBit('s')
+        }
+        const majorE = !metaPropsE.has('water')
+        if (majorE) {
+          groundBits.enableBit('e')
+        }
+        const majorW = !metaPropsW.has('water')
+        if (majorW) {
+          groundBits.enableBit('w')
+        }
+        if (!metaPropsNE.has('water') && (majorN || majorE)) {
+          groundBits.enableBit('ne')
+        }
+        if (!metaPropsSW.has('water') && (majorS || majorW)) {
+          groundBits.enableBit('sw')
+        }
+        if (!metaPropsSE.has('water') && (majorS || majorE)) {
+          groundBits.enableBit('se')
+        }
+        if (!metaPropsNW.has('water') && (majorN || majorW)) {
+          groundBits.enableBit('nw')
+        }
+      }
+      const groundId =
+        `ground${groundBits.value}` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
+      if (groundBits.value > 0) {
+        visProps.enableBit(groundId)
+        // visProps.enableBit('testObject')
+      }
+      if (needsWater) {
+        visProps.enableBit(`water${time}`)
+      }
 
       const propMaskGrass = metaProps.makeFastMask('grass')
       if (metaProps.hasFast(propMaskGrass)) {

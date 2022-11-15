@@ -61,6 +61,7 @@ export default class PointLightRenderer {
     const pixelsWidth = width * pixelsPerTile
     const pixelsHeight = height * pixelsPerTile
     const renderTarget = new WebGLRenderTarget(pixelsWidth, pixelsHeight, {
+      depthBuffer: false,
       minFilter: NearestFilter,
       magFilter: NearestFilter,
       encoding: LinearEncoding,
@@ -166,14 +167,14 @@ export default class PointLightRenderer {
       colorAttr.needsUpdate = true
       renderer.setRenderTarget(this._renderTarget)
       renderer.setClearColor(COLOR_BLACK, 1)
-      renderer.clear(true, true, false)
+      renderer.clear(true, false, false)
       renderer.render(this.pointLightScene, this.pointLightCamera)
       renderer.setRenderTarget(null)
       return true
     } else {
       renderer.setRenderTarget(this._renderTarget)
       renderer.setClearColor(COLOR_BLACK, 1)
-      renderer.clear(true, true, false)
+      renderer.clear(true, false, false)
       renderer.setRenderTarget(null)
       return false
     }

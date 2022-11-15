@@ -21,7 +21,7 @@ import {
   TileCacheWriterPointMaterialParameters
 } from '../materials/TileCacheWriterPointMaterial'
 
-import JITSpriteSampler from '../spriteMaker/JITSpriteSampler'
+import JITSpriteSampler from '../rendering/tileMaker/spriteMaker/JITSpriteSampler'
 import MapCacheRenderer from '../mapCache/MapCacheRenderer'
 import { getTempTexture } from '../utils/threeUtils'
 import { BasicTextureMaterial } from '../materials/BasicTextureMaterial'
