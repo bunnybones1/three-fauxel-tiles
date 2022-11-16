@@ -486,7 +486,8 @@ export default class JITTileSampler {
       // )
       const groundBits = new NamedBitsInNumber(0, CardinalStrings)
       let needsWater = false
-      if (!metaProps.has('water')) {
+      const waterMask = metaProps.makeFastMask('water')
+      if (!metaProps.hasFast(waterMask)) {
         groundBits.enableBit('c')
         groundBits.enableBit('ne')
         groundBits.enableBit('se')
@@ -496,50 +497,50 @@ export default class JITTileSampler {
         groundBits.enableBit('s')
         groundBits.enableBit('e')
         groundBits.enableBit('w')
-        if (metaPropsN.has('water') && metaPropsE.has('water')) {
+        if (metaPropsN.hasFast(waterMask) && metaPropsE.hasFast(waterMask)) {
           groundBits.disableBit('ne')
           needsWater = true
         }
-        if (metaPropsS.has('water') && metaPropsE.has('water')) {
+        if (metaPropsS.hasFast(waterMask) && metaPropsE.hasFast(waterMask)) {
           groundBits.disableBit('se')
           needsWater = true
         }
-        if (metaPropsN.has('water') && metaPropsW.has('water')) {
+        if (metaPropsN.hasFast(waterMask) && metaPropsW.hasFast(waterMask)) {
           groundBits.disableBit('nw')
           needsWater = true
         }
-        if (metaPropsS.has('water') && metaPropsW.has('water')) {
+        if (metaPropsS.hasFast(waterMask) && metaPropsW.hasFast(waterMask)) {
           groundBits.disableBit('sw')
           needsWater = true
         }
       } else {
         needsWater = true
-        const majorN = !metaPropsN.has('water')
+        const majorN = !metaPropsN.hasFast(waterMask)
         if (majorN) {
           groundBits.enableBit('n')
         }
-        const majorS = !metaPropsS.has('water')
+        const majorS = !metaPropsS.hasFast(waterMask)
         if (majorS) {
           groundBits.enableBit('s')
         }
-        const majorE = !metaPropsE.has('water')
+        const majorE = !metaPropsE.hasFast(waterMask)
         if (majorE) {
           groundBits.enableBit('e')
         }
-        const majorW = !metaPropsW.has('water')
+        const majorW = !metaPropsW.hasFast(waterMask)
         if (majorW) {
           groundBits.enableBit('w')
         }
-        if (!metaPropsNE.has('water') && (majorN || majorE)) {
+        if (!metaPropsNE.hasFast(waterMask) && (majorN || majorE)) {
           groundBits.enableBit('ne')
         }
-        if (!metaPropsSW.has('water') && (majorS || majorW)) {
+        if (!metaPropsSW.hasFast(waterMask) && (majorS || majorW)) {
           groundBits.enableBit('sw')
         }
-        if (!metaPropsSE.has('water') && (majorS || majorE)) {
+        if (!metaPropsSE.hasFast(waterMask) && (majorS || majorE)) {
           groundBits.enableBit('se')
         }
-        if (!metaPropsNW.has('water') && (majorN || majorW)) {
+        if (!metaPropsNW.hasFast(waterMask) && (majorN || majorW)) {
           groundBits.enableBit('nw')
         }
       }
@@ -549,8 +550,52 @@ export default class JITTileSampler {
         visProps.enableBit(groundId)
         // visProps.enableBit('testObject')
       }
+      const maxWater = 8
       if (needsWater) {
-        visProps.enableBit(`water${time}`)
+        let landDist = maxWater - 1
+        for (let i = 0; i < maxWater; i++) {
+          const waterN = this.sampleMeta(x, y - i - 1)
+          if (!waterN.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterS = this.sampleMeta(x, y + i + 1)
+          if (!waterS.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterW = this.sampleMeta(x - i - 1, y)
+          if (!waterW.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterE = this.sampleMeta(x + i + 1, y)
+          if (!waterE.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterNE = this.sampleMeta(x + i + 1, y - i - 1)
+          if (!waterNE.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterSW = this.sampleMeta(x - i - 1, y + i + 1)
+          if (!waterSW.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterNW = this.sampleMeta(x - i - 1, y - i - 1)
+          if (!waterNW.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+          const waterSE = this.sampleMeta(x + i + 1, y + i + 1)
+          if (!waterSE.hasFast(waterMask)) {
+            landDist = i
+            break
+          }
+        }
+        visProps.enableBit(`water${time}${landDist}`)
       }
 
       const propMaskGrass = metaProps.makeFastMask('grass')

@@ -2,7 +2,6 @@ import {
   BoxBufferGeometry,
   Mesh,
   Object3D,
-  PlaneBufferGeometry,
   SphereGeometry,
   TorusKnotBufferGeometry,
   Vector4,
@@ -39,24 +38,48 @@ import { BushProps, makeRecursiveBush } from '../../../meshes/factoryBush'
 import { memoize } from '../../../utils/memoizer'
 import { makeBrickWall } from '../../../meshes/factoryBrickWall'
 import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
-import { Vector3 } from 'three'
-import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
-import { length } from '../../../utils/math'
 import { makeWater } from '../../../meshes/factoryWater'
 import { CardinalStrings, makeGround } from '../../../meshes/factoryGround'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
-
-const __tempVec3 = new Vector3()
+import { lerp } from 'three/src/math/MathUtils'
 
 export default class MapTileMaker extends DoubleCachedTileMaker {
   visualPropertyLookupStrings = [
     'layer2',
     'nothingness',
     'floor',
-    'water0',
-    'water1',
-    'water2',
-    'water3',
+    'water00',
+    'water10',
+    'water20',
+    'water30',
+    'water01',
+    'water11',
+    'water21',
+    'water31',
+    'water02',
+    'water12',
+    'water22',
+    'water32',
+    'water03',
+    'water13',
+    'water23',
+    'water33',
+    'water04',
+    'water14',
+    'water24',
+    'water34',
+    'water05',
+    'water15',
+    'water25',
+    'water35',
+    'water06',
+    'water16',
+    'water26',
+    'water36',
+    'water07',
+    'water17',
+    'water27',
+    'water37',
     'beamCenter',
     'beamN',
     'beamE',
@@ -749,22 +772,116 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       return floor
     }
 
-    const variations = [0, 1, 2, 3].map((v) => v / 4)
-    const timeScale = 0.2
-    const water0 = () => {
-      return makeWater(waterMat, timeScale, variations[0])
+    const timeVariations = [0, 1, 2, 3].map((v) => v / 4)
+    const strengths: number[] = []
+    const maxWater = 8
+    for (let i = 0; i < maxWater; i++) {
+      const ratio = i / (maxWater - 1)
+      strengths.push(lerp(0.15, 1.2, ratio))
     }
 
-    const water1 = () => {
-      return makeWater(waterMat, timeScale, variations[1])
+    const water00 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[0])
+    }
+    const water10 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[0])
+    }
+    const water20 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[0])
+    }
+    const water30 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[0])
     }
 
-    const water2 = () => {
-      return makeWater(waterMat, timeScale, variations[2])
+    const water01 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[1])
+    }
+    const water11 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[1])
+    }
+    const water21 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[1])
+    }
+    const water31 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[1])
     }
 
-    const water3 = () => {
-      return makeWater(waterMat, timeScale, variations[3])
+    const water02 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[2])
+    }
+    const water12 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[2])
+    }
+    const water22 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[2])
+    }
+    const water32 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[2])
+    }
+
+    const water03 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[3])
+    }
+    const water13 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[3])
+    }
+    const water23 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[3])
+    }
+    const water33 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[3])
+    }
+
+    const water04 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[4])
+    }
+    const water14 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[4])
+    }
+    const water24 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[4])
+    }
+    const water34 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[4])
+    }
+
+    const water05 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[5])
+    }
+    const water15 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[5])
+    }
+    const water25 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[5])
+    }
+    const water35 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[5])
+    }
+
+    const water06 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[6])
+    }
+    const water16 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[6])
+    }
+    const water26 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[6])
+    }
+    const water36 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[6])
+    }
+
+    const water07 = () => {
+      return makeWater(waterMat, timeVariations[0], strengths[7])
+    }
+    const water17 = () => {
+      return makeWater(waterMat, timeVariations[1], strengths[7])
+    }
+    const water27 = () => {
+      return makeWater(waterMat, timeVariations[2], strengths[7])
+    }
+    const water37 = () => {
+      return makeWater(waterMat, timeVariations[3], strengths[7])
     }
 
     //brick walls
@@ -1406,10 +1523,38 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       dummy,
       nothingness,
       floor,
-      water0,
-      water1,
-      water2,
-      water3,
+      water00,
+      water10,
+      water20,
+      water30,
+      water01,
+      water11,
+      water21,
+      water31,
+      water02,
+      water12,
+      water22,
+      water32,
+      water03,
+      water13,
+      water23,
+      water33,
+      water04,
+      water14,
+      water24,
+      water34,
+      water05,
+      water15,
+      water25,
+      water35,
+      water06,
+      water16,
+      water26,
+      water36,
+      water07,
+      water17,
+      water27,
+      water37,
       beamCenter,
       beamN,
       beamE,
