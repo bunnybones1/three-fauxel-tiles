@@ -4,6 +4,7 @@ import UpdateManager from '../../utils/UpdateManager'
 import renderer from '../../renderer'
 import { CardinalStrings, makeGround } from '../../../src/meshes/factoryGround'
 import NamedBitsInNumber from '../../../src/helpers/utils/NamedBitsInNumber'
+import { Object3D } from 'three'
 
 export default class TestModel2Scene extends TestLightingScene {
   constructor() {
@@ -11,32 +12,37 @@ export default class TestModel2Scene extends TestLightingScene {
     renderer.shadowMap.enabled = true
 
     const bits = new NamedBitsInNumber(0, CardinalStrings)
-    bits.enableBit('n')
-    bits.enableBit('ne')
-    bits.enableBit('e')
-    bits.enableBit('s')
-    bits.enableBit('sw')
+    // bits.enableBit('nw')
+    // bits.enableBit('n')
+    // bits.enableBit('ne')
     bits.enableBit('w')
-    const mesh = makeGround(getMeshMaterial('ground'), bits)
+    bits.enableBit('c')
+    bits.enableBit('e')
+    // bits.enableBit('sw')
+    // bits.enableBit('s')
+    // bits.enableBit('se')
+    const pivot = new Object3D()
+    const meshProto = makeGround(getMeshMaterial('ground'), bits)
 
-    mesh.traverse((n) => {
+    for (let ix = -1; ix <= 1; ix++) {
+      for (let iy = -1; iy <= 1; iy++) {
+        const mesh = meshProto.clone()
+        mesh.position.x = ix * 32
+        mesh.position.z = iy * 32
+        pivot.add(mesh)
+      }
+    }
+    pivot.position.y = 0.2
+    pivot.traverse((n) => {
       n.castShadow = true
       n.receiveShadow = true
     })
-    this.scene.add(mesh)
+    this.scene.add(pivot)
     UpdateManager.register({
       update(dt: number) {
-        const time = performance.now() * 0.002
-        const pingPong = time % 1
-        const iCurrent =
-          ~~(pingPong * mesh.children.length) % mesh.children.length
-        for (let i = 0; i < mesh.children.length; i++) {
-          const m = mesh.children[i]
-          m.visible = i === iCurrent
-        }
-        mesh.rotation.z += dt
+        pivot.rotation.y += dt
       }
     })
-    mesh.scale.multiplyScalar(0.01)
+    pivot.scale.multiplyScalar(0.01)
   }
 }
