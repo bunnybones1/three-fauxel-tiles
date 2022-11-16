@@ -40,7 +40,7 @@ export default class TestModel2Scene extends TestLightingScene {
     this.scene.add(pivot)
     UpdateManager.register({
       update(dt: number) {
-        pivot.rotation.y += dt
+        pivot.rotation.y += dt * 0.2
       }
     })
     pivot.scale.multiplyScalar(0.01)

@@ -25,11 +25,12 @@ for (let step = 0; step < total; step++) {
 }
 const axis = new Vector3(0, 0, 1).normalize()
 
+const tempVec3 = new Vector3()
+const tempVec3B = new Vector3()
+const originalVec3 = new Vector3()
+const basis = 34
+
 export function makeWater(mat: Material, time = 0, maxStrength = 0.15) {
-  const tempVec3 = new Vector3()
-  const tempVec3B = new Vector3()
-  const originalVec3 = new Vector3()
-  const basis = 34
   const geo = new PlaneBufferGeometry(basis, basis, basis, basis)
   const posAttr = geo.attributes.position
   const posArr = posAttr.array as Float32Array

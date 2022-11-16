@@ -16,7 +16,7 @@ import {
   MaterialPassType
 } from '../../../helpers/materials/materialLib'
 import { getChamferedBoxGeometry } from '../../../utils/geometry'
-import { detRandRocks, detRandWoodPlanks } from '../../../utils/random'
+import { detRandWoodPlanks } from '../../../utils/random'
 import { makeRocks } from '../../../meshes/factoryRocks'
 import { makeRockCrumbs } from '../../../meshes/factoryRockCrumbs'
 import {

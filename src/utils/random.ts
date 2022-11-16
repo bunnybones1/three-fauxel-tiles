@@ -94,3 +94,8 @@ const genWater = sfc32(100, 200, 300, 444)
 export function detRandWater(min = 0, max = 1) {
   return genWater() * (max - min) + min
 }
+
+const genSand = sfc32(100, 200, 300, 444)
+export function detRandSand(min = 0, max = 1) {
+  return genSand() * (max - min) + min
+}

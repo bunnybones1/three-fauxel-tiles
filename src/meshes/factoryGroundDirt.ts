@@ -1,87 +1,61 @@
 import { BufferAttribute, Object3D } from 'three'
+import { Color } from 'three'
 import { Material, Mesh, PlaneBufferGeometry, Vector3 } from 'three'
-import { clamp, lerp, unlerp, wrap } from '../utils/math'
+import NoiseHelper4D from '../helpers/utils/NoiseHelper4D'
+import { clamp, lerp, wrap } from '../utils/math'
 import NamedBitsInNumber from '../helpers/utils/NamedBitsInNumber'
-import { detRandSand } from '../utils/random'
 
-const skews: number[] = []
-const strengths: number[] = []
-const aOffsets: number[] = []
-const freqs: number[] = []
-const flips: boolean[] = []
-const total = 11
-// detRandSand(-3, 3)
-// detRandSand(-3, 3)
-// detRandSand(-3, 3)
-detRandSand(-3, 3)
-detRandSand(-3, 3)
-detRandSand(-3, 3)
-for (let step = 0; step < total; step++) {
-  const ratio = step / (total - 1)
-  strengths.push(1 - Math.pow(1 - ratio, 2))
-  const freq = Math.round(lerp(1, 2, ratio))
-  freqs.push(freq)
-  const skew = Math.round(detRandSand(-3, 3)) / freq
-  skews.push(skew)
-  aOffsets.push(detRandSand(0, Math.PI * 2))
-  flips.push(detRandSand(0, 1) > 0.5)
-  // break
-}
-
-const colorA = new Vector3(0.5, 0.3, 0.1)
-const colorB = new Vector3(0.8, 0.7, 0.5)
-const axis = new Vector3(0, 0, 1).normalize()
-
-const tempVec3 = new Vector3()
-const tempVec3B = new Vector3()
-const originalVec3 = new Vector3()
-const basis = 18
+const __tempVec3 = new Vector3()
 const __protoGeos: Map<string, PlaneBufferGeometry> = new Map()
-function __getProtoGeo(uOffset: number, vOffset: number, maxStrength = 0.35) {
+function __getProtoGeo(uOffset: number, vOffset: number) {
   const key = `${uOffset}:${vOffset}`
   if (!__protoGeos.has(key)) {
+    const workingColor = new Color()
+    const color = new Color(0.05, 0.05, 0.05)
+    const color2 = new Color(0.16, 0.14, 0.13)
+    const basis = 18
     const geo = new PlaneBufferGeometry(basis, basis, basis * 2, basis * 2)
     const posAttr = geo.attributes.position
     const posArr = posAttr.array as Float32Array
-    const colorArr = new Float32Array(posAttr.count * 3)
     const uvAttr = geo.attributes.uv
     const uvArr = uvAttr.array as Float32Array
-    const localStrengths = strengths.map((v) => lerp(maxStrength, 0.05, v))
+    const colorArr = new Float32Array(posAttr.count * 3)
+    const noise = new NoiseHelper4D(0.62, 1)
+    const noise2 = new NoiseHelper4D(0.2, 1)
     for (let i = 0; i < posAttr.count; i++) {
+      const i2 = i * 2
       const i3 = i * 3
-      originalVec3.fromArray(posArr, i3)
-      const resultVec3 = originalVec3.clone()
-
-      for (let j = 0; j < skews.length; j++) {
-        tempVec3.copy(originalVec3)
-        tempVec3.x += uOffset
-        tempVec3.y += vOffset
-        if (flips[j]) {
-          const x = tempVec3.x
-          tempVec3.x = -tempVec3.y
-          tempVec3.y = x
-        }
-        const freq = freqs[j]
-        const skew = skews[j]
-        const strength = localStrengths[j]
-        const ratioV = tempVec3.y / 32
-        let ratioU = tempVec3.x / 32
-        ratioU += skew * ratioV
-        const a =
-          ratioU * freq * Math.PI * 2 +
-          aOffsets[j] +
-          maxStrength * (j + 4) * 0.5
-        tempVec3B.set(0, Math.cos(a) * strength, -Math.sin(a) * strength)
-        tempVec3B.applyAxisAngle(
-          axis,
-          Math.atan2(skew, 1) + Math.PI * 0.5 + (flips[j] ? -Math.PI * 0.5 : 0)
-        )
-        resultVec3.add(tempVec3B)
-      }
-      resultVec3.toArray(posArr, i3)
-      const colorSample = unlerp(-2, 1, resultVec3.z)
-      resultVec3.lerpVectors(colorA, colorB, colorSample)
-      resultVec3.toArray(colorArr, i3)
+      __tempVec3.fromArray(posArr, i3)
+      // __tempVec3.x += uOffset
+      // __tempVec3.y += vOffset
+      const u = __tempVec3.x / 16 + 0.5
+      const v = __tempVec3.y / 16 + 0.5
+      uvArr[i2] = u
+      uvArr[i2 + 1] = v
+      const subU = (__tempVec3.x + uOffset) / 32 + 0.5
+      const subV = (__tempVec3.y + vOffset) / 32 + 0.5
+      const angleU = subU * Math.PI * 2
+      const angleV = subV * Math.PI * 2
+      const x = Math.cos(angleU)
+      const y = Math.sin(angleU)
+      const z = Math.cos(angleV) * 1.5
+      const w = Math.sin(angleV) * 1.5
+      const sample = noise.getValue(x + 1.12, y + 7.582, z + 2.1845, w + 4.852)
+      const sample2 = noise2.getValue(
+        x + 1.12,
+        y + 7.582,
+        z + 2.1845,
+        w + 4.852
+      )
+      const bouncedSample1 = 1 - Math.abs(sample)
+      const bouncedSample2 = 1 - Math.abs(sample2)
+      const bouncedSample = Math.max(bouncedSample1, bouncedSample2)
+      __tempVec3.z = Math.pow(bouncedSample, 8) * 2 + 4
+      __tempVec3.toArray(posArr, i3)
+      const colorSample = Math.pow(bouncedSample, 3)
+      workingColor.lerpColors(color, color2, colorSample)
+      __tempVec3.set(workingColor.r, workingColor.g, workingColor.b)
+      __tempVec3.toArray(colorArr, i3)
     }
     geo.setAttribute('color', new BufferAttribute(colorArr, 3))
     __protoGeos.set(key, geo)
@@ -110,7 +84,7 @@ const __offsets = [
 
 const __quadMeshes: Map<string, Mesh> = new Map()
 
-export function makeGround(
+export function makeGroundDirt(
   mat: Material,
   around: NamedBitsInNumber<typeof CardinalStrings>
 ) {
@@ -140,7 +114,7 @@ export function makeGround(
       for (let i = 0; i < posAttr.count; i++) {
         const i2 = i * 2
         const i3 = i * 3
-        tempVec3.fromArray(posArr, i3)
+        __tempVec3.fromArray(posArr, i3)
         const u = uvArr[i2]
         const v = uvArr[i2 + 1]
         const t = lerp(tl, tr, u)
@@ -153,16 +127,8 @@ export function makeGround(
           )
           final += clamp(1 - sinkDist, 0, 1)
         }
-        const sandy = detRandSand(0, 1)
-        if (sandy < 0.3) {
-          // tempVec3.z += (sandy * sandy * sandy) * 0.2
-          tempVec3.z += 0.2
-        }
-        if (sandy > 0.99) {
-          tempVec3.z += 0.7
-        }
-        tempVec3.z += Math.pow(final, 2) * -4
-        tempVec3.toArray(posArr, i3)
+        __tempVec3.z += Math.pow(final, 2) * -10
+        __tempVec3.toArray(posArr, i3)
       }
       geo.computeVertexNormals()
       const mesh = new Mesh(geo, mat)
@@ -173,8 +139,7 @@ export function makeGround(
     pivot.add(__quadMeshes.get(key)!.clone())
   }
   pivot.rotation.x = -Math.PI * 0.5
-  pivot.scale.z = 0.5
-  // pivot.scale.z = 0.1
-  pivot.position.y = 1
+  // pivot.scale.z = 0.5
+  pivot.scale.z = 0.1
   return pivot
 }
