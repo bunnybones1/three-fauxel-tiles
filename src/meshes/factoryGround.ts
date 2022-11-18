@@ -108,7 +108,64 @@ const __offsets = [
   [8, 8]
 ]
 
-const __quadMeshes: Map<string, Mesh> = new Map()
+const __quadMeshes: Map<string, Object3D> = new Map()
+
+export function makeGroundQuad(id: number, quad: boolean[], mat: Material) {
+  const tl = quad[0] ? 0 : 1
+  const tr = quad[1] ? 0 : 1
+  const bl = quad[2] ? 0 : 1
+  const br = quad[3] ? 0 : 1
+  const key = `${id}${tl}${tr}${bl}${br}`
+
+  if (!__quadMeshes.has(key)) {
+    const offsets = __offsets[id]
+    const geo = __getProtoGeo(offsets[0], offsets[1]).clone()
+    const posAttr = geo.attributes.position
+    const posArr = posAttr.array as Float32Array
+    const uvAttr = geo.attributes.uv
+    const uvArr = uvAttr.array as Float32Array
+    const sink = tl === br && tr === bl && tl !== tr
+    for (let i = 0; i < posAttr.count; i++) {
+      const i2 = i * 2
+      const i3 = i * 3
+      tempVec3.fromArray(posArr, i3)
+      const u = uvArr[i2]
+      const v = uvArr[i2 + 1]
+      const t = lerp(tl, tr, u)
+      const b = lerp(bl, br, u)
+      let final = lerp(t, b, v)
+      if (sink) {
+        const sinkDist = Math.pow(
+          Math.sqrt(Math.pow((u - 0.5) * 2, 2) + Math.pow((v - 0.5) * 2, 2)),
+          0.5
+        )
+        final += clamp(1 - sinkDist, 0, 1)
+      }
+      const sandy = detRandSand(0, 1)
+      if (sandy < 0.3) {
+        // tempVec3.z += (sandy * sandy * sandy) * 0.2
+        tempVec3.z += 0.2
+      }
+      if (sandy > 0.99) {
+        tempVec3.z += 0.7
+      }
+      tempVec3.z += Math.pow(final, 2) * -4
+      tempVec3.toArray(posArr, i3)
+    }
+    geo.computeVertexNormals()
+    const mesh = new Mesh(geo, mat)
+    mesh.position.x = offsets[0]
+    mesh.position.y = offsets[1]
+    const pivot = new Object3D()
+    pivot.rotation.x = -Math.PI * 0.5
+    pivot.scale.z = 0.5
+    // pivot.scale.z = 0.1
+    pivot.position.y = 1
+    pivot.add(mesh)
+    __quadMeshes.set(key, pivot)
+  }
+  return __quadMeshes.get(key)!
+}
 
 export function makeGround(
   mat: Material,
@@ -124,57 +181,7 @@ export function makeGround(
 
   for (let j = 0; j < quads.length; j++) {
     const quad = quads[j]
-    const tl = quad[0] ? 0 : 1
-    const tr = quad[1] ? 0 : 1
-    const bl = quad[2] ? 0 : 1
-    const br = quad[3] ? 0 : 1
-    const key = `${j}${tl}${tr}${bl}${br}`
-    if (!__quadMeshes.has(key)) {
-      const offsets = __offsets[j]
-      const geo = __getProtoGeo(offsets[0], offsets[1]).clone()
-      const posAttr = geo.attributes.position
-      const posArr = posAttr.array as Float32Array
-      const uvAttr = geo.attributes.uv
-      const uvArr = uvAttr.array as Float32Array
-      const sink = tl === br && tr === bl && tl !== tr
-      for (let i = 0; i < posAttr.count; i++) {
-        const i2 = i * 2
-        const i3 = i * 3
-        tempVec3.fromArray(posArr, i3)
-        const u = uvArr[i2]
-        const v = uvArr[i2 + 1]
-        const t = lerp(tl, tr, u)
-        const b = lerp(bl, br, u)
-        let final = lerp(t, b, v)
-        if (sink) {
-          const sinkDist = Math.pow(
-            Math.sqrt(Math.pow((u - 0.5) * 2, 2) + Math.pow((v - 0.5) * 2, 2)),
-            0.5
-          )
-          final += clamp(1 - sinkDist, 0, 1)
-        }
-        const sandy = detRandSand(0, 1)
-        if (sandy < 0.3) {
-          // tempVec3.z += (sandy * sandy * sandy) * 0.2
-          tempVec3.z += 0.2
-        }
-        if (sandy > 0.99) {
-          tempVec3.z += 0.7
-        }
-        tempVec3.z += Math.pow(final, 2) * -4
-        tempVec3.toArray(posArr, i3)
-      }
-      geo.computeVertexNormals()
-      const mesh = new Mesh(geo, mat)
-      mesh.position.x = offsets[0]
-      mesh.position.y = offsets[1]
-      __quadMeshes.set(key, mesh)
-    }
-    pivot.add(__quadMeshes.get(key)!.clone())
+    pivot.add(makeGroundQuad(j, quad, mat).clone())
   }
-  pivot.rotation.x = -Math.PI * 0.5
-  pivot.scale.z = 0.5
-  // pivot.scale.z = 0.1
-  pivot.position.y = 1
   return pivot
 }

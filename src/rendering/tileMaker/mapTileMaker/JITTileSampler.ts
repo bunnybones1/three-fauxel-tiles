@@ -16,6 +16,7 @@ import MapTileMaker from './MapTileMaker'
 const metaTileStrings = [
   'water',
   'floor',
+  'sand',
   'beam',
   'bricks',
   'drywall',
@@ -119,6 +120,7 @@ export default class JITTileSampler {
 
     const seed = 1
     const floorNoise = simpleThreshNoise(0.1, 0, 0, 0.5, seed)
+    const sandNoise = simpleThreshNoise(0.1, -182, 237, 0.5, seed)
     const waterNoise = new StephHelper2D(
       new AdditiveGroupHelper2D([
         new NoiseHelper2D(0.02, 0, 0, seed),
@@ -181,6 +183,7 @@ export default class JITTileSampler {
     this.metaNoiseGenerators = [
       waterNoise,
       floorNoise,
+      sandNoise,
       beamNoise,
       bricksNoise,
       drywallNoise,
@@ -544,12 +547,55 @@ export default class JITTileSampler {
           groundBits.enableBit('nw')
         }
       }
-      const groundId =
-        `ground${groundBits.value}` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
-      if (groundBits.value > 0) {
-        visProps.enableBit(groundId)
-        // visProps.enableBit('testObject')
+      const quads = [
+        [
+          groundBits.has('nw'),
+          groundBits.has('n'),
+          groundBits.has('w'),
+          groundBits.has('c')
+        ], //nw
+        [
+          groundBits.has('n'),
+          groundBits.has('ne'),
+          groundBits.has('c'),
+          groundBits.has('e')
+        ], //ne
+        [
+          groundBits.has('w'),
+          groundBits.has('c'),
+          groundBits.has('sw'),
+          groundBits.has('s')
+        ], //sw
+        [
+          groundBits.has('c'),
+          groundBits.has('e'),
+          groundBits.has('s'),
+          groundBits.has('se')
+        ] //se
+      ]
+
+      for (let quadId = 0; quadId < quads.length; quadId++) {
+        const quad = quads[quadId]
+        const heightCode =
+          (quad[0] ? 1 : 0) +
+          (quad[1] ? 2 : 0) +
+          (quad[2] ? 4 : 0) +
+          (quad[3] ? 8 : 0)
+        if (heightCode > 0) {
+          const groundId = `ground${
+            quadId * 16 + heightCode
+          }` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
+          visProps.enableBit(groundId)
+          console.log('groundId: ' + groundId)
+        }
       }
+      // const groundId =
+      //   `ground${groundBits.value}` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
+      // if (groundBits.value > 0) {
+      //   visProps.enableBit(groundId)
+      //   // visProps.enableBit('testObject')
+      // }
+
       const maxWater = 8
       if (needsWater) {
         let landDist = maxWater - 1
