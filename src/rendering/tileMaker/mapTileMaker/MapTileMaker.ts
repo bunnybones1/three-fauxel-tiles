@@ -46,6 +46,7 @@ import {
 } from '../../../meshes/factoryGround'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import { lerp } from 'three/src/math/MathUtils'
+import { makeGroundDirtQuad } from '../../../meshes/factoryGroundDirt'
 
 export default class MapTileMaker extends DoubleCachedTileMaker {
   visualPropertyLookupStrings = [
@@ -1089,15 +1090,12 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
 
     const total = Math.pow(2, 6)
     for (let i = 0; i < total; i++) {
-      // const index = i
       const quadId = ~~(i / 16)
       const tl = i % 2
       const tr = ~~(i / 2) % 2
       const bl = ~~(i / 4) % 2
       const br = ~~(i / 8) % 2
-      console.log(quadId, tl, tr, bl, br)
       indexedMeshes.push(() => {
-        // const bits = new NamedBitsInNumber(index, CardinalStrings)
         return makeGroundQuad(
           quadId,
           [tl === 1, tr === 1, bl === 1, br === 1],
@@ -1107,9 +1105,6 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     }
 
     indexedMeshes.push(testObject)
-    // ].map((f) => {
-    //   return () => mergeMeshes(f())
-    // })
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)
   }

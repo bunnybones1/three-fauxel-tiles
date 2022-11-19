@@ -586,15 +586,8 @@ export default class JITTileSampler {
             quadId * 16 + heightCode
           }` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
           visProps.enableBit(groundId)
-          console.log('groundId: ' + groundId)
         }
       }
-      // const groundId =
-      //   `ground${groundBits.value}` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
-      // if (groundBits.value > 0) {
-      //   visProps.enableBit(groundId)
-      //   // visProps.enableBit('testObject')
-      // }
 
       const maxWater = 8
       if (needsWater) {

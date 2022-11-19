@@ -164,7 +164,7 @@ export function makeGroundQuad(id: number, quad: boolean[], mat: Material) {
     pivot.add(mesh)
     __quadMeshes.set(key, pivot)
   }
-  return __quadMeshes.get(key)!
+  return __quadMeshes.get(key)!.clone()
 }
 
 export function makeGround(
@@ -181,7 +181,7 @@ export function makeGround(
 
   for (let j = 0; j < quads.length; j++) {
     const quad = quads[j]
-    pivot.add(makeGroundQuad(j, quad, mat).clone())
+    pivot.add(makeGroundQuad(j, quad, mat))
   }
   return pivot
 }
