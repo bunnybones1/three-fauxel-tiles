@@ -40,11 +40,8 @@ import { makeBrickWall } from '../../../meshes/factoryBrickWall'
 import DoubleCachedTileMaker from '../DoubleCachedTileMaker'
 import { makeWater } from '../../../meshes/factoryWater'
 import {
-  CardinalStrings,
-  makeGround,
   makeGroundQuad
 } from '../../../meshes/factoryGround'
-import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import { lerp } from 'three/src/math/MathUtils'
 import { makeGroundDirtQuad } from '../../../meshes/factoryGroundDirt'
 
@@ -257,6 +254,70 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'ground61',
     'ground62',
     'ground63',
+    'sand0',
+    'sand1',
+    'sand2',
+    'sand3',
+    'sand4',
+    'sand5',
+    'sand6',
+    'sand7',
+    'sand8',
+    'sand9',
+    'sand10',
+    'sand11',
+    'sand12',
+    'sand13',
+    'sand14',
+    'sand15',
+    'sand16',
+    'sand17',
+    'sand18',
+    'sand19',
+    'sand20',
+    'sand21',
+    'sand22',
+    'sand23',
+    'sand24',
+    'sand25',
+    'sand26',
+    'sand27',
+    'sand28',
+    'sand29',
+    'sand30',
+    'sand31',
+    'sand32',
+    'sand33',
+    'sand34',
+    'sand35',
+    'sand36',
+    'sand37',
+    'sand38',
+    'sand39',
+    'sand40',
+    'sand41',
+    'sand42',
+    'sand43',
+    'sand44',
+    'sand45',
+    'sand46',
+    'sand47',
+    'sand48',
+    'sand49',
+    'sand50',
+    'sand51',
+    'sand52',
+    'sand53',
+    'sand54',
+    'sand55',
+    'sand56',
+    'sand57',
+    'sand58',
+    'sand59',
+    'sand60',
+    'sand61',
+    'sand62',
+    'sand63',
     'testObject'
   ] as const
   private _listenersForUpdatedTiles: ((index: number) => void)[] = []
@@ -1078,6 +1139,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       treeMapleStumpMature
     ]
 
+    //water
     const timeVariations = [0, 1, 2, 3].map((v) => v / 4)
     const maxWater = 8
     for (let i = 0; i < maxWater; i++) {
@@ -1087,21 +1149,22 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
         indexedMeshes.push(() => makeWater(waterMat, timeVariation, strength))
       }
     }
-
-    const total = Math.pow(2, 6)
-    for (let i = 0; i < total; i++) {
-      const quadId = ~~(i / 16)
-      const tl = i % 2
-      const tr = ~~(i / 2) % 2
-      const bl = ~~(i / 4) % 2
-      const br = ~~(i / 8) % 2
-      indexedMeshes.push(() => {
-        return makeGroundQuad(
-          quadId,
-          [tl === 1, tr === 1, bl === 1, br === 1],
-          groundMat
-        )
-      })
+    //ground sand
+    // for (const quadMaker of [() => new Object3D(), () => new Object3D()]) {
+    // for (const quadMaker of [() => new Object3D(), makeGroundDirtQuad]) {
+    // for (const quadMaker of [makeGroundQuad, () => new Object3D()]) {
+    // for (const quadMaker of [makeGroundDirtQuad, makeGroundQuad]) {
+    for (const quadMaker of [makeGroundQuad, makeGroundDirtQuad]) {
+      const total = Math.pow(2, 6)
+      for (let i = 0; i < total; i++) {
+        const quadId = ~~(i / 16)
+        const tl = i % 2
+        const tr = ~~(i / 2) % 2
+        const bl = ~~(i / 4) % 2
+        const br = ~~(i / 8) % 2
+        const quads = [tl === 1, tr === 1, bl === 1, br === 1]
+        indexedMeshes.push(() => quadMaker(quadId, quads, groundMat))
+      }
     }
 
     indexedMeshes.push(testObject)

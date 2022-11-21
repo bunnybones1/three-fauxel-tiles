@@ -7,6 +7,7 @@ import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
 import StephHelper2D from '../../../helpers/utils/StepHelper2D'
+import InvertHelper2D from '../../../helpers/utils/InvertHelper2D'
 import { CardinalStrings } from '../../../meshes/factoryGround'
 import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
@@ -15,8 +16,10 @@ import MapTileMaker from './MapTileMaker'
 
 const metaTileStrings = [
   'water',
-  'floor',
+  'dirt',
   'sand',
+  'beach',
+  'floor',
   'beam',
   'bricks',
   'drywall',
@@ -121,12 +124,13 @@ export default class JITTileSampler {
     const seed = 1
     const floorNoise = simpleThreshNoise(0.1, 0, 0, 0.5, seed)
     const sandNoise = simpleThreshNoise(0.1, -182, 237, 0.5, seed)
-    const waterNoise = new StephHelper2D(
-      new AdditiveGroupHelper2D([
-        new NoiseHelper2D(0.02, 0, 0, seed),
-        new NoiseHelper2D(0.08, 0, 0, seed, 0.5)
-      ])
-    )
+    const beachNoise = simpleThreshNoise(0.1, -182, 237, -0.2, seed)
+    const waterBase = new AdditiveGroupHelper2D([
+      new NoiseHelper2D(0.02, 0, 0, seed),
+      new NoiseHelper2D(0.08, 0, 0, seed, 0.5)
+    ])
+    const waterNoise = new StephHelper2D(waterBase)
+    const dirtNoise = new StephHelper2D(new InvertHelper2D(sandNoise))
     const beamNoise = simpleThreshNoise(0.08, -100, -100, 0.4, seed)
     const bricksNoise = simpleThreshNoise(0.06, -50, -50, 0.5, seed)
     const drywallNoise = simpleThreshNoise(0.05, 20, 20, 0.5, seed)
@@ -182,8 +186,10 @@ export default class JITTileSampler {
     const treeMapleNoise = simpleThreshNoise(0.3, 200, 400, 0.6, seed)
     this.metaNoiseGenerators = [
       waterNoise,
-      floorNoise,
+      dirtNoise,
       sandNoise,
+      beachNoise,
+      floorNoise,
       beamNoise,
       bricksNoise,
       drywallNoise,
@@ -205,26 +211,6 @@ export default class JITTileSampler {
       treeMapleNoise
     ]
   }
-  // flipMeta(x: number, y: number, meta: MetaTile, validate = true) {
-  //   this.writeMeta(x, y, this.metaBitsFlip(this.sampleMeta(x, y), meta))
-  //   if (validate) {
-  //     this.validateLocalMeta(x, y)
-  //   }
-  // }
-  // metaBitsHas(val: number, maskName: MetaTile) {
-  //   return val & masks32[metaTileStrings.indexOf(maskName)]
-  // }
-
-  // metaBitsFlip(val: number, maskName: MetaTile) {
-  //   return val ^ masks32[metaTileStrings.indexOf(maskName)]
-  // }
-
-  // localMetaBitsFlip(maskName: MetaTile) {
-  //   this.localMetaProps = this.metaBitsFlip(this.localMetaProps, maskName)
-  // }
-  // localMetaBitsHas(maskName: MetaTile) {
-  //   return this.metaBitsHas(this.localMetaProps, maskName)
-  // }
   writeMeta(x: number, y: number, meta: NamedMetaBits) {
     const key = x + ':' + y
     if (this.metaCache.has(key) && this.metaCache.get(key)) {
@@ -263,6 +249,9 @@ export default class JITTileSampler {
 
     // this.localMetaProps = this.metaNoiseGenerators[2].getTreshold(x, y, 0.5) << 4
     const hasRocks = val.has('rocks')
+    const hasSand = val.has('sand')
+    const hasBeach = val.has('beach')
+    const hasDirt = val.has('dirt')
     const hasGold = val.has('goldOreForRocks')
     const hasSilver = val.has('silverOreForRocks')
     const hasIron = val.has('ironOreForRocks')
@@ -284,7 +273,26 @@ export default class JITTileSampler {
         this.sampleMetaRaw(x - 1, y - 1).has('water')
       ) {
         val.enableBit('water')
+      } else {
+        // if (!hasSand && !hasDirt) {
+        //   val.enableBit('beach')
+        // }
+        if (hasSand) {
+          val.enableBit('sand')
+        }
+        if (hasDirt) {
+          if(hasBeach) {
+            val.enableBit('sand')
+          } else {
+            val.enableBit('dirt')
+          }
+        }
       }
+    }
+
+    if (val.has('sand')) {
+      val.disableBit('dirt')
+      val.disableBit('grass')
     }
 
     if (Math.abs(x) > 10 || Math.abs(y) > 10) {
@@ -363,6 +371,11 @@ export default class JITTileSampler {
     if (hasRocks) {
       const wasHarvested = val.has('harvested')
       val.value = 0
+      if (val.has('sand')) {
+        val.enableBit('sand')
+      } else {
+        val.enableBit('dirt')
+      }
       val.flipBit('rocks')
       if (hasGold && !hasCopper && !hasIron) {
         val.flipBit('goldOreForRocks')
@@ -480,117 +493,125 @@ export default class JITTileSampler {
 
       this._visPropsCache.set(key, visProps)
 
-      // visProps.enableBit(
-      //   metaProps.has('floor')
-      //     ? 'floor'
-      //     : metaProps.has('water')
-      //     ? `water${time}`
-      //     : 'ground511'
-      // )
-      const groundBits = new NamedBitsInNumber(0, CardinalStrings)
       let needsWater = false
       const waterMask = metaProps.makeFastMask('water')
-      if (!metaProps.hasFast(waterMask)) {
-        groundBits.enableBit('c')
-        groundBits.enableBit('ne')
-        groundBits.enableBit('se')
-        groundBits.enableBit('nw')
-        groundBits.enableBit('sw')
-        groundBits.enableBit('n')
-        groundBits.enableBit('s')
-        groundBits.enableBit('e')
-        groundBits.enableBit('w')
-        if (metaPropsN.hasFast(waterMask) && metaPropsE.hasFast(waterMask)) {
-          groundBits.disableBit('ne')
+      const sandMask = metaProps.makeFastMask('sand')
+      const dirtMask = metaProps.makeFastMask('dirt')
+      const makeCardinalBits = (mask: number) => {
+        const cardinalBits = new NamedBitsInNumber(0, CardinalStrings)
+        if (metaProps.hasFast(mask)) {
+          cardinalBits.enableBit('c')
+          cardinalBits.enableBit('ne')
+          cardinalBits.enableBit('se')
+          cardinalBits.enableBit('nw')
+          cardinalBits.enableBit('sw')
+          cardinalBits.enableBit('n')
+          cardinalBits.enableBit('s')
+          cardinalBits.enableBit('e')
+          cardinalBits.enableBit('w')
+          if (!(metaPropsN.hasFast(mask) || metaPropsE.hasFast(mask))) {
+            cardinalBits.disableBit('ne')
+            needsWater = true
+          }
+          if (!(metaPropsS.hasFast(mask) || metaPropsE.hasFast(mask))) {
+            cardinalBits.disableBit('se')
+            needsWater = true
+          }
+          if (!(metaPropsN.hasFast(mask) || metaPropsW.hasFast(mask))) {
+            cardinalBits.disableBit('nw')
+            needsWater = true
+          }
+          if (!(metaPropsS.hasFast(mask) || metaPropsW.hasFast(mask))) {
+            cardinalBits.disableBit('sw')
+            needsWater = true
+          }
+        } else {
           needsWater = true
+          const majorN = metaPropsN.hasFast(mask)
+          if (majorN) {
+            cardinalBits.enableBit('n')
+          }
+          const majorS = metaPropsS.hasFast(mask)
+          if (majorS) {
+            cardinalBits.enableBit('s')
+          }
+          const majorE = metaPropsE.hasFast(mask)
+          if (majorE) {
+            cardinalBits.enableBit('e')
+          }
+          const majorW = metaPropsW.hasFast(mask)
+          if (majorW) {
+            cardinalBits.enableBit('w')
+          }
+          if (metaPropsNE.hasFast(mask) && (majorN || majorE)) {
+            cardinalBits.enableBit('ne')
+          }
+          if (metaPropsSW.hasFast(mask) && (majorS || majorW)) {
+            cardinalBits.enableBit('sw')
+          }
+          if (metaPropsSE.hasFast(mask) && (majorS || majorE)) {
+            cardinalBits.enableBit('se')
+          }
+          if (metaPropsNW.hasFast(mask) && (majorN || majorW)) {
+            cardinalBits.enableBit('nw')
+          }
         }
-        if (metaPropsS.hasFast(waterMask) && metaPropsE.hasFast(waterMask)) {
-          groundBits.disableBit('se')
-          needsWater = true
-        }
-        if (metaPropsN.hasFast(waterMask) && metaPropsW.hasFast(waterMask)) {
-          groundBits.disableBit('nw')
-          needsWater = true
-        }
-        if (metaPropsS.hasFast(waterMask) && metaPropsW.hasFast(waterMask)) {
-          groundBits.disableBit('sw')
-          needsWater = true
-        }
-      } else {
-        needsWater = true
-        const majorN = !metaPropsN.hasFast(waterMask)
-        if (majorN) {
-          groundBits.enableBit('n')
-        }
-        const majorS = !metaPropsS.hasFast(waterMask)
-        if (majorS) {
-          groundBits.enableBit('s')
-        }
-        const majorE = !metaPropsE.hasFast(waterMask)
-        if (majorE) {
-          groundBits.enableBit('e')
-        }
-        const majorW = !metaPropsW.hasFast(waterMask)
-        if (majorW) {
-          groundBits.enableBit('w')
-        }
-        if (!metaPropsNE.hasFast(waterMask) && (majorN || majorE)) {
-          groundBits.enableBit('ne')
-        }
-        if (!metaPropsSW.hasFast(waterMask) && (majorS || majorW)) {
-          groundBits.enableBit('sw')
-        }
-        if (!metaPropsSE.hasFast(waterMask) && (majorS || majorE)) {
-          groundBits.enableBit('se')
-        }
-        if (!metaPropsNW.hasFast(waterMask) && (majorN || majorW)) {
-          groundBits.enableBit('nw')
-        }
+        return cardinalBits
       }
-      const quads = [
-        [
-          groundBits.has('nw'),
-          groundBits.has('n'),
-          groundBits.has('w'),
-          groundBits.has('c')
-        ], //nw
-        [
-          groundBits.has('n'),
-          groundBits.has('ne'),
-          groundBits.has('c'),
-          groundBits.has('e')
-        ], //ne
-        [
-          groundBits.has('w'),
-          groundBits.has('c'),
-          groundBits.has('sw'),
-          groundBits.has('s')
-        ], //sw
-        [
-          groundBits.has('c'),
-          groundBits.has('e'),
-          groundBits.has('s'),
-          groundBits.has('se')
-        ] //se
-      ]
+      const sandBits = makeCardinalBits(dirtMask)
+      const dirtBits = makeCardinalBits(sandMask)
 
-      for (let quadId = 0; quadId < quads.length; quadId++) {
-        const quad = quads[quadId]
-        const heightCode =
-          (quad[0] ? 1 : 0) +
-          (quad[1] ? 2 : 0) +
-          (quad[2] ? 4 : 0) +
-          (quad[3] ? 8 : 0)
-        if (heightCode > 0) {
-          const groundId = `ground${
-            quadId * 16 + heightCode
-          }` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
-          visProps.enableBit(groundId)
+      for (const params of [
+        ['ground', dirtBits],
+        ['sand', sandBits]
+      ] as const) {
+        const baseName = params[0]
+        const cardinalBits = params[1]
+        const quads = [
+          [
+            cardinalBits.has('nw'),
+            cardinalBits.has('n'),
+            cardinalBits.has('w'),
+            cardinalBits.has('c')
+          ], //nw
+          [
+            cardinalBits.has('n'),
+            cardinalBits.has('ne'),
+            cardinalBits.has('c'),
+            cardinalBits.has('e')
+          ], //ne
+          [
+            cardinalBits.has('w'),
+            cardinalBits.has('c'),
+            cardinalBits.has('sw'),
+            cardinalBits.has('s')
+          ], //sw
+          [
+            cardinalBits.has('c'),
+            cardinalBits.has('e'),
+            cardinalBits.has('s'),
+            cardinalBits.has('se')
+          ] //se
+        ]
+
+        for (let quadId = 0; quadId < quads.length; quadId++) {
+          const quad = quads[quadId]
+          const heightCode =
+            (quad[0] ? 1 : 0) +
+            (quad[1] ? 2 : 0) +
+            (quad[2] ? 4 : 0) +
+            (quad[3] ? 8 : 0)
+          if (heightCode > 0) {
+            const groundId = `${baseName}${
+              quadId * 16 + heightCode
+            }` as unknown as typeof this.tileMaker.visualPropertyLookupStrings
+            visProps.enableBit(groundId)
+          }
         }
       }
 
       const maxWater = 8
-      if (needsWater) {
+      if (needsWater || metaProps.hasFast(waterMask)) {
         let landDist = maxWater - 1
         for (let i = 0; i < maxWater; i++) {
           const waterN = this.sampleMeta(x, y - i - 1)
