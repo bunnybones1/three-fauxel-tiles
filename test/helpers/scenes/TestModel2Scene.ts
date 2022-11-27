@@ -2,7 +2,7 @@ import { getMeshMaterial } from '../../../src/helpers/materials/materialLib'
 import TestLightingScene from './TestLighting'
 import UpdateManager from '../../utils/UpdateManager'
 import renderer from '../../renderer'
-import { CardinalStrings, makeGround } from '../../../src/meshes/factoryGround'
+import { CardinalStrings, makeSand } from '../../../src/meshes/factorySand'
 import NamedBitsInNumber from '../../../src/helpers/utils/NamedBitsInNumber'
 import { Object3D } from 'three'
 
@@ -22,7 +22,7 @@ export default class TestModel2Scene extends TestLightingScene {
     // bits.enableBit('s')
     // bits.enableBit('se')
     const pivot = new Object3D()
-    const meshProto = makeGround(getMeshMaterial('ground'), bits)
+    const meshProto = makeSand(getMeshMaterial('ground'), bits)
 
     for (let ix = -1; ix <= 1; ix++) {
       for (let iy = -1; iy <= 1; iy++) {

@@ -8,7 +8,7 @@ import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
 import StephHelper2D from '../../../helpers/utils/StepHelper2D'
 import InvertHelper2D from '../../../helpers/utils/InvertHelper2D'
-import { CardinalStrings } from '../../../meshes/factoryGround'
+import { CardinalStrings } from '../../../meshes/factorySand'
 import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
 
@@ -281,7 +281,7 @@ export default class JITTileSampler {
           val.enableBit('sand')
         }
         if (hasDirt) {
-          if(hasBeach) {
+          if (hasBeach) {
             val.enableBit('sand')
           } else {
             val.enableBit('dirt')
@@ -562,7 +562,7 @@ export default class JITTileSampler {
       const dirtBits = makeCardinalBits(sandMask)
 
       for (const params of [
-        ['ground', dirtBits],
+        ['dirt', dirtBits],
         ['sand', sandBits]
       ] as const) {
         const baseName = params[0]

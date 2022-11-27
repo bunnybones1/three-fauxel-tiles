@@ -95,11 +95,11 @@ export class FauxelMaterial extends RawShaderMaterial {
     const sunShadowDirection = params.sunShadowDirection
     const uSunShadowDirection = new Uniform(sunShadowDirection)
     const originalColorLightAmbient = params.colorLightAmbient.clone()
-    const nightColorLightAmbient = new Color(0.05, 0.1, 0.4)
+    const nightColorLightAmbient = new Color(0.05, 0.1, 0.4).multiplyScalar(0.1)
     const colorLightAmbient = params.colorLightAmbient
     const uColorLightAmbient = new Uniform(colorLightAmbient)
     const originalColorDarkAmbient = params.colorDarkAmbient.clone()
-    const nightColorDarkAmbient = new Color(0, 0.05, 0.2)
+    const nightColorDarkAmbient = new Color(0, 0.05, 0.2).multiplyScalar(0.1)
     const colorDarkAmbient = params.colorDarkAmbient
     const uColorDarkAmbient = new Uniform(colorDarkAmbient)
     const colorSun = params.colorSun

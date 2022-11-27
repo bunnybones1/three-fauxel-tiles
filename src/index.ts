@@ -10,7 +10,7 @@ import FibonacciSphereGeometry from './geometries/FibonacciSphereGeometry'
 import { getMeshMaterial } from './helpers/materials/materialLib'
 import { LightController } from './mapCache/PointLightRenderer'
 import { SpriteController } from './rendering/tileMaker/spriteMaker/JITSpriteSampler'
-
+import { createMapCacheViewPlane } from './helpers/utils/createMapCacheViewPlane'
 export default {
   MapTileMaker,
   JITTileSampler,
@@ -18,6 +18,9 @@ export default {
   TextureCachingScroller,
   geometry: {
     FibonacciSphereGeometry
+  },
+  helpers: {
+    createMapCacheViewPlane
   },
   LightController,
   SpriteController,

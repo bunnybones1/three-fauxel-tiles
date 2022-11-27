@@ -2,7 +2,7 @@ import { BufferAttribute, Object3D } from 'three'
 import { Color } from 'three'
 import { Material, Mesh, PlaneBufferGeometry, Vector3 } from 'three'
 import NoiseHelper4D from '../helpers/utils/NoiseHelper4D'
-import { clamp, lerp, wrap } from '../utils/math'
+import { clamp, lerp } from '../utils/math'
 import NamedBitsInNumber from '../helpers/utils/NamedBitsInNumber'
 
 const __tempVec3 = new Vector3()
@@ -84,7 +84,7 @@ const __offsets = [
 
 const __quadMeshes: Map<string, Object3D> = new Map()
 
-export function makeGroundDirtQuad(id: number, quad: boolean[], mat: Material) {
+export function makeDirtQuad(id: number, quad: boolean[], mat: Material) {
   const tl = quad[0] ? 0 : 1
   const tr = quad[1] ? 0 : 1
   const bl = quad[2] ? 0 : 1
@@ -131,7 +131,7 @@ export function makeGroundDirtQuad(id: number, quad: boolean[], mat: Material) {
   return __quadMeshes.get(key)!.clone()
 }
 
-export function makeGroundDirt(
+export function makeDirt(
   mat: Material,
   around: NamedBitsInNumber<typeof CardinalStrings>
 ) {
@@ -145,7 +145,7 @@ export function makeGroundDirt(
 
   for (let j = 0; j < quads.length; j++) {
     const quad = quads[j]
-    pivot.add(makeGroundDirtQuad(j, quad, mat))
+    pivot.add(makeDirtQuad(j, quad, mat))
   }
   return pivot
 }
