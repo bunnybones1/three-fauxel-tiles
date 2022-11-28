@@ -213,9 +213,7 @@ export default class JITTileSampler {
   }
   writeMeta(x: number, y: number, meta: NamedMetaBits) {
     const key = x + ':' + y
-    if (this.metaCache.has(key) && this.metaCache.get(key)) {
-      this.metaCache.set(key, meta)
-    }
+    this.metaCache.set(key, meta)
     this.dirtyMeta.add(key)
   }
   sampleMetaRaw(x: number, y: number) {
@@ -236,13 +234,15 @@ export default class JITTileSampler {
     const key = x + ':' + y
     if (this.metaCache.has(key)) {
       return this.metaCache.get(key)!
+    } else {
+      const metaProps = new NamedBitsInNumber(
+        this.sampleMetaRaw(x, y).value,
+        metaTileStrings
+      )
+      this.validateLocalMeta(metaProps, x, y)
+      this.metaCache.set(key, metaProps)
+      return metaProps
     }
-    const metaProps = new NamedBitsInNumber(
-      this.sampleMetaRaw(x, y).value,
-      metaTileStrings
-    )
-    this.validateLocalMeta(metaProps, x, y)
-    return metaProps
   }
   validateLocalMeta(val: NamedMetaBits, x: number, y: number) {
     const key = x + ':' + y
@@ -295,20 +295,30 @@ export default class JITTileSampler {
       val.disableBit('grass')
     }
 
-    if (Math.abs(x) > 10 || Math.abs(y) > 10) {
+    if (val.has('water')) {
       val.disableBit('floor')
-      val.disableBit('bricks')
       val.disableBit('beam')
-      val.disableBit('drywall')
+      val.disableBit('bricks')
+    }
+
+    if (val.has('floor')) {
+      val.disableBit('grass')
+    }
+
+    if (Math.abs(x) > 10 || Math.abs(y) > 10) {
+      // val.disableBit('floor')
+      // val.disableBit('bricks')
+      // val.disableBit('beam')
+      // val.disableBit('drywall')
       val.disableBit('lampPost')
       val.disableBit('pyramid')
       val.disableBit('testObject')
       val.disableBit('goldPile')
     }
 
-    if (Math.abs(x) > 16 || Math.abs(y) > 16) {
-      val.disableBit('harvested')
-    }
+    // if (Math.abs(x) > 16 || Math.abs(y) > 16) {
+    //   val.disableBit('harvested')
+    // }
 
     if (!val.has('floor') && val.has('beam')) {
       val.flipBit('beam')
@@ -446,8 +456,8 @@ export default class JITTileSampler {
 
       const item = val.has('treeMaple')
       const item2 = val.has('treePine')
-      const item3 = val.has('bush')
-      // val.value = 0
+      const item3 = val.has('floor')
+      val.value = 0
       if (item) {
         val.flipBit('treeMaple')
       }
@@ -455,11 +465,11 @@ export default class JITTileSampler {
         val.flipBit('treePine')
       }
       if (item3) {
-        val.flipBit('bush')
+        val.flipBit('floor')
       }
+      val.enableBit('dirt')
     }
 
-    this.metaCache.set(key, val)
     return val
   }
 
@@ -492,6 +502,9 @@ export default class JITTileSampler {
       )
 
       this._visPropsCache.set(key, visProps)
+      if (metaProps.has('floor')) {
+        visProps.enableBit('floor')
+      }
 
       let needsWater = false
       const waterMask = metaProps.makeFastMask('water')
@@ -1206,17 +1219,22 @@ export default class JITTileSampler {
     // console.log(this._offsetXOld, this._offsetX)
     // }
     if (this.dirtyMeta.size > 0) {
-      this.dirtyMeta.forEach((v) => {
+      for (const v of this.dirtyMeta) {
         const coords = v.split(':').map((v) => parseInt(v))
         const x = coords[0]
         const y = coords[1]
+        const meta = this.sampleMeta(x, y)
+        this.validateLocalMeta(meta, x, y)
         for (let cY = -1; cY <= 1; cY++) {
           for (let cX = -1; cX <= 1; cX++) {
             const visKey = `${x + cX}:${y + cY}`
             this.dirtyVis.add(visKey)
+            this._bottomAndTopIdsCache.delete(visKey + ':0')
+            console.log('delete ' + visKey + ':0')
+            this._visPropsCache.delete(visKey + ':0')
           }
         }
-      })
+      }
       this.dirtyMeta.clear()
       return true
     } else {
@@ -1324,7 +1342,7 @@ export default class JITTileSampler {
       const idTopArr = idTopAttr.array as number[]
       const currentFrame =
         __animFrameTimes[this._animFrame % __animFrameTimes.length]
-      this.dirtyVis.forEach((v) => {
+      for (const v of this.dirtyVis) {
         const coords = v.split(':').map((v) => parseInt(v))
         const i = bottomPointsGeo.drawRange.count
         const i2 = i * 2
@@ -1373,7 +1391,7 @@ export default class JITTileSampler {
 
         bottomPointsGeo.drawRange.count += 2
         topPointsGeo.drawRange.count += 2
-      })
+      }
       xyBottomAttr.needsUpdate = true
       idBottomAttr.needsUpdate = true
       xyTopAttr.needsUpdate = true

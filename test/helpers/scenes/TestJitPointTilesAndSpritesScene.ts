@@ -20,12 +20,15 @@ import { getMouseBoundViewTransform } from '~/helpers/viewTransformMouse'
 import { getUrlFlag, getUrlInt } from '~/utils/location'
 import { rand, rand2, wrap } from '~/utils/math'
 import { detRandLights } from '~/utils/random'
+import getKeyboardInput from '~/input/getKeyboardInput'
+import { KeyboardCodes } from '~/utils/KeyboardCodes'
 
 import lib from '@lib/index'
 import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelper'
 
 import BaseTestScene from './BaseTestScene'
 import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTileSampler'
+import NamedBitsInNumber from '../../../src/helpers/utils/NamedBitsInNumber'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
@@ -156,7 +159,7 @@ function makeAvoider(metaTileSampler: JITTileSampler) {
           namedBits.hasFast(fastRocks) &&
           !namedBits.hasFast(fastHarvested)
         ) {
-          size = 0.75
+          size = 0.9
         } else if (namedBits.hasFast(fastWater)) {
           let waters = 0
           for (const co of cardinalOffsets) {
@@ -200,6 +203,7 @@ function makeKeyboardUpdater() {
   let angle = 0
   // let speed = 0
   const kv = new Vector2()
+
   return function keyboardUpdater(dt: number) {
     const adjDt = dt / __idealFrameDuration
     const angleLerpAmt = 1 - Math.pow(1 - angleLerpRate, adjDt)
@@ -213,6 +217,11 @@ function makeKeyboardUpdater() {
         angleDelta -= Math.PI * 2
       }
       angle += angleDelta * angleLerpAmt
+      if (angle < -Math.PI) {
+        angle += Math.PI * 2
+      } else if (angle > Math.PI) {
+        angle -= Math.PI * 2
+      }
       const speed = 0.05 * adjDt
       this.x += kv.x * speed
       this.y -= kv.y * speed
@@ -317,6 +326,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     player.addUpdater(makeKeyboardUpdater())
     const avoider = makeAvoider(mapScrollingView.jitTileSampler)
     player.addUpdater(avoider)
+    rigHarvestAction(player, mapScrollingView.jitTileSampler)
     spriteControllers.push(player)
     for (let i = 0; i < 10; i++) {
       const actor = new DummyController(
@@ -605,4 +615,71 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       renderer.render(this.finalViewCacheScene, this.finalViewCacheCamera)
     }
   }
+}
+const pVec = new Vector2()
+function rigHarvestAction(
+  player: DummyController,
+  metaTileSampler: JITTileSampler
+) {
+  let harvestActionState = false
+  let buildActionState = false
+  let unbuildActionState = false
+  const onKey = (key: KeyboardCodes, down: boolean) => {
+    if (key === 'Space') {
+      harvestActionState = down
+      if (harvestActionState) {
+        const a = player.angle - Math.PI * 0.5
+        pVec.x = Math.cos(a)
+        pVec.y = Math.sin(a)
+        pVec.multiplyScalar(0.75)
+        const x = Math.round(player.x + pVec.x)
+        const y = Math.round(player.y + pVec.y)
+        const tileMeta = metaTileSampler.sampleMeta(x, y).clone()
+        tileMeta.enableBit('harvested')
+        tileMeta.disableBit('bush')
+        metaTileSampler.writeMeta(x, y, tileMeta)
+      }
+    }
+    if (key === 'KeyB') {
+      buildActionState = down
+      if (buildActionState) {
+        const a = player.angle - Math.PI * 0.5
+        pVec.x = Math.cos(a)
+        pVec.y = Math.sin(a)
+        pVec.multiplyScalar(0.75)
+        const x = Math.round(player.x + pVec.x)
+        const y = Math.round(player.y + pVec.y)
+        const tileMeta = metaTileSampler.sampleMeta(x, y).clone()
+        if (!tileMeta.has('floor')) {
+          tileMeta.enableBit('floor')
+        } else if (!tileMeta.has('beam')) {
+          tileMeta.enableBit('beam')
+        } else if (!tileMeta.has('bricks')) {
+          tileMeta.enableBit('bricks')
+        }
+        metaTileSampler.writeMeta(x, y, tileMeta)
+      }
+    }
+    if (key === 'KeyX') {
+      unbuildActionState = down
+      if (unbuildActionState) {
+        const a = player.angle - Math.PI * 0.5
+        pVec.x = Math.cos(a)
+        pVec.y = Math.sin(a)
+        pVec.multiplyScalar(0.75)
+        const x = Math.round(player.x + pVec.x)
+        const y = Math.round(player.y + pVec.y)
+        const tileMeta = metaTileSampler.sampleMeta(x, y).clone()
+        if (tileMeta.has('bricks')) {
+          tileMeta.disableBit('bricks')
+        } else if (tileMeta.has('beam')) {
+          tileMeta.disableBit('beam')
+        } else if (tileMeta.has('floor')) {
+          tileMeta.disableBit('floor')
+        }
+        metaTileSampler.writeMeta(x, y, tileMeta)
+      }
+    }
+  }
+  getKeyboardInput().addListener(onKey)
 }

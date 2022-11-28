@@ -22,6 +22,8 @@ const testParam = getUrlParam('test') || 'pixelText'
 if (testClasses.hasOwnProperty(testParam)) {
   TestClass = testClasses[testParam]
 }
+const __useFixedStep = true
+const __fixedSimStep = 1 / 60
 
 setTimeout(() => {
   const test: BaseTestScene = new TestClass()
@@ -60,9 +62,17 @@ setTimeout(() => {
       timeFractUniform.value = (timeFractUniform.value + dt) % 1
 
       if (frameCounter % nthFrameSim === 0) {
-        UpdateManager.update(simDt)
-        test.update(simDt)
-        simDt = 0
+        if (__useFixedStep) {
+          while (simDt > __fixedSimStep) {
+            UpdateManager.update(__fixedSimStep)
+            test.update(__fixedSimStep)
+            simDt -= __fixedSimStep
+          }
+        } else {
+          UpdateManager.update(simDt)
+          test.update(simDt)
+          simDt = 0
+        }
       }
 
       if (frameCounter % nthFrameRender === 0) {

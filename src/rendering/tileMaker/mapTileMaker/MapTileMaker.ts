@@ -384,7 +384,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
         c.position.z = ~~detRandWoodPlanks(-14, 14)
         floor.add(c)
       }
-      floor.position.y = -1
+      floor.position.y = 0
       return floor
     }
 
