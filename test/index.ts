@@ -42,26 +42,33 @@ setTimeout(() => {
 
     // Start loop
   } else {
-    const nthFrame: number = parseInt(getUrlParam('nthFrame') || '1')
+    const nthFrameSim: number = parseInt(getUrlParam('nthFrameSim') || '1')
+    const nthFrameRender: number = parseInt(
+      getUrlParam('nthFrameRender') || '1'
+    )
     let frameCounter = 0
+    let simDt = 0
     let renderDt = 0
     const loop = () => {
       frameCounter++
       const dt = clock.getDelta()
+      simDt += dt
       renderDt += dt
 
       nextFrameUpdate()
-      UpdateManager.update(dt)
       timeUniform.value += dt
       timeFractUniform.value = (timeFractUniform.value + dt) % 1
 
-      test.update(dt)
-      if (frameCounter % nthFrame !== 0) {
-        requestAnimationFrame(loop)
-        return
+      if (frameCounter % nthFrameSim === 0) {
+        UpdateManager.update(simDt)
+        test.update(simDt)
+        simDt = 0
       }
-      test.render(renderer, renderDt)
-      renderDt = 0
+
+      if (frameCounter % nthFrameRender === 0) {
+        test.render(renderer, renderDt)
+        renderDt = 0
+      }
 
       requestAnimationFrame(loop)
     }

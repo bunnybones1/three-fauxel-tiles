@@ -29,11 +29,47 @@ import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTil
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
+class DummyController {
+  private _updaters: Array<(dt: number) => void> = []
+  constructor(public x: number, public y: number, public angle: number) {
+    //
+  }
+  addUpdater(updater: (dt: number) => void) {
+    this._updaters.push(updater)
+  }
+  update(dt: number) {
+    for (const updater of this._updaters) {
+      updater.call(this, dt)
+    }
+  }
+}
+
+class DummyLightController {
+  private _updaters: Array<(dt: number) => void> = []
+  constructor(
+    public x: number,
+    public y: number,
+    public z: number,
+    public color: Color,
+    public size: number
+  ) {
+    //
+  }
+  addUpdater(updater: (dt: number) => void) {
+    this._updaters.push(updater)
+  }
+  update(dt: number) {
+    for (const updater of this._updaters) {
+      updater.call(this, dt)
+    }
+  }
+}
+
 function makeWanderer(maxSpeed = 0.4, maxSpeedDelta = 0.02) {
   let angleDelta = 0
   let speed = 0
   let speedDelta = 0
-  return function wanderer() {
+  return function wanderer(dt: number) {
     angleDelta += rand2(0.03)
     angleDelta = clamp(angleDelta, -0.1, 0.1)
     angleDelta *= 0.99
@@ -50,44 +86,30 @@ function makeWanderer(maxSpeed = 0.4, maxSpeedDelta = 0.02) {
     this.y += Math.sin(this.angle - Math.PI * 0.5) * realSpeed
   }
 }
-class DummyController {
-  private _updaters: Array<() => void> = []
-  constructor(public x: number, public y: number, public angle: number) {
-    //
-  }
-  addUpdater(updater: () => void) {
-    this._updaters.push(updater)
-  }
-  update() {
-    for (const updater of this._updaters) {
-      updater.call(this)
-    }
-  }
-}
-
-class DummyLightController {
-  private _updaters: Array<() => void> = []
-  constructor(
-    public x: number,
-    public y: number,
-    public z: number,
-    public color: Color,
-    public size: number
-  ) {
-    //
-  }
-  addUpdater(updater: () => void) {
-    this._updaters.push(updater)
-  }
-  update() {
-    for (const updater of this._updaters) {
-      updater.call(this)
-    }
-  }
-}
 
 function makeAvoider(metaTileSampler: JITTileSampler) {
-  return function avoider() {
+  const tempSample = metaTileSampler.sampleMeta(0, 0)
+  const fastSmallColliders = tempSample.makeFastMultiMask(['beam', 'lampPost'])
+
+  const fastTrees = tempSample.makeFastMultiMask(['treePine', 'treeMaple'])
+  const fastRocks = tempSample.makeFastMask('rocks')
+  const fastBeam = tempSample.makeFastMask('beam')
+  const fastHarvested = tempSample.makeFastMask('harvested')
+  const fastMaturePlant = tempSample.makeFastMask('maturePlant')
+  const fastMediumColliders = tempSample.makeFastMultiMask([
+    'bricks',
+    'bush',
+    'testObject',
+    'pyramid'
+  ])
+  const fastWater = tempSample.makeFastMask('water')
+  const cardinalOffsets = [
+    [-1, 0],
+    [0, 1],
+    [1, 0],
+    [0, -1]
+  ]
+  return function avoider(dt: number) {
     const x = this.x
     const y = this.y
     const otx = Math.floor(x)
@@ -100,23 +122,62 @@ function makeAvoider(metaTileSampler: JITTileSampler) {
         const tx = otx + ix
         const ty = oty + iy
         const namedBits = metaTileSampler.sampleMeta(tx, ty)
+        let size = 0
         if (
-          namedBits.has('water') ||
-          namedBits.has('beam') ||
-          namedBits.has('bricks') ||
-          namedBits.has('bush') ||
-          namedBits.has('lampPost') ||
-          namedBits.has('testObject') ||
-          namedBits.has('pyramid') ||
-          (namedBits.has('rocks') && !namedBits.has('harvested')) ||
-          namedBits.has('treePine') ||
-          namedBits.has('treeMaple')
+          namedBits.hasFast(fastSmallColliders) ||
+          (namedBits.hasFast(fastTrees) &&
+            namedBits.hasFast(fastHarvested) &&
+            namedBits.hasFast(fastMaturePlant))
         ) {
+          size = 0.35
+          for (const co of cardinalOffsets) {
+            if (
+              metaTileSampler
+                .sampleMeta(tx + co[0], ty + co[1])
+                .hasFast(fastBeam)
+            ) {
+              const dx = x - tx - co[0] * 0.5
+              const dy = y - ty - co[1] * 0.5
+              const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
+              if (dist < size) {
+                const ratio = 1 - dist / size
+                vx += dx * ratio
+                vy += dy * ratio
+                vDist++
+              }
+            }
+          }
+        } else if (
+          namedBits.hasFast(fastMediumColliders) ||
+          (namedBits.hasFast(fastTrees) && !namedBits.hasFast(fastHarvested))
+        ) {
+          size = 0.65
+        } else if (
+          namedBits.hasFast(fastRocks) &&
+          !namedBits.hasFast(fastHarvested)
+        ) {
+          size = 0.75
+        } else if (namedBits.hasFast(fastWater)) {
+          let waters = 0
+          for (const co of cardinalOffsets) {
+            if (
+              metaTileSampler
+                .sampleMeta(tx + co[0], ty + co[1])
+                .hasFast(fastWater)
+            ) {
+              waters++
+            }
+          }
+          if (waters === 4) {
+            size = 0.75
+          }
+        }
+        if (size > 0) {
           const dx = x - tx
           const dy = y - ty
           const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
-          if (dist < 0.75) {
-            const ratio = 1 - dist / 0.75
+          if (dist < size) {
+            const ratio = 1 - dist / size
             vx += dx * ratio
             vy += dy * ratio
             vDist++
@@ -124,19 +185,24 @@ function makeAvoider(metaTileSampler: JITTileSampler) {
         }
       }
     }
-    this.x += vx
-    this.y += vy
+    const amt = dt / __idealFrameDuration
+    this.x += vx * amt
+    this.y += vy * amt
     if (vDist === 4) {
       this.y += 1
     }
   }
 }
 
+const __idealFrameDuration = 1 / 60
 function makeKeyboardUpdater() {
+  const angleLerpRate = 0.2
   let angle = 0
   // let speed = 0
   const kv = new Vector2()
-  return function keyboardUpdater() {
+  return function keyboardUpdater(dt: number) {
+    const adjDt = dt / __idealFrameDuration
+    const angleLerpAmt = 1 - Math.pow(1 - angleLerpRate, adjDt)
     kv.copy(getQuickKeyboardDirectionVector()).normalize()
     if (!(kv.x === 0 && kv.y === 0)) {
       const newAngle = Math.atan2(-kv.y, kv.x) + Math.PI * 0.5
@@ -146,9 +212,10 @@ function makeKeyboardUpdater() {
       } else if (angleDelta > Math.PI) {
         angleDelta -= Math.PI * 2
       }
-      angle += angleDelta * 0.2
-      this.x += kv.x * 0.05
-      this.y -= kv.y * 0.05
+      angle += angleDelta * angleLerpAmt
+      const speed = 0.05 * adjDt
+      this.x += kv.x * speed
+      this.y -= kv.y * speed
       const steppedAngle =
         (Math.round((angle / Math.PI / 2) * 16) / 16) * Math.PI * 2
       this.angle = steppedAngle
@@ -159,8 +226,8 @@ function makeKeyboardUpdater() {
 function makeLightUpdater(size: number, sizeSpeed = 10) {
   let sizePhase = detRandLights(0, Math.PI * 2)
 
-  return function lightUpdater() {
-    sizePhase += 1 / size
+  return function lightUpdater(dt: number) {
+    sizePhase += ((1 / size) * __idealFrameDuration) / dt
     // this.x += 1 / this._size
     this.size =
       size * lerp(0.8, 1.2, Math.sin(sizePhase * sizeSpeed) * 0.5 + 0.5)
@@ -169,12 +236,18 @@ function makeLightUpdater(size: number, sizeSpeed = 10) {
 }
 
 function makeLanternLightUpdater(parent: DummyController) {
-  return function lanternLightUpdater() {
+  const angleLerpRate = 0.25
+  let swing = 0
+  return function lanternLightUpdater(dt: number) {
+    const adjDt = dt / __idealFrameDuration
+    const angleLerpAmt = 1 - Math.pow(1 - angleLerpRate, adjDt)
     const a = parent.angle + Math.PI * -0.375
     const d = 0.5
+    swing += dt
 
-    this.x = parent.x + Math.cos(a) * d
-    this.y = parent.y + Math.sin(a) * d
+    this.x = lerp(this.x, parent.x + Math.cos(a) * d, angleLerpAmt)
+    this.y = lerp(this.y, parent.y + Math.sin(a) * d, angleLerpAmt)
+    this.z = lerp(0.48, 0.52, Math.sin(swing * 5))
   }
 }
 
@@ -242,9 +315,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       rand(-Math.PI, Math.PI)
     )
     player.addUpdater(makeKeyboardUpdater())
-    player.addUpdater(makeAvoider(mapScrollingView.jitTileSampler))
-    spriteControllers.push(player)
     const avoider = makeAvoider(mapScrollingView.jitTileSampler)
+    player.addUpdater(avoider)
+    spriteControllers.push(player)
     for (let i = 0; i < 10; i++) {
       const actor = new DummyController(
         rand2(20),
@@ -449,6 +522,33 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     this.finalViewCacheCamera = finalViewCacheCamera
   }
   update(dt: number) {
+    for (let i = 0; i < this._spriteControllers.length; i++) {
+      const tc = this._spriteControllers[i]
+      const s = this._sprites[i]
+      tc.update(dt)
+      s.x = tc.x
+      s.y = tc.y
+      s.angle =
+        (~~(wrap(tc.angle / (Math.PI * 2), 0, 1) * 16) / 16) * Math.PI * 2
+    }
+    for (let i = 0; i < this._lightControllers.length; i++) {
+      const tc = this._lightControllers[i]
+      const s = this._lights[i]
+      tc.update(dt)
+      s.x = tc.x
+      s.y = tc.y
+      s.z = tc.z
+      s.size = tc.size
+    }
+    for (let i = 0; i < this._lanternLightControllers.length; i++) {
+      const lc = this._lanternLightControllers[i]
+      const l = this._lanternLights[i]
+      lc.update(dt)
+      l.x = lc.x
+      l.y = lc.y
+      l.z = lc.z
+      l.size = lc.size
+    }
     if (getUrlFlag('play')) {
       const player = this._spriteControllers[0]
       this._pixelsOffset.set(
@@ -492,33 +592,6 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     this._mapViewSubTilePixelOffsetUvST.w =
       this._pixelRemainder.y / this._pixelsPerTile / this._viewHeight
 
-    for (let i = 0; i < this._spriteControllers.length; i++) {
-      const tc = this._spriteControllers[i]
-      const s = this._sprites[i]
-      tc.update()
-      s.x = tc.x
-      s.y = tc.y
-      s.angle =
-        (~~(wrap(tc.angle / (Math.PI * 2), 0, 1) * 16) / 16) * Math.PI * 2
-    }
-    for (let i = 0; i < this._lightControllers.length; i++) {
-      const tc = this._lightControllers[i]
-      const s = this._lights[i]
-      tc.update()
-      s.x = tc.x
-      s.y = tc.y
-      s.z = tc.z
-      s.size = tc.size
-    }
-    for (let i = 0; i < this._lanternLightControllers.length; i++) {
-      const lc = this._lanternLightControllers[i]
-      const l = this._lanternLights[i]
-      lc.update()
-      l.x = lc.x
-      l.y = lc.y
-      l.z = lc.z
-      l.size = lc.size
-    }
     super.update(dt)
   }
   render(renderer: WebGLRenderer, dt: number) {
