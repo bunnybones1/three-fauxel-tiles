@@ -363,10 +363,14 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       lightControllers.push(light)
     }
 
-    for (let iy = -40; iy < 40; iy++) {
-      for (let ix = -40; ix < 40; ix++) {
-        const metaProps = mapScrollingView.jitTileSampler.sampleMeta(ix, iy)
-        if (metaProps.has('lampPost')) {
+    const lights: any[] = []
+
+    const lightRegistry: Map<string, [any, any]> = new Map()
+
+    mapScrollingView.jitTileSampler.onDirtyMetaProcessed(
+      (x: number, y: number, meta) => {
+        const key = `${x}:${y}`
+        if (meta.has('lampPost') && !lightRegistry.has(key)) {
           const color = new Color()
             .setHSL(
               detRandLights(0, 1) > 0.5 ? 0.04 : 0.5,
@@ -378,16 +382,50 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
             )
             .multiplyScalar(3)
           const dlc = new DummyLightController(
-            ix + 0.3,
-            iy,
+            x + 0.3,
+            y,
             1.25,
             color,
             8 * pixelsPerTile
           )
           lightControllers.push(dlc)
+          const light = mapScrollingView.pointLightRenderer.makeLight(
+            dlc.x,
+            dlc.y,
+            0.5,
+            dlc.size,
+            dlc.color
+          )
+          lights.push(light)
+          lightRegistry.set(key, [dlc, light])
         }
       }
-    }
+    )
+    // for (let iy = -40; iy < 40; iy++) {
+    //   for (let ix = -40; ix < 40; ix++) {
+    //     const metaProps = mapScrollingView.jitTileSampler.sampleMeta(ix, iy)
+    //     if (metaProps.has('lampPost')) {
+    //       const color = new Color()
+    //         .setHSL(
+    //           detRandLights(0, 1) > 0.5 ? 0.04 : 0.5,
+    //           0.8,
+    //           0.6
+    //           // detRandLights(0, 100),
+    //           // detRandLights(0.5, 0.8),
+    //           // detRandLights(0.25, 0.5)
+    //         )
+    //         .multiplyScalar(3)
+    //       const dlc = new DummyLightController(
+    //         ix + 0.3,
+    //         iy,
+    //         1.25,
+    //         color,
+    //         8 * pixelsPerTile
+    //       )
+    //       lightControllers.push(dlc)
+    //     }
+    //   }
+    // }
 
     const lanternLightControllers: DummyLightController[] =
       spriteControllers.map((spriteC) => {
@@ -410,15 +448,17 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
         return lc
       })
 
-    const lights = lightControllers.map((tc) =>
-      mapScrollingView.pointLightRenderer.makeLight(
-        tc.x,
-        tc.y,
-        0.5,
-        tc.size,
-        tc.color
+    for (const lc of lightControllers) {
+      lights.push(
+        mapScrollingView.pointLightRenderer.makeLight(
+          lc.x,
+          lc.y,
+          0.5,
+          lc.size,
+          lc.color
+        )
       )
-    )
+    }
 
     const lanternLights = lanternLightControllers.map((tc) =>
       mapScrollingView.pointLightRenderer.makeLight(
@@ -617,68 +657,79 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   }
 }
 const pVec = new Vector2()
+const tVec = new Vector2()
+function getCoordInFrontOfPlayer(player: DummyController) {
+  const a = player.angle - Math.PI * 0.5
+  pVec.x = Math.cos(a)
+  pVec.y = Math.sin(a)
+  pVec.multiplyScalar(0.75)
+  tVec.x = Math.round(player.x + pVec.x)
+  tVec.y = Math.round(player.y + pVec.y)
+  return tVec
+}
 function rigHarvestAction(
   player: DummyController,
   metaTileSampler: JITTileSampler
 ) {
   let harvestActionState = false
   let buildActionState = false
+  let lampPostActionState = false
   let unbuildActionState = false
   const onKey = (key: KeyboardCodes, down: boolean) => {
-    if (key === 'Space') {
-      harvestActionState = down
-      if (harvestActionState) {
-        const a = player.angle - Math.PI * 0.5
-        pVec.x = Math.cos(a)
-        pVec.y = Math.sin(a)
-        pVec.multiplyScalar(0.75)
-        const x = Math.round(player.x + pVec.x)
-        const y = Math.round(player.y + pVec.y)
-        const tileMeta = metaTileSampler.sampleMeta(x, y).clone()
-        tileMeta.enableBit('harvested')
-        tileMeta.disableBit('bush')
-        metaTileSampler.writeMeta(x, y, tileMeta)
-      }
-    }
-    if (key === 'KeyB') {
-      buildActionState = down
-      if (buildActionState) {
-        const a = player.angle - Math.PI * 0.5
-        pVec.x = Math.cos(a)
-        pVec.y = Math.sin(a)
-        pVec.multiplyScalar(0.75)
-        const x = Math.round(player.x + pVec.x)
-        const y = Math.round(player.y + pVec.y)
-        const tileMeta = metaTileSampler.sampleMeta(x, y).clone()
-        if (!tileMeta.has('floor')) {
-          tileMeta.enableBit('floor')
-        } else if (!tileMeta.has('beam')) {
-          tileMeta.enableBit('beam')
-        } else if (!tileMeta.has('bricks')) {
-          tileMeta.enableBit('bricks')
+    switch (key) {
+      case 'Space':
+        if (down && !harvestActionState) {
+          const coord = getCoordInFrontOfPlayer(player)
+          const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
+          tileMeta.enableBit('harvested')
+          tileMeta.disableBit('bush')
+          metaTileSampler.writeMeta(coord.x, coord.y, tileMeta)
         }
-        metaTileSampler.writeMeta(x, y, tileMeta)
-      }
-    }
-    if (key === 'KeyX') {
-      unbuildActionState = down
-      if (unbuildActionState) {
-        const a = player.angle - Math.PI * 0.5
-        pVec.x = Math.cos(a)
-        pVec.y = Math.sin(a)
-        pVec.multiplyScalar(0.75)
-        const x = Math.round(player.x + pVec.x)
-        const y = Math.round(player.y + pVec.y)
-        const tileMeta = metaTileSampler.sampleMeta(x, y).clone()
-        if (tileMeta.has('bricks')) {
-          tileMeta.disableBit('bricks')
-        } else if (tileMeta.has('beam')) {
-          tileMeta.disableBit('beam')
-        } else if (tileMeta.has('floor')) {
-          tileMeta.disableBit('floor')
+        harvestActionState = down
+        break
+      case 'KeyB':
+        if (down && !buildActionState) {
+          const coord = getCoordInFrontOfPlayer(player)
+          const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
+          if (!tileMeta.has('floor')) {
+            tileMeta.enableBit('floor')
+          } else if (!tileMeta.has('beam')) {
+            tileMeta.enableBit('beam')
+          } else if (!tileMeta.has('bricks')) {
+            tileMeta.enableBit('bricks')
+          }
+          metaTileSampler.writeMeta(coord.x, coord.y, tileMeta)
         }
-        metaTileSampler.writeMeta(x, y, tileMeta)
-      }
+        buildActionState = down
+        break
+      case 'KeyX':
+        if (down && !unbuildActionState) {
+          const coord = getCoordInFrontOfPlayer(player)
+          const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
+          if (tileMeta.has('lampPost')) {
+            tileMeta.disableBit('lampPost')
+          } else if (tileMeta.has('bricks')) {
+            tileMeta.disableBit('bricks')
+          } else if (tileMeta.has('beam')) {
+            tileMeta.disableBit('beam')
+          } else if (tileMeta.has('floor')) {
+            tileMeta.disableBit('floor')
+          }
+          metaTileSampler.writeMeta(coord.x, coord.y, tileMeta)
+        }
+        unbuildActionState = down
+        break
+      case 'KeyL':
+        if (down && !lampPostActionState) {
+          const coord = getCoordInFrontOfPlayer(player)
+          const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
+          if (!tileMeta.has('lampPost')) {
+            tileMeta.enableBit('lampPost')
+            metaTileSampler.writeMeta(coord.x, coord.y, tileMeta)
+          }
+        }
+        lampPostActionState = down
+        break
     }
   }
   getKeyboardInput().addListener(onKey)

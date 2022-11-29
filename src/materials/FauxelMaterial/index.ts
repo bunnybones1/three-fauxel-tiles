@@ -10,6 +10,7 @@ import {
 } from 'three'
 import { lerp } from 'three/src/math/MathUtils'
 import { buildParameters } from '../../utils/jsUtils'
+import { wrap } from '../../utils/math'
 import { getTempTexture } from '../../utils/threeUtils'
 
 import fragmentShader from './frag.glsl'
@@ -75,6 +76,19 @@ const __sunDirectionForWaterFake = new Vector3(
 const __tempVec3 = new Vector3()
 export class FauxelMaterial extends RawShaderMaterial {
   setSunAngle: (sunAngle: number) => void
+  private _useSunShadows: boolean
+  public get useSunShadows(): boolean {
+    return this._useSunShadows
+  }
+  public set useSunShadows(value: boolean) {
+    if (value === this._useSunShadows) {
+      return
+    }
+    this.defines.USE_SUN_SHADOWS = value
+    this.needsUpdate = true
+
+    this._useSunShadows = value
+  }
   constructor(options: Partial<Parameters> = {}) {
     const params = buildParameters(__defaultParams, options)
     const uUvST = new Uniform(params.uvST)
@@ -146,7 +160,8 @@ export class FauxelMaterial extends RawShaderMaterial {
       RELATIVE_PIXEL_SIZE: params.relativePixelSize,
       RELATIVE_TILE_PIXEL_SIZE:
         params.relativePixelSize / params.relativeTileSize,
-      USE_WATER: params.useWater
+      USE_WATER: params.useWater,
+      USE_SUN_SHADOWS: true
     }
 
     super({
@@ -162,6 +177,7 @@ export class FauxelMaterial extends RawShaderMaterial {
     })
 
     this.setSunAngle = (sunAngle: number) => {
+      this.useSunShadows = wrap(sunAngle, 0, Math.PI * 2) < Math.PI
       sunDirection.set(Math.cos(sunAngle), 0.75, Math.sin(sunAngle))
       sunDirection.normalize()
 

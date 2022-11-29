@@ -69,13 +69,15 @@ void main() {
   texelHeight += RELATIVE_TILE_PIXEL_SIZE;
   float mixShadow = 1.0;
   vec2 flooredUv = uv + vec2(0, floorYOffset);
-	for(float i = RELATIVE_PIXEL_SIZE; i < RELATIVE_TILE_SIZE * 2.0; i += RELATIVE_PIXEL_SIZE) {
-    float newHeight = texture2D(uTextureTopDownHeight, flooredUv - (vec2(i) * uSunShadowDirection.xz)).b * 2.0;
-    float newHeight2 = texture2D(uTextureRoughnessMetalnessHeight, uv + (vec2(0.0, i) + vec2(i) * -uSunShadowDirection.xz)).b * 2.0;
-    mixShadow = min(mixShadow, max(step(newHeight, texelHeight), step(newHeight2, texelHeight)));
-    // mixShadow = min(mixShadow, step(newHeight2, texelHeight));
-    texelHeight += RELATIVE_TILE_PIXEL_SIZE;
-	}
+  #ifdef USE_SUN_SHADOWS
+    for(float i = RELATIVE_PIXEL_SIZE; i < RELATIVE_TILE_SIZE * 2.0; i += RELATIVE_PIXEL_SIZE) {
+      float newHeight = texture2D(uTextureTopDownHeight, flooredUv - (vec2(i) * uSunShadowDirection.xz)).b * 2.0;
+      float newHeight2 = texture2D(uTextureRoughnessMetalnessHeight, uv + (vec2(0.0, i) + vec2(i) * -uSunShadowDirection.xz)).b * 2.0;
+      mixShadow = min(mixShadow, max(step(newHeight, texelHeight), step(newHeight2, texelHeight)));
+      // mixShadow = min(mixShadow, step(newHeight2, texelHeight));
+      texelHeight += RELATIVE_TILE_PIXEL_SIZE;
+    }
+  #endif
   #ifdef USE_MIST
     float mistMask = max(0.0, 0.3 - texelRoughnessMetalnessHeight.b * 2.0) * max(texture2D(uTextureFog, uv + uFogScroll).b, texture2D(uTextureFog, uv + uFogScroll * 2.0).b);
     sunLightStrength *= mixShadow * (1.0-mistMask);

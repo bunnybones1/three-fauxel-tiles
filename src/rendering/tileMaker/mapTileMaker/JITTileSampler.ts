@@ -6,7 +6,7 @@ import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
 import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
 import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
-import StephHelper2D from '../../../helpers/utils/StepHelper2D'
+import StepHelper2D from '../../../helpers/utils/StepHelper2D'
 import InvertHelper2D from '../../../helpers/utils/InvertHelper2D'
 import { CardinalStrings } from '../../../meshes/factorySand'
 import { getUrlFlag } from '../../../utils/location'
@@ -14,6 +14,7 @@ import { wrap } from '../../../utils/math'
 
 import MapTileMaker from './MapTileMaker'
 import LocalStorageMap from '../../../utils/LocalStorageMap'
+import BoxFilterHelper2D from '../../../helpers/utils/BoxFilterHelper2D'
 
 const metaTileStrings = [
   'water',
@@ -94,7 +95,7 @@ export default class JITTileSampler {
   set tileMaker(value: MapTileMaker) {
     throw new Error('Cannot change tileMaker during runtime')
   }
-  metaNoiseGenerators: StephHelper2D[]
+  metaNoiseGenerators: StepHelper2D[]
   bytesPerTile: number
   // localMetaProps: number
   // visProps: Uint8Array
@@ -126,19 +127,31 @@ export default class JITTileSampler {
     )
 
     const seed = 1
-    const floorNoise = simpleThreshNoise(0.1, 0, 0, 0.5, seed)
+    const floorNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(0.1, 0, 0, seed)),
+      0.5
+    )
     const sandNoise = simpleThreshNoise(0.1, -182, 237, 0.5, seed)
     const beachNoise = simpleThreshNoise(0.1, -182, 237, -0.2, seed)
     const waterBase = new AdditiveGroupHelper2D([
       new NoiseHelper2D(0.02, 0, 0, seed),
       new NoiseHelper2D(0.08, 0, 0, seed, 0.5)
     ])
-    const waterNoise = new StephHelper2D(waterBase)
-    const dirtNoise = new StephHelper2D(new InvertHelper2D(sandNoise))
-    const beamNoise = simpleThreshNoise(0.08, -100, -100, 0.4, seed)
-    const bricksNoise = simpleThreshNoise(0.06, -50, -50, 0.5, seed)
-    const drywallNoise = simpleThreshNoise(0.05, 20, 20, 0.5, seed)
-    const grassNoise = new StephHelper2D(
+    const waterNoise = new StepHelper2D(waterBase)
+    const dirtNoise = new StepHelper2D(new InvertHelper2D(sandNoise))
+    const beamNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(0.08, -100, -100, seed)),
+      0.4
+    )
+    const bricksNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(0.06, -50, -50, seed)),
+      0.5
+    )
+    const drywallNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(0.05, 20, 20, seed)),
+      0.5
+    )
+    const grassNoise = new StepHelper2D(
       new AdditiveGroupHelper2D([
         new NoiseHelper2D(0.15, 100, 200, seed),
         new NoiseHelper2D(0.01, 100, 200, seed)
@@ -146,45 +159,60 @@ export default class JITTileSampler {
       -0.5
     )
     const bushNoise = simpleThreshNoise(0.3, 300, 200, 0.25, seed)
-    const goldNoise = simpleThreshNoise(3, -300, 200, 0.75, seed)
-    const lampPostNoise = simpleThreshNoise(3, -1300, 200, 0.75, seed)
-    const testObjectNoise = simpleThreshNoise(3, -100, -300, 0.75, seed)
-    const pyramidNoise = simpleThreshNoise(3, -204, -121, 0.85, seed)
+    const goldNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(3, -300, 200, seed), -32, 32),
+      0.75
+    )
+    const lampPostNoise = new StepHelper2D(
+      new BoxFilterHelper2D(simpleThreshNoise(3, -1300, 200, seed)),
+      0.75
+    )
+    const testObjectNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(3, -100, -300, seed)),
+      0.75
+    )
+    const pyramidNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(3, -204, -121, seed)),
+      0.85
+    )
     const rockyGroundNoise = simpleThreshNoise(3, 204, -121, 0.25, seed)
     const rocksNoiseBase = new AdditiveGroupHelper2D([
       new NoiseHelper2D(0.01, 604, -121, seed),
       new NoiseHelper2D(0.05, 604, -121, seed, 0.5)
     ])
-    const rocksNoise = new StephHelper2D(rocksNoiseBase, 0.7)
-    const goldOreForRocksNoise = new StephHelper2D(
+    const rocksNoise = new StepHelper2D(rocksNoiseBase, 0.7)
+    const goldOreForRocksNoise = new StepHelper2D(
       new AdditiveGroupHelper2D([
         new ClampHelper2D(rocksNoiseBase),
         new NoiseHelper2D(0.8, 604, -121, seed, 0.2, -0.1)
       ]),
       1.07
     )
-    const silverOreForRocksNoise = new StephHelper2D(
+    const silverOreForRocksNoise = new StepHelper2D(
       new AdditiveGroupHelper2D([
         new ClampHelper2D(rocksNoiseBase),
         new NoiseHelper2D(0.8, -604, -121, seed, 0.2, -0.1)
       ]),
       1.05
     )
-    const ironOreForRocksNoise = new StephHelper2D(
+    const ironOreForRocksNoise = new StepHelper2D(
       new AdditiveGroupHelper2D([
         new ClampHelper2D(rocksNoiseBase),
         new NoiseHelper2D(0.8, 404, 121, seed, 0.2, -0.15)
       ]),
       0.95
     )
-    const copperOreForRocksNoise = new StephHelper2D(
+    const copperOreForRocksNoise = new StepHelper2D(
       new AdditiveGroupHelper2D([
         new ClampHelper2D(rocksNoiseBase),
         new NoiseHelper2D(0.8, 504, 121, seed, 0.2, -0.15)
       ]),
       0.97
     )
-    const harvestedNoise = simpleThreshNoise(0.08, -500, -100, 0.35, seed)
+    const harvestedNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(0.08, -500, -100, seed)),
+      0.35
+    )
     const treePineNoise = simpleThreshNoise(0.3, -200, -400, 0.5, seed)
     const plantMatureNoise = simpleThreshNoise(3, -340, -460, 0.25, seed)
     const treeMapleNoise = simpleThreshNoise(0.3, 200, 400, 0.6, seed)
@@ -217,6 +245,7 @@ export default class JITTileSampler {
   }
   writeMeta(x: number, y: number, meta: NamedMetaBits) {
     const key = x + ':' + y
+    this.validateLocalMeta(meta, x, y)
     this.metaCache.set(key, meta)
     this.dirtyMeta.add(key)
   }
@@ -234,10 +263,12 @@ export default class JITTileSampler {
     this.metaRawCache.set(key, metaRaw)
     return metaRaw
   }
-  sampleMeta(x: number, y: number) {
+  sampleMeta(x: number, y: number): NamedMetaBits {
     const key = x + ':' + y
     if (this.metaCache.has(key)) {
-      return this.metaCache.get(key)!
+      const metaProps = this.metaCache.get(key)!
+      this.emitDirtyMetaProcessed(x, y, metaProps)
+      return metaProps
     } else {
       const metaProps = new NamedBitsInNumber(
         this.sampleMetaRaw(x, y).value,
@@ -245,6 +276,7 @@ export default class JITTileSampler {
       )
       this.validateLocalMeta(metaProps, x, y)
       this.metaCache.set(key, metaProps)
+      this.emitDirtyMetaProcessed(x, y, metaProps)
       return metaProps
     }
   }
@@ -307,18 +339,20 @@ export default class JITTileSampler {
 
     if (val.has('floor')) {
       val.disableBit('grass')
+      val.disableBit('sand')
+      val.enableBit('dirt')
     }
 
-    if (Math.abs(x) > 10 || Math.abs(y) > 10) {
-      // val.disableBit('floor')
-      // val.disableBit('bricks')
-      // val.disableBit('beam')
-      // val.disableBit('drywall')
-      val.disableBit('lampPost')
-      val.disableBit('pyramid')
-      val.disableBit('testObject')
-      val.disableBit('goldPile')
-    }
+    // if (Math.abs(x) > 10 || Math.abs(y) > 10) {
+    //   // val.disableBit('floor')
+    //   // val.disableBit('bricks')
+    //   // val.disableBit('beam')
+    //   // val.disableBit('drywall')
+    //   val.disableBit('lampPost')
+    //   val.disableBit('pyramid')
+    //   val.disableBit('testObject')
+    //   val.disableBit('goldPile')
+    // }
 
     // if (Math.abs(x) > 16 || Math.abs(y) > 16) {
     //   val.disableBit('harvested')
@@ -1229,7 +1263,8 @@ export default class JITTileSampler {
         const y = coords[1]
         const meta = this.sampleMeta(x, y)
         this.validateLocalMeta(meta, x, y)
-        for (let cY = -1; cY <= 1; cY++) {
+        this.emitDirtyMetaProcessed(x, y, meta)
+        for (let cY = -1; cY <= 2; cY++) {
           for (let cX = -1; cX <= 1; cX++) {
             const visKey = `${x + cX}:${y + cY}`
             this.dirtyVis.add(visKey)
@@ -1245,6 +1280,20 @@ export default class JITTileSampler {
       return false
     }
   }
+  private _dirtyMetaProcessedListeners: Array<
+    (x: number, y: number, meta: NamedMetaBits) => void
+  > = []
+  onDirtyMetaProcessed(
+    cb: (x: number, y: number, meta: NamedMetaBits) => void
+  ) {
+    this._dirtyMetaProcessedListeners.push(cb)
+  }
+  emitDirtyMetaProcessed(x: number, y: number, meta: NamedMetaBits) {
+    for (const cb of this._dirtyMetaProcessedListeners) {
+      cb(x, y, meta)
+    }
+  }
+
   updateVis(bottomPointsGeo: BufferGeometry, topPointsGeo: BufferGeometry) {
     if (this._offsetsDirty) {
       this._offsetsDirty = false
