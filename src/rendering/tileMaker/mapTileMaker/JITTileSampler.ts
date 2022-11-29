@@ -13,6 +13,7 @@ import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
 
 import MapTileMaker from './MapTileMaker'
+import LocalStorageMap from '../../../utils/LocalStorageMap'
 
 const metaTileStrings = [
   'water',
@@ -98,7 +99,10 @@ export default class JITTileSampler {
   // localMetaProps: number
   // visProps: Uint8Array
   metaRawCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
-  metaCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
+  metaCache: LocalStorageMap<string, NamedMetaBits> = new LocalStorageMap(
+    (v) => new NamedBitsInNumber(parseInt(v), metaTileStrings),
+    (v) => v.value.toString()
+  ) //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   dirtyMeta: Set<string> = new Set()
   dirtyVis: Set<string> = new Set()
   private _offsetX = initOffset.x
@@ -1372,6 +1376,7 @@ export default class JITTileSampler {
         idBottomArr[i] = this.indicesOfMadeTiles.has(sampleCenter.idBottom)
           ? sampleCenter.idBottom
           : 0
+
         idBottomArr[i + 1] = this.indicesOfMadeTiles.has(sampleUp.idBottom)
           ? sampleUp.idBottom
           : 0
