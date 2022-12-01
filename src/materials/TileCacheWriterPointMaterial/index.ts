@@ -38,6 +38,13 @@ const __defaultParams: TileCacheWriterPointMaterialParameters = {
 }
 
 export class TileCacheWriterPointMaterial extends RawShaderMaterial {
+  private _mapDepthCacheTextureUniform: Uniform
+  public get mapDepthCacheTexture(): Texture {
+    return this._mapDepthCacheTextureUniform.value
+  }
+  public set mapDepthCacheTexture(value: Texture) {
+    this._mapDepthCacheTextureUniform.value = value
+  }
   public get tileTexture(): Texture {
     return this._tileTexUniform.value
   }
@@ -73,8 +80,9 @@ export class TileCacheWriterPointMaterial extends RawShaderMaterial {
         params.pixelsPerCacheEdge / params.pixelsPerTile
       ).toFixed(1)
     }
+    const mapDepthCacheTextureUniform = new Uniform(params.mapDepthCacheTexture)
     if (params.mapDepthCacheTexture) {
-      uniforms.uMapDepthCacheTexture = new Uniform(params.mapDepthCacheTexture)
+      uniforms.uMapDepthCacheTexture = mapDepthCacheTextureUniform
       uniforms.uMapDepthCacheUvST = new Uniform(params.mapDepthCacheUvST)
       defines.DISCARD_BY_MAP_DEPTH_CACHE = true
       defines.TILE_VIEW_RATIO = `vec2(${(32 / params.viewWidth).toFixed(6)}, ${(
@@ -100,5 +108,6 @@ export class TileCacheWriterPointMaterial extends RawShaderMaterial {
     })
     this._tileTexUniform = uTileTex
     this._alternateDepthTileTexUniform = alternateDepthTileTexUniform
+    this._mapDepthCacheTextureUniform = mapDepthCacheTextureUniform
   }
 }

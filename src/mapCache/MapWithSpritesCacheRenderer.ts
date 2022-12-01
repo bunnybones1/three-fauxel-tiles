@@ -165,9 +165,17 @@ export default class MapWithSpritesCacheRenderer {
           ? 'customTopDownHeight'
           : 'customRoughnessMetalnessHeight'
       )
+      const passDepthMapTex = this._mapCacheRenderer.mapCache.get(
+        pass === 'customTopDownHeight'
+          ? 'customTopDownHeight'
+          : 'customRoughnessMetalnessHeight'
+      )!.texture
       this._pointsBottomMaterial.tileTexture = passTileTex
+      this._pointsBottomMaterial.tileTexture = passTileTex
+      this._pointsBottomMaterial.mapDepthCacheTexture = passDepthMapTex
       this._pointsBottomMaterial.alternateDepthTileTexture = passDepthTileTex
       this._pointsTopMaterial.tileTexture = passTileTex
+      this._pointsTopMaterial.mapDepthCacheTexture = passDepthMapTex
       this._pointsTopMaterial.alternateDepthTileTexture = passDepthTileTex
       renderer.clearDepth()
       renderer.render(this.mapCacheScene, this.mapCacheCamera)

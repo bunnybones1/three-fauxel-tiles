@@ -29,6 +29,7 @@ import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelp
 import BaseTestScene from './BaseTestScene'
 import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTileSampler'
 import NamedBitsInNumber from '../../../src/helpers/utils/NamedBitsInNumber'
+import { getUrlParam } from '../../utils/location'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
@@ -256,7 +257,22 @@ function makeLanternLightUpdater(parent: DummyController) {
 
     this.x = lerp(this.x, parent.x + Math.cos(a) * d, angleLerpAmt)
     this.y = lerp(this.y, parent.y + Math.sin(a) * d, angleLerpAmt)
-    this.z = lerp(0.48, 0.52, Math.sin(swing * 5))
+    this.z = lerp(0.45, 0.55, Math.sin(swing * 5) * 0.5 + 0.5)
+  }
+}
+
+function makeYoyoUpdater(low: number, high: number) {
+  return function yoyoUpdater(dt: number) {
+    this.z = lerp(low, high, Math.sin(performance.now() * 0.001) * 0.5 + 0.5)
+  }
+}
+
+function makeOffsetSpinUpdater(x: number, y: number, radius: number) {
+  const angleOffset = detRandLights() * Math.PI * 2
+  return function yoyoUpdater(dt: number) {
+    const a = angleOffset + performance.now() * 0.0002
+    this.x = x + Math.cos(a) * radius
+    this.y = y + Math.sin(a) * radius
   }
 }
 
@@ -327,6 +343,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     const avoider = makeAvoider(mapScrollingView.jitTileSampler)
     player.addUpdater(avoider)
     rigHarvestAction(player, mapScrollingView.jitTileSampler)
+    player.x = getUrlInt('x')
+    player.y = getUrlInt('y')
     spriteControllers.push(player)
     for (let i = 0; i < 10; i++) {
       const actor = new DummyController(
@@ -380,14 +398,15 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
               // detRandLights(0.5, 0.8),
               // detRandLights(0.25, 0.5)
             )
-            .multiplyScalar(3)
+            .multiplyScalar(1.2)
           const dlc = new DummyLightController(
             x + 0.3,
             y,
-            1.25,
+            1.1,
             color,
             8 * pixelsPerTile
           )
+          // dlc.addUpdater(makeYoyoUpdater(0.5, 1.5))
           lightControllers.push(dlc)
           const light = mapScrollingView.pointLightRenderer.makeLight(
             dlc.x,
@@ -398,6 +417,48 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           )
           lights.push(light)
           lightRegistry.set(key, [dlc, light])
+        }
+        if (
+          meta.has('treePine') &&
+          !meta.has('maturePlant') &&
+          !meta.has('harvested') &&
+          !lightRegistry.has(key) &&
+          getUrlFlag('christmas')
+        ) {
+          const t = 62
+          for (let i = 0; i < t; i++) {
+            const ratio = i / t
+            const color = new Color()
+              .setHSL(
+                detRandLights(0, 1),
+                0.9,
+                0.5
+                // detRandLights(0, 100),
+                // detRandLights(0.5, 0.8),
+                // detRandLights(0.25, 0.5)
+              )
+              .multiplyScalar(20)
+            const a = detRandLights() * Math.PI * 2
+            const radius = (1 - ratio) * 0.7 + 0.1
+            const dlc = new DummyLightController(
+              x + Math.cos(a) * radius,
+              y + Math.sin(a) * radius,
+              1.2 * ratio * ratio + 0.2,
+              color,
+              0.5 * pixelsPerTile
+            )
+            dlc.addUpdater(makeOffsetSpinUpdater(x, y, radius))
+            lightControllers.push(dlc)
+            const light = mapScrollingView.pointLightRenderer.makeLight(
+              dlc.x,
+              dlc.y,
+              0.5,
+              dlc.size,
+              dlc.color
+            )
+            lights.push(light)
+            lightRegistry.set(key, [dlc, light])
+          }
         }
       }
     )
@@ -442,7 +503,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           spriteC.y,
           0.5,
           color,
-          4 * pixelsPerTile
+          8 * pixelsPerTile
         )
         lc.addUpdater(makeLanternLightUpdater(spriteC))
         return lc
