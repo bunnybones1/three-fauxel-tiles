@@ -15,7 +15,7 @@ const renderer = new WebGLRenderer({
   canvas,
   // context,
   context: recorderContext,
-  antialias: true,
+  antialias: false,
   premultipliedAlpha: false,
   powerPreference: 'high-performance'
   // powerPreference: "low-power"
