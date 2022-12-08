@@ -343,8 +343,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     const avoider = makeAvoider(mapScrollingView.jitTileSampler)
     player.addUpdater(avoider)
     rigHarvestAction(player, mapScrollingView.jitTileSampler)
-    player.x = getUrlInt('x')
-    player.y = getUrlInt('y')
+    player.x = getUrlInt('x', 0)
+    player.y = getUrlInt('y', 0)
     spriteControllers.push(player)
     for (let i = 0; i < 10; i++) {
       const actor = new DummyController(
