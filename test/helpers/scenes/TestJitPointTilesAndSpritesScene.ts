@@ -573,8 +573,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           new PlaneGeometry(0.5, 0.5, 1, 1),
           tileCacheMaterial
         )
-        tileCachePreview.position.x = -1.1 + i * 0.1
-        tileCachePreview.position.y = i * -0.1
+        tileCachePreview.position.x = 0.25 + i * 0.1
+        tileCachePreview.position.y = i * -0.1 + 2
+        tileCachePreview.position.z = 1.2
         tileCachePreview.rotation.x = Math.PI * -0.25
         tileCachePreview.scale.multiplyScalar(2)
         scene.add(tileCachePreview)

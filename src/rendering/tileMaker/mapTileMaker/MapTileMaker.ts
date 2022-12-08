@@ -1174,6 +1174,8 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       renderer.getScissor(oldScissor)
       let duration = 0
       let count = 0
+      const backupPixelRatio = renderer.getPixelRatio()
+      renderer.setPixelRatio(1)
       for (const index of this._renderQueue) {
         count++
         const startTime = performance.now()
@@ -1194,10 +1196,9 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
           this._indexedMeshesVisibility[j] = shouldShow
         }
         // this._scene.updateMatrixWorld(true)
-
         for (const pass of this._passes) {
           renderer.setRenderTarget(this._renderTargets.get(pass)!)
-          const p = this._pixelsPerTile / renderer.getPixelRatio()
+          const p = this._pixelsPerTile
           const depthPass = pass === 'customTopDownHeight'
           if (layer2 && depthPass) {
             continue
@@ -1222,6 +1223,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
           break
         }
       }
+      renderer.setPixelRatio(backupPixelRatio)
       console.log(duration)
       renderer.setViewport(oldViewport)
       renderer.setScissor(oldScissor)
