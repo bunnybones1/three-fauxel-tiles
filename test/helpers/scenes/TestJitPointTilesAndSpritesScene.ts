@@ -30,6 +30,7 @@ import BaseTestScene from './BaseTestScene'
 import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTileSampler'
 import NamedBitsInNumber from '../../../src/helpers/utils/NamedBitsInNumber'
 import { getUrlParam } from '../../utils/location'
+import { removeFromArray } from '../../utils/arrayUtils'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
@@ -91,7 +92,7 @@ function makeWanderer(maxSpeed = 0.4, maxSpeedDelta = 0.02) {
   }
 }
 
-function makeAvoider(metaTileSampler: JITTileSampler) {
+function makeTileAvoider(metaTileSampler: JITTileSampler) {
   const tempSample = metaTileSampler.sampleMeta(0, 0)
   const fastSmallColliders = tempSample.makeFastMultiMask(['beam', 'lampPost'])
 
@@ -113,7 +114,7 @@ function makeAvoider(metaTileSampler: JITTileSampler) {
     [1, 0],
     [0, -1]
   ]
-  return function avoider(dt: number) {
+  return function tileAvoider(dt: number) {
     const x = this.x
     const y = this.y
     const otx = Math.floor(x)
@@ -195,6 +196,59 @@ function makeAvoider(metaTileSampler: JITTileSampler) {
     if (vDist === 4) {
       this.y += 1
     }
+  }
+}
+
+const spriteTileOccupancy: Map<string, any[]> = new Map()
+const spriteSize = 0.5
+function makeSpriteAvoider() {
+  let oldKey: string | undefined = undefined
+  return function spriteAvoider(dt: number) {
+    const x = this.x
+    const y = this.y
+    const otx = Math.floor(x - spriteSize)
+    const oty = Math.floor(y - spriteSize)
+    let vx = 0
+    let vy = 0
+    const amt = (dt / __idealFrameDuration) * 0.5
+    for (let ix = 0; ix < 2; ix++) {
+      for (let iy = 0; iy < 2; iy++) {
+        const tx = otx + ix
+        const ty = oty + iy
+        const nearbyKey = `${tx}:${ty}`
+        if (spriteTileOccupancy.has(nearbyKey)) {
+          for (const other of spriteTileOccupancy.get(nearbyKey)!) {
+            if (other !== this) {
+              const dx = x - other.x
+              const dy = y - other.y
+              const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
+              if (dist < spriteSize) {
+                const ratio = 1 - dist / spriteSize
+                vx += dx * ratio
+                vy += dy * ratio
+                other.x -= dx * ratio * amt
+                other.y -= dy * ratio * amt
+              }
+            }
+          }
+        }
+      }
+    }
+    this.x += vx * amt
+    this.y += vy * amt
+    const finalOtx = Math.floor(x)
+    const finalOty = Math.floor(y)
+    const newKey = `${finalOtx}:${finalOty}`
+    if (oldKey !== newKey) {
+      if (oldKey) {
+        removeFromArray(spriteTileOccupancy.get(oldKey)!, this)
+      }
+      if (!spriteTileOccupancy.has(newKey)) {
+        spriteTileOccupancy.set(newKey, [])
+      }
+      spriteTileOccupancy.get(newKey)!.push(this)
+    }
+    oldKey = newKey
   }
 }
 
@@ -340,13 +394,14 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       rand(-Math.PI, Math.PI)
     )
     player.addUpdater(makeKeyboardUpdater())
-    const avoider = makeAvoider(mapScrollingView.jitTileSampler)
-    player.addUpdater(avoider)
+    const tileAvoider = makeTileAvoider(mapScrollingView.jitTileSampler)
+    player.addUpdater(tileAvoider)
+    player.addUpdater(makeSpriteAvoider())
     rigHarvestAction(player, mapScrollingView.jitTileSampler)
     player.x = getUrlInt('x', 0)
     player.y = getUrlInt('y', 0)
     spriteControllers.push(player)
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 2000; i++) {
       const actor = new DummyController(
         rand2(20),
         rand2(20, 10),
@@ -354,7 +409,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       )
       const wanderer = makeWanderer(0.25)
       actor.addUpdater(wanderer)
-      actor.addUpdater(avoider)
+      actor.addUpdater(tileAvoider)
+      actor.addUpdater(makeSpriteAvoider())
       spriteControllers.push(actor)
     }
     const sprites = spriteControllers.map((tc) =>
@@ -488,26 +544,31 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     //   }
     // }
 
-    const lanternLightControllers: DummyLightController[] =
-      spriteControllers.map((spriteC) => {
-        const color = new Color().setHSL(
-          // detRandLights(0, 100),
-          // detRandLights(0.5, 0.8),
-          // detRandLights(0.25, 0.5)
-          0.1,
-          0.9,
-          0.6
-        )
-        const lc = new DummyLightController(
-          spriteC.x,
-          spriteC.y,
-          0.5,
-          color,
-          8 * pixelsPerTile
-        )
-        lc.addUpdater(makeLanternLightUpdater(spriteC))
-        return lc
+    const lanternLightControllers: DummyLightController[] = spriteControllers
+      .map((spriteC, i) => {
+        if (i === 0 || detRandLights() > 0.95) {
+          const color = new Color().setHSL(
+            // detRandLights(0, 100),
+            // detRandLights(0.5, 0.8),
+            // detRandLights(0.25, 0.5)
+            0.1,
+            0.9,
+            0.6
+          )
+          const lc = new DummyLightController(
+            spriteC.x,
+            spriteC.y,
+            0.5,
+            color,
+            8 * pixelsPerTile
+          )
+          lc.addUpdater(makeLanternLightUpdater(spriteC))
+          return lc
+        } else {
+          return undefined
+        }
       })
+      .filter((v) => !!v) as DummyLightController[]
 
     for (const lc of lightControllers) {
       lights.push(
