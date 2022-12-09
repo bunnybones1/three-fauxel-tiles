@@ -53,7 +53,7 @@ setTimeout(() => {
     let renderDt = 0
     const loop = () => {
       frameCounter++
-      const dt = clock.getDelta()
+      const dt = Math.min(clock.getDelta(), 0.2)
       simDt += dt
       renderDt += dt
 
