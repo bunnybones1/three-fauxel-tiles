@@ -3,9 +3,15 @@ import { Color } from 'three'
 import { hexColor } from './colors'
 import { clamp } from './math'
 
+const cache = new Map<string, string>()
 export function getUrlParam(param: string) {
+  if (cache.has(param)) {
+    return cache.get(param)
+  }
   __setReminder(param)
-  return new URL(window.location.href).searchParams.get(param)
+  const val = new URL(window.location.href).searchParams.get(param)
+  cache.set(param, val)
+  return val
 }
 
 export function getUrlFlag(param: string) {
