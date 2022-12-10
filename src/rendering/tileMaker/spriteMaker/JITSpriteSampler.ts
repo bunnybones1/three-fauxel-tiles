@@ -1,16 +1,30 @@
 import { BufferGeometry } from 'three'
 import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
-import StephHelper2D from '../../../helpers/utils/StepHelper2D'
+import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
+import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
+import StepHelper2D from '../../../helpers/utils/StepHelper2D'
 import { wrap } from '../../../utils/math'
 
 import SpriteMaker from './SpriteMaker'
 
+type BottomAndTopIds = {
+  idTop: number
+  idBottom: number
+}
 const masks32: number[] = []
 for (let i = 0; i < 32; i++) {
   masks32[i] = 1 << i
 }
 
-type MetaSprite = 'body' | 'body2' | 'hat' | 'sword' | 'shield'
+const metaSpriteStrings = [
+  'body',
+  'body2',
+  'hat',
+  'sword',
+  'shield',
+  'sheep'
+] as const
+type MetaSprite = typeof metaSpriteStrings[number]
 
 const masks8: number[] = []
 for (let i = 0; i < 8; i++) {
@@ -22,7 +36,7 @@ export class SpriteController {
     public x: number,
     public y: number,
     public id: number,
-    public metaBytes: number,
+    // public metaBytes: NamedBitsInNumber<typeof metaSpriteStrings>,
     public angle: number
   ) {
     //
@@ -36,7 +50,8 @@ export default class JITTileSampler {
   offsetY = 0
   makeSprite(x: number, y: number, angle: number) {
     const id = __id
-    const sprite = new SpriteController(x, y, id, this.sampleMeta(id), angle)
+    const sprite = new SpriteController(x, y, id, angle)
+    // const sprite = new SpriteController(x, y, id, this.sampleMeta(id), angle)
     __id++
     this._sprites.push(sprite)
     return sprite
@@ -49,12 +64,10 @@ export default class JITTileSampler {
   }
   metaPropertyLookup: MetaSprite[]
   visualPropertyLookup: string[]
-  metaNoiseGenerators: StephHelper2D[]
+  metaNoiseGenerators: StepHelper2D[]
   bytesPerTile: number
-  localMetaProps: number
-  visProps: Uint8Array
-  metaCache: Map<string, number> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
-  metaPropertyMasks: number[]
+  metaCache: Map<string, NamedBitsInNumber<typeof metaSpriteStrings>> =
+    new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   dirtyMeta: Set<string> = new Set()
   constructor(
     private _spriteMaker: SpriteMaker,
@@ -62,7 +75,14 @@ export default class JITTileSampler {
     private _viewWidth: number,
     private _viewHeight: number
   ) {
-    this.metaPropertyLookup = ['body', 'body2', 'hat', 'sword', 'shield']
+    this.metaPropertyLookup = [
+      'body',
+      'body2',
+      'hat',
+      'sword',
+      'shield',
+      'sheep'
+    ]
 
     this.visualPropertyLookup = [
       'layer2',
@@ -71,6 +91,7 @@ export default class JITTileSampler {
       'hat',
       'sword',
       'shield',
+      'sheep',
       '180',
       '90',
       '45'
@@ -84,13 +105,15 @@ export default class JITTileSampler {
     const goldNoise = simpleThreshNoise(0.16, 50, -50, 0, seed)
     const swordNoise = simpleThreshNoise(0.26, 50, 50, 0, seed)
     const shieldNoise = simpleThreshNoise(0.36, 50, 150, 0, seed)
+    const sheepNoise = simpleThreshNoise(0.36, 50, 150, -0.9, seed)
     this.metaNoiseGenerators = [
       bodyNoise,
       body2Noise,
       hatNoise,
       goldNoise,
       swordNoise,
-      shieldNoise
+      shieldNoise,
+      sheepNoise
     ]
   }
 
@@ -99,94 +122,108 @@ export default class JITTileSampler {
     if (this.metaCache.has(key)) {
       return this.metaCache.get(key)!
     }
-    this.localMetaProps = this.metaNoiseGenerators.reduce((accum, noise, j) => {
-      return (
-        accum +
-        (noise.getValue(wrap(id * 37, -100, 100), wrap(id * 124, -70, 70)) << j)
-      )
-    }, 0)
-    return this.validateLocalMeta(id)
+    const metaProps = new NamedBitsInNumber(
+      this.metaNoiseGenerators.reduce((accum, noise, j) => {
+        return (
+          accum +
+          (noise.getValue(wrap(id * 37, -100, 100), wrap(id * 124, -70, 70)) <<
+            j)
+        )
+      }, 0),
+      metaSpriteStrings
+    )
+    this.validateMeta(metaProps)
+    this.metaCache.set(key, metaProps)
+    return metaProps
   }
-  flipMeta(id: number, meta: MetaSprite, validate = true) {
-    this.writeMeta(id, this.metaBitsFlip(this.sampleMeta(id), meta))
-    if (validate) {
-      this.validateLocalMeta(id)
+  validateMeta(val: NamedBitsInNumber<typeof metaSpriteStrings>) {
+    if (!val.has('body') && !val.has('body2')) {
+      val.flipBit('body')
     }
-  }
-  metaBitsHas(val: number, maskName: MetaSprite) {
-    return val & masks32[this.metaPropertyLookup.indexOf(maskName)]
-  }
-
-  metaBitsFlip(val: number, maskName: MetaSprite) {
-    return val ^ masks32[this.metaPropertyLookup.indexOf(maskName)]
-  }
-
-  visualBitsEnable(val: Uint8Array, maskName: string) {
-    const i = this.visualPropertyLookup.indexOf(maskName)
-    const ib = ~~(i / 8)
-    const i8 = i % 8
-    val[ib] |= masks8[i8]
-  }
-  localMetaBitsFlip(maskName: MetaSprite) {
-    this.localMetaProps = this.metaBitsFlip(this.localMetaProps, maskName)
-  }
-  localMetaBitsHas(maskName: MetaSprite) {
-    return this.metaBitsHas(this.localMetaProps, maskName)
-  }
-  writeMeta(id: number, meta: number) {
-    const key = id.toString()
-    if (this.metaCache.has(key) && this.metaCache.get(key)) {
-      this.metaCache.set(key, meta)
+    if (val.has('body') && val.has('body2')) {
+      val.flipBit('body2')
     }
-    this.dirtyMeta.add(key)
-    this.localMetaProps = meta
-  }
-  validateLocalMeta(id: number) {
-    const key = id.toString()
-
-    // this.localMetaProps = this.metaNoiseGenerators[2].getTreshold(x, y, 0.5) << 4
-
-    if (!this.localMetaBitsHas('body') && !this.localMetaBitsHas('body2')) {
-      this.localMetaBitsFlip('body')
+    if (val.has('sheep')) {
+      if (val.has('body2')) {
+        val.flipBit('body2')
+      }
+      if (val.has('body')) {
+        val.flipBit('body')
+      }
     }
-    if (this.localMetaBitsHas('body') && this.localMetaBitsHas('body2')) {
-      this.localMetaBitsFlip('body2')
+    return val
+  }
+  private _visPropsCache: Map<
+    string,
+    NamedBitsInBytes<typeof this.visualPropertyLookup>
+  > = new Map()
+
+  sampleVisProps(id: number, angle: number) {
+    const key = `${id}@${angle}`
+    if (this._visPropsCache.has(key)) {
+      return this._visPropsCache.get(key)!
     }
-    this.metaCache.set(key, this.localMetaProps)
-    return this.localMetaProps
-  }
-  myVisualBitsEnable(maskName: string) {
-    this.visualBitsEnable(this.visProps, maskName)
-  }
-  sampleVis(id: number, angle: number) {
+
     const metaProps = this.sampleMeta(id)
-    this.localMetaProps = metaProps
+    const visProps = new NamedBitsInBytes(
+      new Uint8Array(this.bytesPerTile),
+      this.visualPropertyLookup
+    )
+    this._visPropsCache.set(key, visProps)
 
-    this.visProps = new Uint8Array(this.bytesPerTile)
+    if (metaProps.has('sheep')) {
+      visProps.enableBit('sheep')
+    } else {
+      if (metaProps.has('body')) {
+        visProps.enableBit('body')
+      }
+      if (metaProps.has('body2')) {
+        visProps.enableBit('body2')
+      }
 
-    this.myVisualBitsEnable(this.localMetaBitsHas('body') ? 'body' : 'body2')
+      if (metaProps.has('hat')) {
+        visProps.enableBit('hat')
+      }
+      if (metaProps.has('sword')) {
+        visProps.enableBit('sword')
+      }
+      if (metaProps.has('shield')) {
+        visProps.enableBit('shield')
+      }
+    }
+    return visProps
+  }
 
-    if (this.localMetaBitsHas('hat')) {
-      this.myVisualBitsEnable('hat')
+  private _bottomAndTopIdsCache: Map<string, BottomAndTopIds> = new Map()
+  sampleVisIds(id: number, angle: number) {
+    const key = `${id}@${angle}`
+    if (!this._bottomAndTopIdsCache.has(key)) {
+      const visProps = this.sampleVisProps(id, angle)
+      const bottomAndTopIds: BottomAndTopIds = this.sampleVisIdsByVisProps(
+        visProps,
+        angle
+      )
+      this._bottomAndTopIdsCache.set(key, bottomAndTopIds)
+      return bottomAndTopIds
+    } else {
+      return this._bottomAndTopIdsCache.get(key)!
     }
-    if (this.localMetaBitsHas('sword')) {
-      this.myVisualBitsEnable('sword')
-    }
-    if (this.localMetaBitsHas('shield')) {
-      this.myVisualBitsEnable('shield')
-    }
-    const idBottom = this._spriteMaker.getTileIdAtAngle(this.visProps, angle)
-    const visProps2 = this.visProps.slice()
+  }
+
+  sampleVisIdsByVisProps(
+    visProps: NamedBitsInBytes<typeof this.visualPropertyLookup>,
+    angle: number
+  ) {
+    const idBottom = this._spriteMaker.getTileIdAtAngle(visProps.bytes, angle)
+    const visProps2 = visProps.bytes.slice()
     visProps2[0] |= 1
     const idTop = this._spriteMaker.getTileIdAtAngle(visProps2, angle)
-    // const indexBottomX = (idBottom * 8) % 256
-    // const indexBottomY = ~~(idBottom / 32) * 8
-    // const indexTopX = (idTop * 8) % 256
-    // const indexTopY = ~~(idTop / 32) * 8
-    return {
+
+    const bottomAndTopIds: BottomAndTopIds = {
       idBottom,
       idTop
     }
+    return bottomAndTopIds
   }
   updateVis(bottomPointsGeo: BufferGeometry, topPointsGeo: BufferGeometry) {
     if (this._sprites.length > 0) {
@@ -211,13 +248,13 @@ export default class JITTileSampler {
         }
         const xSnap = Math.round(wrap(x, 0, this._viewWidth) * ppt) / ppt
         const ySnap = Math.round(wrap(y, 0, this._viewHeight) * ppt) / ppt
-        const id = sprite.metaBytes
+        const id = sprite.id
         const j2 = j * 2
         xyBottomArr[j2] = xSnap
         xyBottomArr[j2 + 1] = ySnap
         xyTopArr[j2] = xSnap
         xyTopArr[j2 + 1] = ySnap + 1
-        const sample = this.sampleVis(id, sprite.angle)
+        const sample = this.sampleVisIds(id, sprite.angle)
         idBottomArr[j] = sample.idBottom
         idTopArr[j] = sample.idTop
         j++

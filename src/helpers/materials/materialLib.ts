@@ -49,7 +49,11 @@ const CuratedMaterialTypeStrings = [
   'rock',
   'cyberGlow',
   'cyberPanel',
-  'water'
+  'water',
+  'fleeceWhite',
+  'fleeceBlack',
+  'sheepNose',
+  'shinyBlack'
 ] as const
 
 export type CuratedMaterialType = typeof CuratedMaterialTypeStrings[number]
@@ -223,6 +227,25 @@ export const standardMaterialParamLib: {
   cyberPanel: {
     roughness: 0.05,
     metalness: 0.7,
+    color: new Color(0.1, 0.1, 0.1)
+  },
+  fleeceWhite: {
+    roughness: 1,
+    metalness: 0,
+    color: new Color(1, 0.9, 0.8)
+  },
+  fleeceBlack: {
+    roughness: 1,
+    metalness: 0,
+    color: new Color(0.2, 0.2, 0.2)
+  },
+  sheepNose: {
+    roughness: 0.5,
+    metalness: 0.5,
+    color: new Color(1, 0.4, 0.4)
+  },
+  shinyBlack: {
+    roughness: 0.3,
     color: new Color(0.1, 0.1, 0.1)
   }
 }

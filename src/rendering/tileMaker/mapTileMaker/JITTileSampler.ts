@@ -95,8 +95,6 @@ export default class JITTileSampler {
   }
   metaNoiseGenerators: StepHelper2D[]
   bytesPerTile: number
-  // localMetaProps: number
-  // visProps: Uint8Array
   metaRawCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   metaCache: LocalStorageMap<string, NamedMetaBits> = new LocalStorageMap(
     (v) => new NamedBitsInNumber(parseInt(v), metaTileStrings),
@@ -243,7 +241,7 @@ export default class JITTileSampler {
   }
   writeMeta(x: number, y: number, meta: NamedMetaBits) {
     const key = x + ':' + y
-    this.validateLocalMeta(meta, x, y)
+    this.validateMeta(meta, x, y)
     this.metaCache.set(key, meta)
     this.dirtyMeta.add(key)
   }
@@ -272,16 +270,13 @@ export default class JITTileSampler {
         this.sampleMetaRaw(x, y).value,
         metaTileStrings
       )
-      this.validateLocalMeta(metaProps, x, y)
+      this.validateMeta(metaProps, x, y)
       this.metaCache.set(key, metaProps)
       this.emitDirtyMetaProcessed(x, y, metaProps)
       return metaProps
     }
   }
-  validateLocalMeta(val: NamedMetaBits, x: number, y: number) {
-    const key = x + ':' + y
-
-    // this.localMetaProps = this.metaNoiseGenerators[2].getTreshold(x, y, 0.5) << 4
+  validateMeta(val: NamedMetaBits, x: number, y: number) {
     const hasRocks = val.has('rocks')
     const hasSand = val.has('sand')
     const hasBeach = val.has('beach')
@@ -1218,7 +1213,7 @@ export default class JITTileSampler {
         const x = coords[0]
         const y = coords[1]
         const meta = this.sampleMeta(x, y)
-        this.validateLocalMeta(meta, x, y)
+        this.validateMeta(meta, x, y)
         this.emitDirtyMetaProcessed(x, y, meta)
         for (let cY = -1; cY <= 2; cY++) {
           for (let cX = -1; cX <= 1; cX++) {

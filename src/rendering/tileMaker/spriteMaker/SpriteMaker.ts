@@ -5,6 +5,7 @@ import {
   getMeshMaterial,
   MaterialPassType
 } from '../../../helpers/materials/materialLib'
+import { makeSheep } from '../../../meshes/factorySheep'
 import { getChamferedBoxGeometry } from '../../../utils/geometry'
 import { memoize } from '../../../utils/memoizer'
 import TileMaker from '../TileMaker'
@@ -99,7 +100,16 @@ export default class SpriteMaker extends TileMaker {
       return obj
     }
 
-    const indexedMeshes = [dummy, body, body2, hat, sword, shield]
+    const sheep = () => {
+      return makeSheep(
+        getMeshMaterial('fleeceWhite'),
+        getMeshMaterial('fleeceBlack'),
+        getMeshMaterial('sheepNose'),
+        getMeshMaterial('shinyBlack')
+      )
+    }
+
+    const indexedMeshes = [dummy, body, body2, hat, sword, shield, sheep]
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)
 
