@@ -6,9 +6,10 @@ import { testClasses } from './tests'
 import { timeFractUniform, timeUniform } from './uniforms'
 import { cameraShaker } from './utils/cameraShaker'
 import { recorderCanvas, recordFrame } from './utils/canvasRecorder'
-import { getUrlParam } from './utils/location'
 import { nextFrameUpdate } from './utils/onNextFrame'
 import UpdateManager from './utils/UpdateManager'
+
+import { getUrlParam } from './utils/location'
 
 document.addEventListener('gesturestart', (e) => e.preventDefault()) // disable zooming on mobile
 
@@ -53,7 +54,7 @@ setTimeout(() => {
     let renderDt = 0
     const loop = () => {
       frameCounter++
-      const dt = Math.min(clock.getDelta(), 0.2)
+      const dt = Math.min(clock.getDelta(), 0.1)
       simDt += dt
       renderDt += dt
 

@@ -9,8 +9,8 @@ import {
   WebGLRenderer
 } from 'three'
 import lib from '@lib/index'
-import { rand } from '~/utils/math'
-import { detRandGraphics } from '~/utils/random'
+import { rand } from '../../utils/math'
+import { detRandGraphics } from '../../utils/random'
 
 import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelper'
 

@@ -9,7 +9,6 @@ import {
 } from 'three'
 import { initOffset } from '~/constants'
 import { getMouseBoundViewTransform } from '~/helpers/viewTransformMouse'
-import { getUrlFlag, getUrlInt } from '~/utils/location'
 import { wrap } from '~/utils/math'
 
 import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelper'
@@ -17,6 +16,7 @@ import lib from '@lib/index'
 
 import BaseTestScene from './BaseTestScene'
 import JITTileSampler from './tileMaker/JITTileSampler'
+import { getUrlInt } from '../../utils/location'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 export default class TestJitPointTilesScene extends BaseTestScene {

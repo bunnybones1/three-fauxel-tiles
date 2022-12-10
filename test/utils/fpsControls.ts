@@ -1,11 +1,12 @@
 import { PerspectiveCamera } from 'three'
 import FPSController from 'threejs-camera-controller-first-person-desktop'
-import renderer from '~/renderer'
+import renderer from '../renderer'
 
 import { cameraShaker } from './cameraShaker'
-import { getUrlFloat } from './location'
+
 import { clamp, lerp } from './math'
 import UpdateManager from './UpdateManager'
+import { getUrlFloat } from './location'
 
 const FPS_CAMERA_DAMPING = getUrlFloat('camDamping', 0, 0, 0.999)
 const FPS_CAMERA_LERP_STRENGTH = 1 - clamp(FPS_CAMERA_DAMPING, 0, 1)

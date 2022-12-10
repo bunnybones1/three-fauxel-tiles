@@ -10,7 +10,7 @@ import {
   Vector3,
   WebGLRenderer
 } from 'three'
-import { getMouseBoundViewTransform } from '~/helpers/viewTransformMouse'
+import { getMouseBoundViewTransform } from '../viewTransformMouse'
 
 import BaseTestScene from './BaseTestScene'
 import lib from '@lib/index'

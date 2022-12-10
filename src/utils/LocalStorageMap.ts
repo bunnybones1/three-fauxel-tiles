@@ -18,7 +18,8 @@ export default class LocalStorageMap<K extends string, V> extends Map {
     return super.get(key)
   }
   set(key: K, value: V) {
-    localStorage.setItem(key, this._dehydrator(value))
+    const v = this._dehydrator(value)
+    localStorage.setItem(key, v)
     return super.set(key, value)
   }
   delete(key: K) {

@@ -17,7 +17,6 @@ import {
 import { clamp, lerp } from 'three/src/math/MathUtils'
 import { initOffset } from '~/constants'
 import { getMouseBoundViewTransform } from '~/helpers/viewTransformMouse'
-import { getUrlFlag, getUrlInt } from '~/utils/location'
 import { rand, rand2, wrap } from '~/utils/math'
 import { detRandLights } from '~/utils/random'
 import getKeyboardInput from '~/input/getKeyboardInput'
@@ -28,9 +27,8 @@ import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelp
 
 import BaseTestScene from './BaseTestScene'
 import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTileSampler'
-import NamedBitsInNumber from '../../../src/helpers/utils/NamedBitsInNumber'
-import { getUrlParam } from '../../utils/location'
 import { removeFromArray } from '../../utils/arrayUtils'
+import { getUrlFlag, getUrlInt } from '../../utils/location'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
@@ -70,26 +68,51 @@ class DummyLightController {
   }
 }
 
-function makeWanderer(maxSpeed = 0.4, maxSpeedDelta = 0.02) {
-  let angleDelta = 0
-  let speed = 0
-  let speedDelta = 0
-  return function wanderer(dt: number) {
-    angleDelta += rand2(0.03)
-    angleDelta = clamp(angleDelta, -0.1, 0.1)
-    angleDelta *= 0.99
-    this.angle += angleDelta
-    this.angle *= 0.99
-    speedDelta += rand2(maxSpeedDelta)
-    speedDelta = clamp(speedDelta, -maxSpeedDelta, maxSpeedDelta)
-    speedDelta *= 0.9
-    speed += speedDelta
-    speed = clamp(speed, 0, maxSpeed)
-    speed *= 0.99
-    const realSpeed = Math.max(0, speed - 0.2) * 0.5
-    this.x += Math.cos(this.angle - Math.PI * 0.5) * realSpeed
-    this.y += Math.sin(this.angle - Math.PI * 0.5) * realSpeed
+function wandererUpdate(dt: number) {
+  let angleDelta = this.wandererAngleDelta
+  let speed = this.wandererSpeed
+  let speedDelta = this.wandererSpeedDelta
+  const maxSpeedDelta = this.wandererMaxSpeedDelta
+
+  angleDelta += rand2(0.03)
+  angleDelta = clamp(angleDelta, -0.1, 0.1)
+  angleDelta *= 0.99
+  this.angle += angleDelta
+  this.angle *= 0.99
+  speedDelta += rand2(maxSpeedDelta)
+  speedDelta = clamp(speedDelta, -maxSpeedDelta, maxSpeedDelta)
+  speedDelta *= 0.9
+  speed += speedDelta
+  speed = clamp(speed, 0, this.wandererMaxSpeed)
+  speed *= 0.99
+  const realSpeed = Math.max(0, speed - 0.2) * 0.5
+  this.x += Math.cos(this.angle - Math.PI * 0.5) * realSpeed
+  this.y += Math.sin(this.angle - Math.PI * 0.5) * realSpeed
+
+  this.wandererAngleDelta = angleDelta
+  this.wandererSpeed = speed
+  this.wandererSpeedDelta = speedDelta
+}
+function makeWanderer(target: any, maxSpeed = 0.4, maxSpeedDelta = 0.02) {
+  target.wandererMaxSpeed = maxSpeed
+  target.wandererMaxSpeedDelta = maxSpeedDelta
+  target.wandererAngleDelta = 0
+  target.wandererSpeed = 0
+  target.wandererSpeedDelta = 0
+  return wandererUpdate
+}
+function makeSolipsisticRespawner(solipsisticRespawnerTarget: any) {
+  function solipsisticRespawnerUpdate(dt: number) {
+    const distanceX = solipsisticRespawnerTarget.x - this.x
+    if (Math.abs(distanceX) > 10) {
+      this.x = solipsisticRespawnerTarget.x + distanceX * 0.9
+    }
+    const distanceY = solipsisticRespawnerTarget.y - this.y
+    if (Math.abs(distanceY) > 10) {
+      this.y = solipsisticRespawnerTarget.y + distanceY * 0.9
+    }
   }
+  return solipsisticRespawnerUpdate
 }
 
 function makeTileAvoider(metaTileSampler: JITTileSampler) {
@@ -202,7 +225,6 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
 const spriteTileOccupancy: Map<string, any[]> = new Map()
 const spriteSize = 0.5
 function makeSpriteAvoider() {
-  let oldKey: string | undefined = undefined
   return function spriteAvoider(dt: number) {
     const x = this.x
     const y = this.y
@@ -239,16 +261,19 @@ function makeSpriteAvoider() {
     const finalOtx = Math.floor(x)
     const finalOty = Math.floor(y)
     const newKey = `${finalOtx}:${finalOty}`
-    if (oldKey !== newKey) {
-      if (oldKey) {
-        removeFromArray(spriteTileOccupancy.get(oldKey)!, this)
+    if (this.spriteAvoiderOldKey !== newKey) {
+      if (this.spriteAvoiderOldKey) {
+        removeFromArray(
+          spriteTileOccupancy.get(this.spriteAvoiderOldKey)!,
+          this
+        )
       }
       if (!spriteTileOccupancy.has(newKey)) {
         spriteTileOccupancy.set(newKey, [])
       }
       spriteTileOccupancy.get(newKey)!.push(this)
     }
-    oldKey = newKey
+    this.spriteAvoiderOldKey = newKey
   }
 }
 
@@ -309,8 +334,15 @@ function makeLanternLightUpdater(parent: DummyController) {
     const d = 0.5
     swing += dt
 
-    this.x = lerp(this.x, parent.x + Math.cos(a) * d, angleLerpAmt)
-    this.y = lerp(this.y, parent.y + Math.sin(a) * d, angleLerpAmt)
+    const x = parent.x + Math.cos(a) * d
+    const y = parent.y + Math.sin(a) * d
+    if (Math.abs(this.x - x) > 2 || Math.abs(this.y - y) > 2) {
+      this.x = x
+      this.y = y
+    } else {
+      this.x = lerp(this.x, x, angleLerpAmt)
+      this.y = lerp(this.y, y, angleLerpAmt)
+    }
     this.z = lerp(0.45, 0.55, Math.sin(swing * 5) * 0.5 + 0.5)
   }
 }
@@ -395,22 +427,25 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     )
     player.addUpdater(makeKeyboardUpdater())
     const tileAvoider = makeTileAvoider(mapScrollingView.jitTileSampler)
+    const solipsisticRespawner = makeSolipsisticRespawner(player)
+    const spriteAvoider = makeSpriteAvoider()
     player.addUpdater(tileAvoider)
-    player.addUpdater(makeSpriteAvoider())
+    player.addUpdater(spriteAvoider)
     rigHarvestAction(player, mapScrollingView.jitTileSampler)
     player.x = getUrlInt('x', 0)
     player.y = getUrlInt('y', 0)
     spriteControllers.push(player)
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 200; i++) {
       const actor = new DummyController(
         rand2(20),
         rand2(20, 10),
         rand(-Math.PI, Math.PI)
       )
-      const wanderer = makeWanderer(0.25)
+      const wanderer = makeWanderer(actor, 0.25)
       actor.addUpdater(wanderer)
+      actor.addUpdater(solipsisticRespawner)
       actor.addUpdater(tileAvoider)
-      actor.addUpdater(makeSpriteAvoider())
+      actor.addUpdater(spriteAvoider)
       spriteControllers.push(actor)
     }
     const sprites = spriteControllers.map((tc) =>
@@ -474,13 +509,15 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           lights.push(light)
           lightRegistry.set(key, [dlc, light])
         }
-        if (
+        const correctTile =
           meta.has('treePine') &&
           !meta.has('maturePlant') &&
-          !meta.has('harvested') &&
-          !lightRegistry.has(key) &&
-          getUrlFlag('christmas')
-        ) {
+          !meta.has('harvested')
+
+        const christmas = getUrlFlag('christmas')
+        const needsChristmasLights =
+          correctTile && !lightRegistry.has(key) && christmas
+        if (needsChristmasLights) {
           const t = 62
           for (let i = 0; i < t; i++) {
             const ratio = i / t

@@ -1,10 +1,10 @@
 import { PerspectiveCamera, WebGLRenderer } from 'three'
 import PixelTextMesh from 'three-pixel-font'
-import { loadText } from '~/loaders/assetLoader'
-import { FPSControls } from '~/utils/fpsControls'
-import { getUrlFlag } from '~/utils/location'
+import { loadText } from '../../loaders/assetLoader'
+import { FPSControls } from '../../utils/fpsControls'
 
 import BaseTestScene from './BaseTestScene'
+import { getUrlFlag } from '../../utils/location'
 
 function url(name: string, ext: string) {
   return `books/${name}.${ext}`

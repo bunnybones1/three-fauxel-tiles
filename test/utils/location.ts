@@ -1,16 +1,23 @@
 import { Color } from 'three'
 
-import { hexColor } from './colors'
-import { clamp } from './math'
+import { hexColor } from '../../src/utils/colors'
+import { clamp } from '../../src/utils/math'
 
+const cache = new Map<string, string | null>()
 export function getUrlParam(param: string) {
+  if (cache.has(param)) {
+    return cache.get(param)
+  }
   __setReminder(param)
-  return new URL(window.location.href).searchParams.get(param)
+  const val = new URL(window.location.href).searchParams.get(param)
+  cache.set(param, val)
+  return val
 }
 
 export function getUrlFlag(param: string) {
   const result = getUrlParam(param)
-  return !!(result === '' || (result && result !== 'false'))
+  const flag = !!(result === '' || (result && result !== 'false'))
+  return flag
 }
 
 function __getUrlNumber(

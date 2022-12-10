@@ -1,5 +1,4 @@
 import { BufferGeometry } from 'three'
-import { initOffset } from '../../../constants'
 import AdditiveGroupHelper2D from '../../../helpers/utils/AdditiveGroupHelper2D'
 import ClampHelper2D from '../../../helpers/utils/ClampHelper2D'
 import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
@@ -9,7 +8,6 @@ import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
 import StepHelper2D from '../../../helpers/utils/StepHelper2D'
 import InvertHelper2D from '../../../helpers/utils/InvertHelper2D'
 import { CardinalStrings } from '../../../meshes/factorySand'
-import { getUrlFlag } from '../../../utils/location'
 import { wrap } from '../../../utils/math'
 
 import MapTileMaker from './MapTileMaker'
@@ -106,8 +104,8 @@ export default class JITTileSampler {
   ) //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   dirtyMeta: Set<string> = new Set()
   dirtyVis: Set<string> = new Set()
-  private _offsetX = initOffset.x
-  private _offsetY = initOffset.y
+  private _offsetX = 0
+  private _offsetY = 0
   private _offsetsDirty: boolean
   get offsetsDirty(): boolean {
     return this._offsetsDirty
@@ -115,8 +113,8 @@ export default class JITTileSampler {
   set offsetsDirty(value: boolean) {
     this._offsetsDirty = value
   }
-  private _offsetXOld = initOffset.x
-  private _offsetYOld = -initOffset.y
+  private _offsetXOld = 0
+  private _offsetYOld = 0
   constructor(
     private _tileMaker: MapTileMaker,
     private _viewWidthInTiles: number,
@@ -464,48 +462,6 @@ export default class JITTileSampler {
 
     if (val.has('treePine') && val.has('treeMaple')) {
       val.flipBit('treeMaple')
-    }
-
-    //TEST SIMPLER MAP
-    if (getUrlFlag('simple')) {
-      // const item = val.has('testObject')
-      // const keepGrass = val.has('grass')
-      // this.localMetaProps = 0
-      // if (keepGrass) {
-      //   val.flipBit('grass')
-      // }
-      // if (keepGrass && item) {
-      //   val.flipBit('testObject')
-      // }
-
-      // const item = val.has('floor')
-      // const item2 = val.has('beam')
-      // const item3 = val.has('bricks')
-      // val.value = 0
-      // if (item) {
-      //   val.flipBit('floor')
-      // }
-      // if (item2) {
-      //   val.flipBit('beam')
-      // }
-      // if (item3) {
-      //   val.flipBit('bricks')
-      // }
-
-      const item = val.has('treeMaple')
-      const item2 = val.has('treePine')
-      const item3 = val.has('floor')
-      val.value = 0
-      if (item) {
-        val.flipBit('treeMaple')
-      }
-      if (item2) {
-        val.flipBit('treePine')
-      }
-      if (item3) {
-        val.flipBit('floor')
-      }
-      val.enableBit('dirt')
     }
 
     return val
