@@ -105,11 +105,26 @@ export default class SpriteMaker extends TileMaker {
         getMeshMaterial('fleeceWhite'),
         getMeshMaterial('fleeceBlack'),
         getMeshMaterial('sheepNose'),
-        getMeshMaterial('shinyBlack')
+        getMeshMaterial('shinyBlack'),
+        0
       )
     }
-
     const indexedMeshes = [dummy, body, body2, hat, sword, shield, sheep]
+
+    const t = 8
+    for (let i = 0; i < t; i++) {
+      const time = i / t
+      const sheepRunFrame = () => {
+        return makeSheep(
+          getMeshMaterial('fleeceWhite'),
+          getMeshMaterial('fleeceBlack'),
+          getMeshMaterial('sheepNose'),
+          getMeshMaterial('shinyBlack'),
+          time
+        )
+      }
+      indexedMeshes.push(sheepRunFrame)
+    }
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)
 
