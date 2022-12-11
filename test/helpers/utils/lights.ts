@@ -13,7 +13,7 @@ import { getUrlFlag } from '../../utils/location'
 const __defaultGroundColor = new Color(0x4f3f2f).multiplyScalar(0.5)
 const __defaultSkyColor = new Color(0xafbfef).multiplyScalar(0.5)
 
-const s = 10
+const s = 3
 
 const __defaultShadowBoxSize = new Vector3(0.8 * s, 0.2 * s, 0.6 * s)
 const __defaultShadowBoxCenter = new Vector3(0 * s, 0.05 * s, 0.04 * s)
@@ -31,7 +31,7 @@ export function addPrettyLights(scene: Scene, bgColor: Color) {
 
   sunLight.name = 'sunlight'
   sunLight.castShadow = true
-  sunLight.shadow.bias = -0.002
+  sunLight.shadow.bias = 0.001
   sunLight.shadow.camera.near = 0.1
   sunLight.shadow.camera.far = 10
   sunLight.shadow.camera.left = -5

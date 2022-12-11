@@ -230,3 +230,16 @@ export const Easing = {
     }
   }
 }
+
+export function makeEaseOutIn(inOut: Ease) {
+  //assume inOut passes through 0.5, 0.5
+  return function OutInVariant(k: number) {
+    if (k <= 0.5) {
+      return inOut(k + 0.5) - 0.5
+    } else {
+      return inOut(k - 0.5) + 0.5
+    }
+  }
+}
+
+export type Ease = (k: number) => number

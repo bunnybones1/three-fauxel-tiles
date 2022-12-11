@@ -39,7 +39,7 @@ export function addPrettyLights(scene: Scene, bgColor: Color) {
   sunLight.shadow.camera.top = -3
   sunLight.shadow.camera.bottom = 3
   sunLight.shadow.camera.updateProjectionMatrix()
-  sunLight.shadow.mapSize.width = sunLight.shadow.mapSize.height = 1024
+  sunLight.shadow.mapSize.width = sunLight.shadow.mapSize.height = 128
 
   const distance = 5
   const angle = 0.6

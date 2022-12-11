@@ -1,31 +1,50 @@
 import { Material, Mesh, Object3D, SphereBufferGeometry } from 'three'
-import { getChamferedBoxGeometry } from '../utils/geometry'
+import { Easing } from '../animation/Easing'
+import {
+  getCachedChamferedBoxGeometry,
+  getChamferedBoxGeometry
+} from '../utils/geometry'
 import { mergeMeshes } from '../utils/mergeMeshes'
+
+const C1_1 = Math.PI * 2
+const C1_2 = Math.PI
+const C1_4 = Math.PI * 0.5
+const C1_8 = Math.PI * 0.25
 
 export function makeSheep(
   matFleecePrimary: Material,
   matFleeceSecondary: Material,
   matNose: Material,
-  matEyes: Material
+  matEyes: Material,
+  time = 0
 ) {
   const pivot = new Object3D()
   const body = new Mesh(
-    getChamferedBoxGeometry(24, 26, 34, 8),
+    getCachedChamferedBoxGeometry(24, 26, 34, 8),
     matFleecePrimary
   )
-  body.position.y = 20
+  const angle = time * C1_1
+  const phaseBody = angle * 0.5 - C1_4
+  body.position.y = 20 + Easing.Quadratic.Out(Math.cos(phaseBody)) * 30 - 2
 
+  const bodyAngle = Easing.Quadratic.In(time) * C1_1
+  body.rotation.x = Math.sin(-bodyAngle) * 0.4
   //leg back
   const legBack = new Mesh(
-    getChamferedBoxGeometry(10, 20, 14, 4),
+    getCachedChamferedBoxGeometry(10, 20, 14, 4),
     matFleecePrimary
   )
   legBack.position.x = -10
   legBack.position.z = 7
-  legBack.rotation.x = Math.PI * 0.125
+  legBack.position.y = Math.cos(angle + 1) * 4
+  //   const legBackAngle = Math.cos(angle * 0.5 - C1_4) * 1.5
+  const legBackAngle =
+    Math.sin(Easing.Quadratic.InOut((time + 1.5) % 1) * C1_1) * 1.3
+
+  legBack.rotation.x = Math.PI * 0.125 + legBackAngle
   body.add(legBack)
   const shinBack = new Mesh(
-    getChamferedBoxGeometry(5, 20, 7, 2),
+    getCachedChamferedBoxGeometry(5, 20, 7, 2),
     matFleeceSecondary
   )
   shinBack.position.y = -10
@@ -35,19 +54,21 @@ export function makeSheep(
   const legBack2 = legBack.clone()
   legBack2.position.x *= -1
   body.add(legBack2)
-  body.position.y = 20
 
   //leg front
   const legFront = new Mesh(
-    getChamferedBoxGeometry(10, 20, 14, 4),
+    getCachedChamferedBoxGeometry(10, 20, 14, 4),
     matFleecePrimary
   )
   legFront.position.x = -8
-  legFront.position.z = -7
-  legFront.rotation.x = Math.PI * -0.125
+  legFront.position.z = -7 + Math.sin(angle - 1) * 4
+  legBack.position.y = Math.cos(angle) * 4
+  const legFrontAngle =
+    Math.sin(Easing.Quadratic.InOut((time + 0.6) % 1) * C1_1) * 1.3
+  legFront.rotation.x = Math.PI * -0.125 + legFrontAngle + 0.25
   body.add(legFront)
   const shinFront = new Mesh(
-    getChamferedBoxGeometry(5, 20, 7, 2),
+    getCachedChamferedBoxGeometry(5, 20, 7, 2),
     matFleeceSecondary
   )
   shinFront.position.y = -10
@@ -57,38 +78,55 @@ export function makeSheep(
   const legFront2 = legFront.clone()
   legFront2.position.x *= -1
   body.add(legFront2)
-  body.position.y = 20
 
   //tail
-  const tail = new Mesh(getChamferedBoxGeometry(6, 12, 10, 3), matFleecePrimary)
+  const tail = new Mesh(
+    getCachedChamferedBoxGeometry(8, 12, 10, 3),
+    matFleecePrimary
+  )
   tail.position.z = 17
-  tail.position.y = 4
-  tail.rotation.x = Math.PI * -0.125
+  const tailPhase = Math.sin(angle + 2.5) * 0.5 + 0.5
+  tail.position.y = 4 + tailPhase * 6
+  tail.rotation.x = Math.PI * -0.125 - tailPhase * 2
   body.add(tail)
 
   //head
   const head = new Mesh(
-    getChamferedBoxGeometry(12, 20, 12, 4),
+    getCachedChamferedBoxGeometry(12, 20, 12, 4),
     matFleecePrimary
   )
-  head.position.z = -17
-  head.position.y = 10
-  head.rotation.x = Math.PI * 0.25
+  const headPhase = Math.sin(angle - 0.5) * 0.5 + 0.5
+  const headPhase2 = Math.sin(angle + 1) * 0.5 + 0.5
+  head.position.z = -17 + headPhase2 * -4
+  head.position.y = 10 + headPhase * 4
+  head.rotation.x = Math.PI * 0.25 + headPhase * 1.5
   body.add(head)
 
   //ears
   const earContainer = new Object3D()
-  const ear = new Mesh(getChamferedBoxGeometry(8, 2, 8, 1), matFleecePrimary)
+  const ear = new Mesh(
+    getCachedChamferedBoxGeometry(8, 2, 8, 1),
+    matFleecePrimary
+  )
   ear.position.x = -8
-  earContainer.position.y = 4
   ear.rotation.y = Math.PI * 0.25
+  earContainer.position.y = 4
   earContainer.rotation.x = Math.PI * 0.125
+  earContainer.scale.z = 0.5
+  const ear2Container = earContainer.clone()
+  earContainer.add(ear)
   const ear2 = ear.clone()
   ear2.position.x *= -1
-  earContainer.add(ear2)
-  earContainer.add(ear)
-  earContainer.scale.z = 0.5
+  ear2Container.add(ear2)
+  const earPhase = Math.sin(angle - 2) * 0.5 + 0.5
+  earContainer.position.x = earPhase * -3
+  earContainer.rotation.z = -earPhase
+  earContainer.rotation.x = -earPhase
+  ear2Container.position.x = earPhase * 3
+  ear2Container.rotation.z = earPhase
+  ear2Container.rotation.x = -earPhase
   head.add(earContainer)
+  head.add(ear2Container)
 
   //eyes
   const eyeGeo = new SphereBufferGeometry(2, 16, 8)
@@ -102,7 +140,7 @@ export function makeSheep(
   head.add(eye)
 
   //nose
-  const nose = new Mesh(getChamferedBoxGeometry(6, 4, 4, 1), matNose)
+  const nose = new Mesh(getCachedChamferedBoxGeometry(6, 4, 4, 1), matNose)
   nose.position.z = -4
   nose.position.y = -7
   nose.rotation.x = Math.PI * 0.25
