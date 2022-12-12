@@ -34,6 +34,7 @@ const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
 class DummyController {
   private _updaters: Array<(dt: number) => void> = []
+  animTime = 0
   constructor(public x: number, public y: number, public angle: number) {
     //
   }
@@ -70,35 +71,32 @@ class DummyLightController {
 
 function wandererUpdate(dt: number) {
   let angleDelta = this.wandererAngleDelta
-  let speed = this.wandererSpeed
-  let speedDelta = this.wandererSpeedDelta
-  const maxSpeedDelta = this.wandererMaxSpeedDelta
+  const maxSpeed = this.wandererMaxSpeed
 
-  angleDelta += rand2(0.03)
-  angleDelta = clamp(angleDelta, -0.1, 0.1)
-  angleDelta *= 0.99
-  this.angle += angleDelta
-  this.angle *= 0.99
-  speedDelta += rand2(maxSpeedDelta)
-  speedDelta = clamp(speedDelta, -maxSpeedDelta, maxSpeedDelta)
-  speedDelta *= 0.9
-  speed += speedDelta
-  speed = clamp(speed, 0, this.wandererMaxSpeed)
-  speed *= 0.99
-  const realSpeed = Math.max(0, speed - 0.2) * 0.5
-  this.x += Math.cos(this.angle - Math.PI * 0.5) * realSpeed
-  this.y += Math.sin(this.angle - Math.PI * 0.5) * realSpeed
-
-  this.wandererAngleDelta = angleDelta
-  this.wandererSpeed = speed
-  this.wandererSpeedDelta = speedDelta
+  if (this.animTime === 0) {
+    angleDelta += rand2(0.03)
+    angleDelta = clamp(angleDelta, -0.1, 0.1)
+    angleDelta *= 0.99
+    this.angle += angleDelta
+    this.angle *= 0.99
+    this.wandererAngleDelta = angleDelta
+    if (rand() > 0.97) {
+      this.animTime += 0.01
+    }
+  }
+  if (this.animTime > 0) {
+    this.animTime += 0.025
+    const realSpeed = maxSpeed
+    this.x += Math.cos(this.angle - Math.PI * 0.5) * realSpeed
+    this.y += Math.sin(this.angle - Math.PI * 0.5) * realSpeed
+  }
+  if (this.animTime >= 1) {
+    this.animTime = 0
+  }
 }
-function makeWanderer(target: any, maxSpeed = 0.4, maxSpeedDelta = 0.02) {
-  target.wandererMaxSpeed = maxSpeed
-  target.wandererMaxSpeedDelta = maxSpeedDelta
+function makeWanderer(target: any, maxSpeed = 0.4) {
   target.wandererAngleDelta = 0
-  target.wandererSpeed = 0
-  target.wandererSpeedDelta = 0
+  target.wandererMaxSpeed = maxSpeed
   return wandererUpdate
 }
 function makeSolipsisticRespawner(solipsisticRespawnerTarget: any) {
@@ -441,7 +439,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
         rand2(20, 10),
         rand(-Math.PI, Math.PI)
       )
-      const wanderer = makeWanderer(actor, 0.25)
+      const wanderer = makeWanderer(actor, 0.025)
       actor.addUpdater(wanderer)
       actor.addUpdater(solipsisticRespawner)
       actor.addUpdater(tileAvoider)
@@ -451,6 +449,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     const sprites = spriteControllers.map((tc) =>
       mapScrollingView.jitSpriteSampler.makeSprite(tc.x, tc.y, tc.angle)
     )
+    sprites[0].metaBytes.disableBit('sheep')
+    mapScrollingView.jitSpriteSampler.validateMeta(sprites[0].metaBytes)
 
     const lightControllers: DummyLightController[] = []
     const s = 20
@@ -738,6 +738,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       tc.update(dt)
       s.x = tc.x
       s.y = tc.y
+      s.animTime = tc.animTime
       s.angle =
         (~~(wrap(tc.angle / (Math.PI * 2), 0, 1) * 16) / 16) * Math.PI * 2
     }
