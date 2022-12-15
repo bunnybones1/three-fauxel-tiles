@@ -106,6 +106,7 @@ export default class SpriteMaker extends TileMaker {
         getMeshMaterial('fleeceBlack'),
         getMeshMaterial('sheepNose'),
         getMeshMaterial('shinyBlack'),
+        0,
         0
       )
     }

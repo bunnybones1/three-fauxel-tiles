@@ -25,58 +25,55 @@ export default class TestJitTilesScene extends BaseTestScene {
     const tileMaker = this._tileMaker
     const transform = getMouseBoundViewTransform()
     const tileTex = this._tileMaker.getTexture('normals')
-    async function initMapRenderer() {
-      const width = 64
-      const height = 64
-      const totalTiles = width * height
-      const data = new Uint8Array(width * height * 4)
+    const width = 64
+    const height = 64
+    const totalTiles = width * height
+    const data = new Uint8Array(width * height * 4)
 
-      const jitTileSampler = new lib.JITTileSampler(tileMaker, width, height)
-      for (let i = 0; i < totalTiles; i++) {
-        const i4 = i * 4
-        const sample = jitTileSampler.sampleVis(i % width, ~~(i / width))
+    const jitTileSampler = new lib.JITTileSampler(tileMaker, width, height)
+    for (let i = 0; i < totalTiles; i++) {
+      const i4 = i * 4
+      const sample = jitTileSampler.sampleVis(i % width, ~~(i / width))
 
-        const indexBottomX = (sample.idBottom * 8) % 256
-        const indexBottomY = ~~(sample.idBottom / 32) * 8
-        const indexTopX = (sample.idTop * 8) % 256
-        const indexTopY = ~~(sample.idTop / 32) * 8
-        data[i4] = indexBottomX
-        data[i4 + 1] = indexBottomY
-        data[i4 + 2] = indexTopX
-        data[i4 + 3] = indexTopY
-        // data[i4] = ~~rand2(0, 255)
-        // data[i4+1] = ~~rand2(0, 255)
-        // data[i4+2] = ~~rand2(0, 255)
-        // data[i4+3] = ~~rand2(0, 255)
-        // const testSrt = visualProperties[0].toString(16)
-      }
-
-      const mapTex = new DataTexture(
-        data,
-        width,
-        height,
-        RGBAFormat,
-        UnsignedByteType,
-        UVMapping,
-        RepeatWrapping,
-        RepeatWrapping,
-        NearestFilter,
-        NearestFilter
-      )
-      mapTex.needsUpdate = true
-
-      const material = new lib.materials.BasicFullScreenMaterial({
-        mapTex,
-        tileTex,
-        transform,
-        tilesPerEdge: 64,
-        useTwoLayers: false
-      })
-
-      const mapPreview = new Mesh(new PlaneGeometry(2, 2, 1, 1), material)
-      scene.add(mapPreview)
+      const indexBottomX = (sample.idBottom * 8) % 256
+      const indexBottomY = ~~(sample.idBottom / 32) * 8
+      const indexTopX = (sample.idTop * 8) % 256
+      const indexTopY = ~~(sample.idTop / 32) * 8
+      data[i4] = indexBottomX
+      data[i4 + 1] = indexBottomY
+      data[i4 + 2] = indexTopX
+      data[i4 + 3] = indexTopY
+      // data[i4] = ~~rand2(0, 255)
+      // data[i4+1] = ~~rand2(0, 255)
+      // data[i4+2] = ~~rand2(0, 255)
+      // data[i4+3] = ~~rand2(0, 255)
+      // const testSrt = visualProperties[0].toString(16)
     }
-    initMapRenderer()
+
+    const mapTex = new DataTexture(
+      data,
+      width,
+      height,
+      RGBAFormat,
+      UnsignedByteType,
+      UVMapping,
+      RepeatWrapping,
+      RepeatWrapping,
+      NearestFilter,
+      NearestFilter
+    )
+    mapTex.needsUpdate = true
+
+    const material = new lib.materials.BasicFullScreenMaterial({
+      mapTex,
+      tileTex,
+      transform,
+      tilesPerEdge: 64,
+      useTwoLayers: false
+    })
+
+    const mapPreview = new Mesh(new PlaneGeometry(2, 2, 1, 1), material)
+    scene.add(mapPreview)
     this._transform = transform
   }
   update(dt: number) {

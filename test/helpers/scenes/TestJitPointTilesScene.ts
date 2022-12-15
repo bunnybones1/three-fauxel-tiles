@@ -20,7 +20,7 @@ import { getUrlInt } from '../../utils/location'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 export default class TestJitPointTilesScene extends BaseTestScene {
-  mapCacheNeedsUpdate: boolean
+  mapCacheNeedsUpdate = false
   dirty = true
   protected _transform: Vector3
   private _jitTileSampler: JITTileSampler
@@ -48,14 +48,14 @@ export default class TestJitPointTilesScene extends BaseTestScene {
     const pixelsPerTile = __pixelsPerTile
     const pixelsPerCacheEdge = 2048
     const clipspaceMode = !getUrlFlag('debugView')
-    const passes: string[] = [
+    const passes = [
       // 'beauty',
       'customColor',
       'normals',
       'customEmissive',
       'customRoughnessMetalnessHeight',
       'customTopDownHeight'
-    ]
+    ] as const
     const mapScrollingView = new lib.MapScrollingView(
       viewWidth,
       viewHeight,

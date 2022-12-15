@@ -69,7 +69,7 @@ class DummyLightController {
   }
 }
 
-function wandererUpdate(dt: number) {
+function wandererUpdate(this: any, dt: number) {
   let angleDelta = this.wandererAngleDelta
   const maxSpeed = this.wandererMaxSpeed
 
@@ -322,7 +322,7 @@ function makeLightUpdater(size: number, sizeSpeed = 10) {
   }
 }
 
-function makeLanternLightUpdater(parent: DummyController) {
+function makeLanternLightUpdater(this:any, parent: DummyController) {
   const angleLerpRate = 0.25
   let swing = 0
   return function lanternLightUpdater(dt: number) {

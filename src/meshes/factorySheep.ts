@@ -16,7 +16,8 @@ export function makeSheep(
   matFleeceSecondary: Material,
   matNose: Material,
   matEyes: Material,
-  time = 0
+  time = 0,
+  runStrength = 1
 ) {
   const pivot = new Object3D()
   const body = new Mesh(
@@ -25,10 +26,11 @@ export function makeSheep(
   )
   const angle = time * C1_1
   const phaseBody = angle * 0.5 - C1_4
-  body.position.y = 20 + Easing.Quadratic.Out(Math.cos(phaseBody)) * 30 - 2
+  body.position.y =
+    18 + Easing.Quadratic.Out(Math.cos(phaseBody)) * 30 * runStrength
 
   const bodyAngle = Easing.Quadratic.In(time) * C1_1
-  body.rotation.x = Math.sin(-bodyAngle) * 0.4
+  body.rotation.x = Math.sin(-bodyAngle) * 0.4 * runStrength
   //leg back
   const legBack = new Mesh(
     getCachedChamferedBoxGeometry(10, 20, 14, 4),
@@ -36,12 +38,12 @@ export function makeSheep(
   )
   legBack.position.x = -10
   legBack.position.z = 7
-  legBack.position.y = Math.cos(angle + 1) * 4
+  legBack.position.y = Math.cos(angle + 1) * 4 * runStrength
   //   const legBackAngle = Math.cos(angle * 0.5 - C1_4) * 1.5
   const legBackAngle =
     Math.sin(Easing.Quadratic.InOut((time + 1.5) % 1) * C1_1) * 1.3
 
-  legBack.rotation.x = Math.PI * 0.125 + legBackAngle
+  legBack.rotation.x = Math.PI * 0.125 + legBackAngle * runStrength
   body.add(legBack)
   const shinBack = new Mesh(
     getCachedChamferedBoxGeometry(5, 20, 7, 2),
@@ -61,11 +63,11 @@ export function makeSheep(
     matFleecePrimary
   )
   legFront.position.x = -8
-  legFront.position.z = -7 + Math.sin(angle - 1) * 4
-  legBack.position.y = Math.cos(angle) * 4
+  legFront.position.z = -7 + Math.sin(angle - 1) * 4 * runStrength
+  legBack.position.y = Math.cos(angle) * 4 * runStrength
   const legFrontAngle =
     Math.sin(Easing.Quadratic.InOut((time + 0.6) % 1) * C1_1) * 1.3
-  legFront.rotation.x = Math.PI * -0.125 + legFrontAngle + 0.25
+  legFront.rotation.x = Math.PI * -0.125 + (legFrontAngle + 0.25) * runStrength
   body.add(legFront)
   const shinFront = new Mesh(
     getCachedChamferedBoxGeometry(5, 20, 7, 2),
@@ -86,8 +88,8 @@ export function makeSheep(
   )
   tail.position.z = 17
   const tailPhase = Math.sin(angle + 2.5) * 0.5 + 0.5
-  tail.position.y = 4 + tailPhase * 6
-  tail.rotation.x = Math.PI * -0.125 - tailPhase * 2
+  tail.position.y = 4 + tailPhase * 6 * runStrength
+  tail.rotation.x = Math.PI * -0.125 - tailPhase * 2 * runStrength
   body.add(tail)
 
   //head
@@ -97,9 +99,9 @@ export function makeSheep(
   )
   const headPhase = Math.sin(angle - 0.5) * 0.5 + 0.5
   const headPhase2 = Math.sin(angle + 1) * 0.5 + 0.5
-  head.position.z = -17 + headPhase2 * -4
-  head.position.y = 10 + headPhase * 4
-  head.rotation.x = Math.PI * 0.25 + headPhase * 1.5
+  head.position.z = -17 + headPhase2 * -4 * runStrength
+  head.position.y = 10 + headPhase * 4 * runStrength
+  head.rotation.x = Math.PI * 0.25 + headPhase * 1.5 * runStrength
   body.add(head)
 
   //ears
@@ -119,12 +121,12 @@ export function makeSheep(
   ear2.position.x *= -1
   ear2Container.add(ear2)
   const earPhase = Math.sin(angle - 2) * 0.5 + 0.5
-  earContainer.position.x = earPhase * -3
-  earContainer.rotation.z = -earPhase
-  earContainer.rotation.x = -earPhase
-  ear2Container.position.x = earPhase * 3
-  ear2Container.rotation.z = earPhase
-  ear2Container.rotation.x = -earPhase
+  earContainer.position.x = earPhase * -3 * runStrength
+  earContainer.rotation.z = -earPhase * runStrength
+  earContainer.rotation.x = -earPhase * runStrength
+  ear2Container.position.x = earPhase * 3 * runStrength
+  ear2Container.rotation.z = earPhase * runStrength
+  ear2Container.rotation.x = -earPhase * runStrength
   head.add(earContainer)
   head.add(ear2Container)
 

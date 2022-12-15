@@ -62,6 +62,11 @@ export class SpriteController {
     return this._animTime
   }
   set animTime(value: number) {
+    if(value === 0) {
+      this.metaBytes.disableBit('animRun')
+    } else {
+      this.metaBytes.enableBit('animRun')
+    }
     this._animTime = value
     this.animFrame = ~~(value * 8)
   }
@@ -200,6 +205,7 @@ export default class JITTileSampler {
           (metaProps.has('animTime1') ? 1 : 0) +
           (metaProps.has('animTime2') ? 2 : 0) +
           (metaProps.has('animTime4') ? 4 : 0)
+          //@ts-ignore
         visProps.enableBit('sheepRun' + time)
       } else {
         visProps.enableBit('sheep')

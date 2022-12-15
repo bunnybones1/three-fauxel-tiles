@@ -3,6 +3,7 @@ import {
   NearestFilter,
   RGBAFormat,
   sRGBEncoding,
+  Texture,
   TextureLoader,
   UnsignedByteType
 } from 'three'
