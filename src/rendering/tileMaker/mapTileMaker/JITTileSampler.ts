@@ -388,7 +388,6 @@ export default class JITTileSampler {
       (val.has('bush') ||
         val.has('beam') ||
         val.has('lampPost') ||
-        val.has('lampPost') ||
         val.has('grass') ||
         !val.has('floor') ||
         val.has('goldPile'))
@@ -407,6 +406,17 @@ export default class JITTileSampler {
         val.has('testObject'))
     ) {
       val.flipBit('rockyGround')
+    }
+
+    if (
+      val.has('goldPile') &&
+      (val.has('bush') ||
+        val.has('beam') ||
+        val.has('treePine') ||
+        val.has('treeMaple') ||
+        val.has('lampPost'))
+    ) {
+      val.flipBit('goldPile')
     }
 
     if (hasRocks) {

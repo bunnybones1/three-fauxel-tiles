@@ -53,7 +53,10 @@ const CuratedMaterialTypeStrings = [
   'fleeceWhite',
   'fleeceBlack',
   'sheepNose',
-  'shinyBlack'
+  'shinyBlack',
+  'pitchBlack',
+  'zombieSkin',
+  'bone'
 ] as const
 
 export type CuratedMaterialType = typeof CuratedMaterialTypeStrings[number]
@@ -212,8 +215,9 @@ export const standardMaterialParamLib: {
     // wireframe: true
   },
   pants: {
-    roughness: 0.65,
-    color: new Color(0.2, 0.25, 0.4)
+    roughness: 0.95,
+    metalness: 0.95,
+    color: new Color(0.1, 0.15, 0.4)
   },
   pantsRed: {
     roughness: 0.65,
@@ -247,6 +251,26 @@ export const standardMaterialParamLib: {
   shinyBlack: {
     roughness: 0.3,
     color: new Color(0.1, 0.1, 0.1)
+  },
+  pitchBlack: {
+    roughness: 0,
+    metalness: 0,
+    color: new Color(0, 0, 0)
+  },
+  zombieSkin: {
+    roughness: 1,
+    metalness: 0.95,
+    color: new Color(0.1, 0.3, -0.1),
+    // emissive: new Color(0.1, 0.45, 0.05).multiplyScalar(0.05),
+    // wireframe: true,
+    opacity: 0.5
+  },
+  bone: {
+    roughness: 4,
+    metalness: 0.95,
+    color: new Color(0.5 * 2, 0.45 * 2, 0.3 * 2)
+    // emissive: new Color(0.1, 0.45, 0.05).multiplyScalar(0.05),
+    // wireframe: true,
   }
 }
 

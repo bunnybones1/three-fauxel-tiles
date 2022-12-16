@@ -1,4 +1,4 @@
-import { SphereBufferGeometry, Vector3 } from 'three'
+import { BufferGeometry, SphereBufferGeometry, Vector3 } from 'three'
 
 import { inferDirection } from './math'
 
@@ -36,12 +36,16 @@ export function getChamferedBoxGeometry(
   return geo
 }
 
-const __cachedChamferedBoxGeometry = new Map<string, SphereBufferGeometry>()
+const __cachedOffsetChamferedBoxGeometry = new Map<string, BufferGeometry>()
+const __cachedChamferedBoxGeometry = new Map<string, BufferGeometry>()
 export function getCachedChamferedBoxGeometry(
   width: number,
   height: number,
   depth: number,
-  chamfer = 0.005
+  chamfer = 0.005,
+  offsetX = 0,
+  offsetY = 0,
+  offsetZ = 0
 ) {
   const key = `${width};${height};${depth};${chamfer};`
   if (!__cachedChamferedBoxGeometry.has(key)) {
@@ -50,5 +54,23 @@ export function getCachedChamferedBoxGeometry(
       getChamferedBoxGeometry(width, height, depth, chamfer)
     )
   }
-  return __cachedChamferedBoxGeometry.get(key)!
+  if (offsetX === 0 && offsetY === 0 && offsetZ === 0) {
+    return __cachedChamferedBoxGeometry.get(key)!
+  }
+  const key2 = `${key}${offsetX};${offsetY};${offsetZ}`
+
+  if (!__cachedOffsetChamferedBoxGeometry.has(key2)) {
+    const geo = __cachedChamferedBoxGeometry.get(key)!
+    const geoOffset = __cachedChamferedBoxGeometry.get(key)!.clone()
+    geoOffset.attributes.uv = geo.attributes.uv
+    geoOffset.attributes.normal = geo.attributes.normal
+    const posArr = geoOffset.attributes.position.array as number[]
+    for (let i3 = 0; i3 < posArr.length; i3 += 3) {
+      posArr[i3] += offsetX
+      posArr[i3 + 1] += offsetY
+      posArr[i3 + 2] += offsetZ
+    }
+    __cachedOffsetChamferedBoxGeometry.set(key2, geoOffset)
+  }
+  return __cachedOffsetChamferedBoxGeometry.get(key2)!
 }

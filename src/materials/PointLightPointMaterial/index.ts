@@ -6,9 +6,9 @@ import {
   Uniform,
   Vector2
 } from 'three'
-import { buildParameters } from '~/utils/jsUtils'
-import { assertPowerOfTwo } from '~/utils/math'
-import { getTempTexture } from '~/utils/threeUtils'
+import { buildParameters } from '../../utils/jsUtils'
+import { assertPowerOfTwo } from '../../utils/math'
+import { getTempTexture } from '../../utils/threeUtils'
 
 import fragmentShader from './frag.glsl'
 import vertexShader from './vert.glsl'
@@ -25,6 +25,9 @@ export interface PointLightPointMaterialParameters {
   mapCacheRoughnessMetalnessHeightTexture: Texture
   mapCacheDepthTopDownTexture: Texture
   z: number
+  useShadows: boolean
+  shadowResolution: number
+  Í
 }
 
 const __defaultParams: PointLightPointMaterialParameters = {
@@ -38,7 +41,9 @@ const __defaultParams: PointLightPointMaterialParameters = {
   relativeTileSize: 1 / 16, //one over the number of tiles in view
   relativePixelSize: 1 / 512, //one over the number of pixels in view
   pixelsPerCacheEdge: 2048,
-  z: 0
+  z: 0,
+  useShadows: true,
+  shadowResolution: 128.0
 }
 
 export class PointLightPointMaterial extends RawShaderMaterial {
@@ -66,6 +71,8 @@ export class PointLightPointMaterial extends RawShaderMaterial {
     }
 
     const defines: { [key: string]: boolean | string | number } = {
+      USE_SHADOWS: params.useShadows,
+      SHADOW_STEP_SIZE: 1 / params.shadowResolution,
       PIXELS_PER_TILE: params.pixelsPerTile.toFixed(1),
       RELATIVE_TILE_SIZE: params.relativeTileSize,
       RELATIVE_PIXEL_SIZE: params.relativePixelSize,

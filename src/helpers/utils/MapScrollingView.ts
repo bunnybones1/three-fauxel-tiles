@@ -27,7 +27,6 @@ export default class MapScrollingView {
   private _noiseMaker: NoiseTextureMaker
   mapCacheFinalView: Mesh
   private _noiseReady: boolean
-  areLightsVisible: boolean
   private _mapScrollingViewMaterial: FauxelMaterial
   public get offsetX(): number {
     return this.jitTileSampler.offsetX
@@ -174,10 +173,8 @@ export default class MapScrollingView {
     }
     this.tileMaker.render(renderer)
     const tileTime = (performance.now() * 0.002) % 1
-    const spriteTime = (performance.now() * 0.0015) % 1
     // const pingPong = Math.abs((time % 2) - 1)
     this.jitTileSampler.animFrame = ~~(tileTime * 4)
-    this.jitSpriteSampler.animFrame = ~~(spriteTime * 8)
     if (
       this.jitTileSampler.updateMeta() ||
       this._dirty ||
@@ -198,6 +195,6 @@ export default class MapScrollingView {
     )
     this.spriteMaker.render(renderer)
     this.mapWithSpritesCacheRenderer.render(renderer)
-    this.areLightsVisible = this.pointLightRenderer.render(renderer)
+    this.pointLightRenderer.render(renderer)
   }
 }

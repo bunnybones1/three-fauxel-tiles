@@ -24,6 +24,7 @@ const metaSpriteStrings = [
   'sword',
   'shield',
   'sheep',
+  'skeleton',
   'animRun',
   'animTime1',
   'animTime2',
@@ -46,7 +47,16 @@ const visualSpriteStrings = [
   'sheepRun4',
   'sheepRun5',
   'sheepRun6',
-  'sheepRun7'
+  'sheepRun7',
+  'skeleton',
+  'skeletonRun0',
+  'skeletonRun1',
+  'skeletonRun2',
+  'skeletonRun3',
+  'skeletonRun4',
+  'skeletonRun5',
+  'skeletonRun6',
+  'skeletonRun7'
 ] as const
 
 type VisSprite = typeof visualSpriteStrings[number]
@@ -62,7 +72,7 @@ export class SpriteController {
     return this._animTime
   }
   set animTime(value: number) {
-    if(value === 0) {
+    if (value === 0) {
       this.metaBytes.disableBit('animRun')
     } else {
       this.metaBytes.enableBit('animRun')
@@ -145,6 +155,7 @@ export default class JITTileSampler {
     const swordNoise = simpleThreshNoise(0.26, 50, 50, 0, seed)
     const shieldNoise = simpleThreshNoise(0.36, 50, 150, 0, seed)
     const sheepNoise = simpleThreshNoise(0.36, 50, 150, -0.9, seed)
+    const skeletonNoise = simpleThreshNoise(0.36, 50, 150, -0.9, seed)
     const animRunNoise = simpleThreshNoise(0.36, 50, 150, -0.5, seed)
     this.metaNoiseGenerators = [
       bodyNoise,
@@ -153,6 +164,7 @@ export default class JITTileSampler {
       swordNoise,
       shieldNoise,
       sheepNoise,
+      skeletonNoise,
       animRunNoise
     ]
   }
@@ -184,13 +196,17 @@ export default class JITTileSampler {
     if (val.has('body')) {
       val.disableBit('body2')
     }
-    if (val.has('sheep')) {
+    if (val.has('sheep') || val.has('skeleton')) {
       val.disableBit('body2')
       val.disableBit('body')
       val.enableBit('animRun')
     } else if (val.has('animRun')) {
       val.disableBit('animRun')
     }
+    if (val.has('sheep')) {
+      val.disableBit('skeleton')
+    }
+
     return val
   }
   sampleVisProps(metaProps: NamedBitsInNumber<typeof metaSpriteStrings>) {
@@ -205,10 +221,21 @@ export default class JITTileSampler {
           (metaProps.has('animTime1') ? 1 : 0) +
           (metaProps.has('animTime2') ? 2 : 0) +
           (metaProps.has('animTime4') ? 4 : 0)
-          //@ts-ignore
+        //@ts-ignore
         visProps.enableBit('sheepRun' + time)
       } else {
         visProps.enableBit('sheep')
+      }
+    } else if (metaProps.has('skeleton')) {
+      if (metaProps.has('animRun')) {
+        const time =
+          (metaProps.has('animTime1') ? 1 : 0) +
+          (metaProps.has('animTime2') ? 2 : 0) +
+          (metaProps.has('animTime4') ? 4 : 0)
+        //@ts-ignore
+        visProps.enableBit('skeletonRun' + time)
+      } else {
+        visProps.enableBit('skeleton')
       }
     } else {
       if (metaProps.has('body')) {

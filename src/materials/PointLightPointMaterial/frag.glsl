@@ -55,17 +55,19 @@ void main() {
   vec2 lightVec2Diagonal = vec2(-relLightPos.x, relLightPos.y - relLightPos.z / (lightTileSize));
   // vec2 lightVec2TopDown = vec2(relLightPos.x, relLightPos.y - lightHeight);
   // vec2 lightVec2 = vec2(relLightPos.x, relLightPos.z - relLightPos.y);
-	for(float i = 0.0; i < 0.5; i += 1.0/128.0) {
-    vec2 lightVec2TopDownStep = lightVec2TopDown * i;
-    vec2 lightVec2DiagonalStep = lightVec2Diagonal * i;
-    float newTopDownHeight = texture2D(uTextureDepthTopDownMapCache, flooredUv + lightVec2TopDownStep).b;
-    float newDiagonalHeight = texture2D(uTextureRoughnessMetalnessHeightMapCache, texelUv + lightVec2DiagonalStep).b;
-    workingTexelHeight = startingCastHeight - relLightPos.z * i;
+  #ifdef USE_SHADOWS
+    for(float i = 0.0; i < 0.5; i += SHADOW_STEP_SIZE) {
+      vec2 lightVec2TopDownStep = lightVec2TopDown * i;
+      vec2 lightVec2DiagonalStep = lightVec2Diagonal * i;
+      float newTopDownHeight = texture2D(uTextureDepthTopDownMapCache, flooredUv + lightVec2TopDownStep).b;
+      float newDiagonalHeight = texture2D(uTextureRoughnessMetalnessHeightMapCache, texelUv + lightVec2DiagonalStep).b;
+      workingTexelHeight = startingCastHeight - relLightPos.z * i;
 
-    mixShadow = min(mixShadow, max(step(newTopDownHeight, workingTexelHeight), step(newDiagonalHeight, workingTexelHeight)));
-    // mixShadow = min(mixShadow, step(newTopDownHeight, workingTexelHeight));
-    // mixShadow = min(mixShadow, step(newDiagonalHeight, workingTexelHeight));
-	}
+      mixShadow = min(mixShadow, max(step(newTopDownHeight, workingTexelHeight), step(newDiagonalHeight, workingTexelHeight)));
+      // mixShadow = min(mixShadow, step(newTopDownHeight, workingTexelHeight));
+      // mixShadow = min(mixShadow, step(newDiagonalHeight, workingTexelHeight));
+    }
+  #endif
 
   vec3 lightColorHit = vColor * lightStrength * mixShadow;
 

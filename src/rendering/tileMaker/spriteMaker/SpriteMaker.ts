@@ -1,4 +1,5 @@
 import { Material, Mesh, Object3D, Vector4, WebGLRenderer } from 'three'
+import { skeletonMaterialNames } from '../../../../test/helpers/skeletonMaterialNames'
 import { verticalScale } from '../../../constants'
 import {
   changeMeshMaterials,
@@ -6,6 +7,7 @@ import {
   MaterialPassType
 } from '../../../helpers/materials/materialLib'
 import { makeSheep } from '../../../meshes/factorySheep'
+import { makeSkeleton } from '../../../meshes/factorySkeleton'
 import { getChamferedBoxGeometry } from '../../../utils/geometry'
 import { memoize } from '../../../utils/memoizer'
 import TileMaker from '../TileMaker'
@@ -125,6 +127,29 @@ export default class SpriteMaker extends TileMaker {
         )
       }
       indexedMeshes.push(sheepRunFrame)
+    }
+
+    const skeleton = () => {
+      return makeSkeleton(
+        getMeshMaterial(skeletonMaterialNames.skin),
+        getMeshMaterial(skeletonMaterialNames.black),
+        getMeshMaterial(skeletonMaterialNames.pants),
+        0,
+        0
+      )
+    }
+    indexedMeshes.push(skeleton)
+    for (let i = 0; i < t; i++) {
+      const time = i / t
+      const skeletonRunFrame = () => {
+        return makeSkeleton(
+          getMeshMaterial(skeletonMaterialNames.skin),
+          getMeshMaterial(skeletonMaterialNames.black),
+          getMeshMaterial(skeletonMaterialNames.pants),
+          time
+        )
+      }
+      indexedMeshes.push(skeletonRunFrame)
     }
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)

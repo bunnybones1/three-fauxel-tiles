@@ -306,6 +306,9 @@ function makeKeyboardUpdater() {
       const steppedAngle =
         (Math.round((angle / Math.PI / 2) * 16) / 16) * Math.PI * 2
       this.angle = steppedAngle
+      this.animTime += 0.02
+    } else {
+      this.animTime = 0
     }
   }
 }
@@ -322,14 +325,14 @@ function makeLightUpdater(size: number, sizeSpeed = 10) {
   }
 }
 
-function makeLanternLightUpdater(this:any, parent: DummyController) {
+function makeLanternLightUpdater(this: any, parent: DummyController) {
   const angleLerpRate = 0.25
   let swing = 0
   return function lanternLightUpdater(dt: number) {
     const adjDt = dt / __idealFrameDuration
     const angleLerpAmt = 1 - Math.pow(1 - angleLerpRate, adjDt)
     const a = parent.angle + Math.PI * -0.375
-    const d = 0.5
+    const d = 0.75
     swing += dt
 
     const x = parent.x + Math.cos(a) * d
@@ -351,8 +354,12 @@ function makeYoyoUpdater(low: number, high: number) {
   }
 }
 
-function makeOffsetSpinUpdater(x: number, y: number, radius: number) {
-  const angleOffset = detRandLights() * Math.PI * 2
+function makeOffsetSpinUpdater(
+  x: number,
+  y: number,
+  radius: number,
+  angleOffset: number
+) {
   return function yoyoUpdater(dt: number) {
     const a = angleOffset + performance.now() * 0.0002
     this.x = x + Math.cos(a) * radius
@@ -433,7 +440,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     player.x = getUrlInt('x', 0)
     player.y = getUrlInt('y', 0)
     spriteControllers.push(player)
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 20; i++) {
       const actor = new DummyController(
         rand2(20),
         rand2(20, 10),
@@ -450,6 +457,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       mapScrollingView.jitSpriteSampler.makeSprite(tc.x, tc.y, tc.angle)
     )
     sprites[0].metaBytes.disableBit('sheep')
+    sprites[0].metaBytes.enableBit('skeleton')
     mapScrollingView.jitSpriteSampler.validateMeta(sprites[0].metaBytes)
 
     const lightControllers: DummyLightController[] = []
@@ -499,13 +507,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           )
           // dlc.addUpdater(makeYoyoUpdater(0.5, 1.5))
           lightControllers.push(dlc)
-          const light = mapScrollingView.pointLightRenderer.makeLight(
-            dlc.x,
-            dlc.y,
-            0.5,
-            dlc.size,
-            dlc.color
-          )
+          const light = mapScrollingView.pointLightRenderer
+            .getLightGroup(true, 128)
+            .makeLight(dlc.x, dlc.y, 0.5, dlc.size, dlc.color)
           lights.push(light)
           lightRegistry.set(key, [dlc, light])
         }
@@ -518,9 +522,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
         const needsChristmasLights =
           correctTile && !lightRegistry.has(key) && christmas
         if (needsChristmasLights) {
-          const t = 62
-          for (let i = 0; i < t; i++) {
-            const ratio = i / t
+          const t1 = 62
+          for (let i = 0; i < t1; i++) {
+            const ratio = i / t1
             const color = new Color()
               .setHSL(
                 detRandLights(0, 1),
@@ -540,15 +544,43 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
               color,
               0.5 * pixelsPerTile
             )
-            dlc.addUpdater(makeOffsetSpinUpdater(x, y, radius))
+            const angleOffset = detRandLights() * Math.PI * 2
+            dlc.addUpdater(makeOffsetSpinUpdater(x, y, radius, angleOffset))
             lightControllers.push(dlc)
-            const light = mapScrollingView.pointLightRenderer.makeLight(
-              dlc.x,
-              dlc.y,
-              0.5,
-              dlc.size,
-              dlc.color
+            const light = mapScrollingView.pointLightRenderer
+              .getLightGroup(false)
+              .makeLight(dlc.x, dlc.y, 0.5, dlc.size, dlc.color)
+            lights.push(light)
+            lightRegistry.set(key, [dlc, light])
+          }
+
+          const t2 = 5
+          for (let i = 0; i < t2; i++) {
+            const ratio = i / t2
+            const color = new Color()
+              .setHSL(
+                detRandLights(0, 1),
+                0.9,
+                0.5
+                // detRandLights(0, 100),
+                // detRandLights(0.5, 0.8),
+                // detRandLights(0.25, 0.5)
+              )
+              .multiplyScalar(0.8)
+            const a = ratio * Math.PI * 2
+            const radius = 0.5
+            const dlc = new DummyLightController(
+              x + Math.cos(a) * radius,
+              y + Math.sin(a) * radius,
+              0.6,
+              color,
+              3 * pixelsPerTile
             )
+            dlc.addUpdater(makeOffsetSpinUpdater(x, y, radius, a))
+            lightControllers.push(dlc)
+            const light = mapScrollingView.pointLightRenderer
+              .getLightGroup(false)
+              .makeLight(dlc.x, dlc.y, 0.5, dlc.size, dlc.color)
             lights.push(light)
             lightRegistry.set(key, [dlc, light])
           }
@@ -609,24 +641,16 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
 
     for (const lc of lightControllers) {
       lights.push(
-        mapScrollingView.pointLightRenderer.makeLight(
-          lc.x,
-          lc.y,
-          0.5,
-          lc.size,
-          lc.color
-        )
+        mapScrollingView.pointLightRenderer
+          .getLightGroup()
+          .makeLight(lc.x, lc.y, 0.5, lc.size, lc.color)
       )
     }
 
     const lanternLights = lanternLightControllers.map((tc) =>
-      mapScrollingView.pointLightRenderer.makeLight(
-        tc.x,
-        tc.y,
-        0.5,
-        tc.size,
-        tc.color
-      )
+      mapScrollingView.pointLightRenderer
+        .getLightGroup(true, 64)
+        .makeLight(tc.x, tc.y, 0.5, tc.size, tc.color)
     )
 
     const allViews = !debugView
@@ -663,8 +687,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       for (let i = 0; i < passes.length; i++) {
         const pass = passes[i]
         const tileCacheMaterial = new MeshBasicMaterial({
-          // map: mapScrollingView.spriteMaker.getTexture(pass)
-          map: mapScrollingView.tileMaker.getTexture(pass)
+          map: mapScrollingView.spriteMaker.getTexture(pass)
+          // map: mapScrollingView.tileMaker.getTexture(pass)
         })
 
         const tileCachePreview = new Mesh(
