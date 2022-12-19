@@ -10,7 +10,7 @@ export default function getKeyboardInput() {
 
 export function rigToKeyboard(callback: (controller: KeyboardInput) => void) {
   let initd = false
-  window.addEventListener('keydown', (e: GamepadEvent) => {
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
     if (initd) {
       return
     }

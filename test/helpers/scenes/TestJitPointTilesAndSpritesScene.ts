@@ -276,40 +276,74 @@ function makeSpriteAvoider() {
 }
 
 const __idealFrameDuration = 1 / 60
-function makeKeyboardUpdater() {
+function makeKeyboardUpdater(
+  movementVector: Vector2,
+  directionVector: Vector2
+) {
   const angleLerpRate = 0.2
   let angle = 0
   // let speed = 0
-  const kv = new Vector2()
+  const mv = new Vector2()
+  const dv = new Vector2()
 
   return function keyboardUpdater(dt: number) {
     const adjDt = dt / __idealFrameDuration
     const angleLerpAmt = 1 - Math.pow(1 - angleLerpRate, adjDt)
-    kv.copy(getQuickKeyboardDirectionVector()).normalize()
-    if (!(kv.x === 0 && kv.y === 0)) {
-      const newAngle = Math.atan2(-kv.y, kv.x) + Math.PI * 0.5
-      let angleDelta = newAngle - angle
-      if (angleDelta < -Math.PI) {
-        angleDelta += Math.PI * 2
-      } else if (angleDelta > Math.PI) {
-        angleDelta -= Math.PI * 2
-      }
-      angle += angleDelta * angleLerpAmt
-      if (angle < -Math.PI) {
-        angle += Math.PI * 2
-      } else if (angle > Math.PI) {
-        angle -= Math.PI * 2
+    mv.copy(movementVector).normalize()
+    dv.copy(directionVector).normalize()
+    let newAngle = 0
+
+    const directionOverridesMovementAngle =
+      directionVector.x !== 0 || directionVector.y !== 0
+
+    const newDirectionAngle = Math.atan2(-dv.y, dv.x) + Math.PI * 0.5
+    if (directionOverridesMovementAngle) {
+      newAngle = newDirectionAngle
+    } else {
+      newAngle = this.angle
+    }
+
+    if (!(mv.x === 0 && mv.y === 0)) {
+      const newMovementAngle = Math.atan2(-mv.y, mv.x) + Math.PI * 0.5
+      if (!directionOverridesMovementAngle) {
+        newAngle = newMovementAngle
       }
       const speed = 0.05 * adjDt
-      this.x += kv.x * speed
-      this.y -= kv.y * speed
-      const steppedAngle =
-        (Math.round((angle / Math.PI / 2) * 16) / 16) * Math.PI * 2
-      this.angle = steppedAngle
-      this.animTime += 0.02
+      this.x += mv.x * speed
+      this.y -= mv.y * speed
+      let movementDirectionAngleDelta = newMovementAngle - newDirectionAngle
+      while (movementDirectionAngleDelta > Math.PI) {
+        movementDirectionAngleDelta -= Math.PI * 2
+      }
+      while (movementDirectionAngleDelta < -Math.PI) {
+        movementDirectionAngleDelta += Math.PI * 2
+      }
+      if (
+        movementDirectionAngleDelta > Math.PI * 0.5 ||
+        movementDirectionAngleDelta < Math.PI * -0.5
+      ) {
+        this.animTime -= 0.02
+      } else {
+        this.animTime += 0.02
+      }
     } else {
       this.animTime = 0
     }
+    let angleDelta = newAngle - angle
+    if (angleDelta < -Math.PI) {
+      angleDelta += Math.PI * 2
+    } else if (angleDelta > Math.PI) {
+      angleDelta -= Math.PI * 2
+    }
+    angle += angleDelta * angleLerpAmt
+    if (angle < -Math.PI) {
+      angle += Math.PI * 2
+    } else if (angle > Math.PI) {
+      angle -= Math.PI * 2
+    }
+    const steppedAngle =
+      (Math.round((angle / Math.PI / 2) * 16) / 16) * Math.PI * 2
+    this.angle = steppedAngle
   }
 }
 
@@ -382,6 +416,12 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   private _mapViewUvST = new Vector4(1, 1, 0, 0)
   private _mapViewSubTilePixelOffsetUvST = new Vector4(1, 1, 0, 0)
   private _tilesOffsetPrevious = new Vector2(initOffset.x, initOffset.y)
+  private _wasdKeysDirection = getQuickKeyboardDirectionVector(
+    'KeyW',
+    'KeyS',
+    'KeyA',
+    'KeyD'
+  )
   private _arrowKeysDirection = getQuickKeyboardDirectionVector()
   private _pixelsPerTile: number
   private _viewWidth: number
@@ -430,7 +470,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       rand2(20, 10),
       rand(-Math.PI, Math.PI)
     )
-    player.addUpdater(makeKeyboardUpdater())
+    player.addUpdater(
+      makeKeyboardUpdater(this._wasdKeysDirection, this._arrowKeysDirection)
+    )
     const tileAvoider = makeTileAvoider(mapScrollingView.jitTileSampler)
     const solipsisticRespawner = makeSolipsisticRespawner(player)
     const spriteAvoider = makeSpriteAvoider()
@@ -793,12 +835,12 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     } else {
       if (getUrlFlag('autoMove')) {
         const a = performance.now() * 0.0002
-        this._arrowKeysDirection.copy(
+        this._wasdKeysDirection.copy(
           new Vector2(Math.cos(a) * 1, Math.sin(a) * 1)
         )
       }
       this._pixelsOffset.add(
-        this._arrowKeysDirection.clone().multiplyScalar(4 * 60 * dt)
+        this._wasdKeysDirection.clone().multiplyScalar(4 * 60 * dt)
       )
     }
     this._tilesOffset.x = Math.floor(this._pixelsOffset.x / this._pixelsPerTile)
