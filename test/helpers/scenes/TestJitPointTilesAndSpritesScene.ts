@@ -519,21 +519,21 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           !meta.has('harvested')
 
         const christmas = getUrlFlag('christmas')
+        const christmasColors = [
+          new Color(1, 0, 0.05),
+          new Color(1, 0.5, 0),
+          new Color(0, 0.15, 1),
+          new Color(0, 1, 0)
+        ]
+        // christmasColors.forEach(c => c.multiplyScalar(0.9).addScalar(0.1))
         const needsChristmasLights =
           correctTile && !lightRegistry.has(key) && christmas
         if (needsChristmasLights) {
           const t1 = 62
           for (let i = 0; i < t1; i++) {
             const ratio = i / t1
-            const color = new Color()
-              .setHSL(
-                detRandLights(0, 1),
-                0.9,
-                0.5
-                // detRandLights(0, 100),
-                // detRandLights(0.5, 0.8),
-                // detRandLights(0.25, 0.5)
-              )
+            const color = christmasColors[i % christmasColors.length]
+              .clone()
               .multiplyScalar(20)
             const a = detRandLights() * Math.PI * 2
             const radius = (1 - ratio) * 0.7 + 0.1

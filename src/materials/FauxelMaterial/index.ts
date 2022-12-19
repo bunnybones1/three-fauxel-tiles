@@ -39,6 +39,7 @@ interface Parameters {
   fogScroll: Vector2
   waterHeight: number
   useWater: boolean
+  useOutlines: boolean
 }
 
 const __defaultParams: Parameters = {
@@ -63,7 +64,8 @@ const __defaultParams: Parameters = {
   textureFog: getTempTexture(),
   fogScroll: new Vector2(),
   waterHeight: 0.5,
-  useWater: false
+  useWater: false,
+  useOutlines: false
 }
 
 // const axis = new Vector3(0, 0, 1)
@@ -161,7 +163,8 @@ export class FauxelMaterial extends RawShaderMaterial {
       RELATIVE_TILE_PIXEL_SIZE:
         params.relativePixelSize / params.relativeTileSize,
       USE_WATER: params.useWater,
-      USE_SUN_SHADOWS: true
+      USE_SUN_SHADOWS: true,
+      USE_OUTLINES: params.useOutlines
     }
 
     super({

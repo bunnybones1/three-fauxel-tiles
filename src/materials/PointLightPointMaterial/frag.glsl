@@ -75,6 +75,11 @@ void main() {
   float mask = max(0.0, 1.0-length((gl_PointCoord - 0.5) * 2.0));
   float invMask = 1.0 - mask;
   gl_FragColor.rgb *= 1.0 - (invMask * invMask);
+  vec2 texelUvCenter = vInverseUv + PIXEL_VIEW_RATIO * lightSize * 0.5;
+  float texelHeightCenter = texture2D(uTextureRoughnessMetalnessHeightMapCache, texelUvCenter).b * 2.0;
+  float blocked = step(texelHeightCenter, lightHeight);
+  gl_FragColor.rgb += vColor * pow(max(0.0, 1.0 - 8.0 * length(vec2(0.5) - gl_PointCoord)), 3.0) * blocked;
+  // gl_FragColor.rgb += vec3(texelHeightCenter);
 
   // gl_FragColor = texelNormals;
   // gl_FragColor = vec4(mixShadow, distance, lightDepth, 1.0);

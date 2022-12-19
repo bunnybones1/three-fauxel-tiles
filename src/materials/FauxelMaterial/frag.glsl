@@ -102,20 +102,22 @@ void main() {
 
 
   vec4 texelPointLights = texture2D(uTexturePointLights, uv);
-  gl_FragColor.rgb += texelPointLights.rgb;
 
+  gl_FragColor.rgb += texelPointLights.rgb;
   gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(0.5454));
 
   //outlines
-  vec2 pixelH = vec2(RELATIVE_PIXEL_SIZE, 0.0);
-  vec2 pixelV = vec2(0.0, RELATIVE_PIXEL_SIZE);
-  uv = vUv;
-  float heightL = texture2D(uTextureRoughnessMetalnessHeight, uv - pixelH).b;
-  float heightR = texture2D(uTextureRoughnessMetalnessHeight, uv + pixelH).b;
-  float heightU = texture2D(uTextureRoughnessMetalnessHeight, uv + pixelV).b;
-  float heightD = texture2D(uTextureRoughnessMetalnessHeight, uv - pixelV).b;
-  float highestNeighbour = max(max(heightL, heightR), max(heightU, heightD)) * 2.0;
-  float outline = smoothstep((highestNeighbour - 0.2),(highestNeighbour - 0.05), originalHeight);
+  #ifdef USE_OUTLINES
+    vec2 pixelH = vec2(RELATIVE_PIXEL_SIZE, 0.0);
+    vec2 pixelV = vec2(0.0, RELATIVE_PIXEL_SIZE);
+    uv = vUv;
+    float heightL = texture2D(uTextureRoughnessMetalnessHeight, uv - pixelH).b;
+    float heightR = texture2D(uTextureRoughnessMetalnessHeight, uv + pixelH).b;
+    float heightU = texture2D(uTextureRoughnessMetalnessHeight, uv + pixelV).b;
+    float heightD = texture2D(uTextureRoughnessMetalnessHeight, uv - pixelV).b;
+    float highestNeighbour = max(max(heightL, heightR), max(heightU, heightD)) * 2.0;
+    float outline = smoothstep((highestNeighbour - 0.2),(highestNeighbour - 0.05), originalHeight);
+  #endif
 
   #ifdef USE_MIST
     gl_FragColor.rgb += (vec3(1.0) - gl_FragColor.rgb) * mistMask * vec3(0.5);
@@ -123,8 +125,17 @@ void main() {
   #ifdef USE_WATER
     gl_FragColor.rgb *= mix(vec3(0.4, 0.3, 0.1), vec3(1.0), vec3(mix(1.0, outline, smoothstep(waterDepth-0.1, waterDepth, highestNeighbour)))); //outline
   #else
-    gl_FragColor.rgb *= mix(vec3(0.4, 0.3, 0.1), vec3(1.0), outline); //outline
+    #ifdef USE_OUTLINES
+      gl_FragColor.rgb *= mix(vec3(0.4, 0.3, 0.1), vec3(1.0), outline); //outline
+    #else
+      // gl_FragColor.rgb *= mix(vec3(0.4, 0.3, 0.1), vec3(1.0), outline); //outline
+    #endif
   #endif
+
+  // gl_FragColor.rgb += texelPointLights.rgb;
+  // gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(0.5454));
+
+
   // gl_FragColor.rgb = vec3(texelColor.a);
   // gl_FragColor.rgb = vec3(sin(floorYOffset * 1000.0) * 0.5 + 0.5);
 	// gl_FragColor = texelColor * texelNormals;
