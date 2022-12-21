@@ -535,12 +535,22 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       mapScrollingView.jitTileSampler
     )
     const spriteAvoider = makeSpriteAvoider()
+    const sprites: any[] = []
     player.addUpdater(tileAvoider)
     player.addUpdater(spriteAvoider)
     rigHarvestAction(player, mapScrollingView.jitTileSampler)
     player.x = getUrlInt('x', 0)
     player.y = getUrlInt('y', 0)
+
+    const playerSprite = mapScrollingView.jitSpriteSampler.makeSprite(
+      player.x,
+      player.y,
+      player.angle
+    )
+    playerSprite.metaBytes.enableBit('skeleton')
+    mapScrollingView.jitSpriteSampler.validateMeta(playerSprite.metaBytes)
     spriteControllers.push(player)
+    sprites.push(playerSprite)
     const tempSample = (
       mapScrollingView.jitTileSampler as JITTileSampler
     ).sampleMeta(0, 0)
@@ -558,13 +568,48 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       actor.addUpdater(tileAvoider)
       actor.addUpdater(spriteAvoider)
       spriteControllers.push(actor)
+      const sprite = mapScrollingView.jitSpriteSampler.makeSprite(
+        actor.x,
+        actor.y,
+        actor.angle
+      )
+      sprite.metaBytes.enableBit('sheep')
+      mapScrollingView.jitSpriteSampler.validateMeta(sprite.metaBytes)
+      sprites.push(sprite)
     }
-    const sprites = spriteControllers.map((tc) =>
-      mapScrollingView.jitSpriteSampler.makeSprite(tc.x, tc.y, tc.angle)
-    )
-    sprites[0].metaBytes.disableBit('sheep')
-    sprites[0].metaBytes.enableBit('skeleton')
-    mapScrollingView.jitSpriteSampler.validateMeta(sprites[0].metaBytes)
+
+    const noLogsHere = tempSample.makeFastMultiMask([
+      'water',
+      'rocks',
+      'lampPost',
+      'bricks',
+      'beam',
+      'treeMaple',
+      'treePine',
+      'bush',
+      'testObject',
+      'pyramid'
+    ])
+
+    for (let i = 0; i < 200; i++) {
+      regenSampleCoords(mapScrollingView.jitTileSampler, noLogsHere)
+      const item = new DummyController(
+        sampleCoords.x,
+        sampleCoords.y,
+        rand(-Math.PI, Math.PI)
+      )
+      item.addUpdater(tileAvoider)
+      item.addUpdater(spriteAvoider)
+      spriteControllers.push(item)
+      const sprite = mapScrollingView.jitSpriteSampler.makeSprite(
+        item.x,
+        item.y,
+        item.angle
+      )
+      sprite.metaBytes.enableBit('itemLog')
+      mapScrollingView.jitSpriteSampler.validateMeta(sprite.metaBytes)
+      sprites.push(sprite)
+    }
 
     const lightControllers: DummyLightController[] = []
     const s = 20
@@ -862,7 +907,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     this.finalViewCacheCamera = finalViewCacheCamera
 
     const testText = new PixelTextMesh.PixelTextMesh(
-      'hello',
+      'logs!',
       undefined,
       undefined,
       (w, h) => {

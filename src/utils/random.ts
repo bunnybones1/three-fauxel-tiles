@@ -85,6 +85,11 @@ export function detRandTreesPineStumpMature(min = 0, max = 1) {
   return genTreesPineStumpMature() * (max - min) + min
 }
 
+const genLogPine = sfc32(100, 200, 300, 444)
+export function detRandLogPine(min = 0, max = 1) {
+  return genLogPine() * (max - min) + min
+}
+
 const genWoodPlanks = sfc32(100, 152, 353, 504)
 export function detRandWoodPlanks(min = 0, max = 1) {
   return genWoodPlanks() * (max - min) + min

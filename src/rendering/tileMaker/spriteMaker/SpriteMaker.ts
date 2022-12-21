@@ -1,4 +1,11 @@
-import { Material, Mesh, Object3D, Vector4, WebGLRenderer } from 'three'
+import {
+  CylinderBufferGeometry,
+  Material,
+  Mesh,
+  Object3D,
+  Vector4,
+  WebGLRenderer
+} from 'three'
 import { skeletonMaterialNames } from '../../../../test/helpers/skeletonMaterialNames'
 import { verticalScale } from '../../../constants'
 import {
@@ -8,8 +15,12 @@ import {
 } from '../../../helpers/materials/materialLib'
 import { makeSheep } from '../../../meshes/factorySheep'
 import { makeSkeleton } from '../../../meshes/factorySkeleton'
-import { getChamferedBoxGeometry } from '../../../utils/geometry'
+import {
+  getCachedChamferedBoxGeometry,
+  getChamferedBoxGeometry
+} from '../../../utils/geometry'
 import { memoize } from '../../../utils/memoizer'
+import { detRandLogPine } from '../../../utils/random'
 import TileMaker from '../TileMaker'
 
 export default class SpriteMaker extends TileMaker {
@@ -102,6 +113,46 @@ export default class SpriteMaker extends TileMaker {
       return obj
     }
 
+    const itemLog = () => {
+      const radius = 8
+      const radiusInner = radius - 2
+      const height = 40
+      const pivot = new Object3D()
+      const wood = new Mesh(
+        new CylinderBufferGeometry(radiusInner, radiusInner, height, 16, 1),
+        getMeshMaterial('wood')
+      )
+      pivot.add(wood)
+
+      const matBark = getMeshMaterial('bark')
+      const tiltRange = 0.1
+
+      for (let i = 0; i < 200; i++) {
+        const size = ~~detRandLogPine(6, 8)
+        const bark = new Mesh(
+          getCachedChamferedBoxGeometry(2, size, 4, 1),
+          matBark
+        )
+        bark.rotation.order = 'YXZ'
+        const y = detRandLogPine() - 0.5
+        const angle = detRandLogPine(0, Math.PI * 2)
+        bark.position.set(
+          Math.cos(angle) * radius,
+          y * height,
+          Math.sin(angle) * radius
+        )
+        bark.rotation.y = -angle
+        bark.rotation.x += detRandLogPine(-tiltRange, tiltRange)
+        bark.rotation.y += detRandLogPine(-tiltRange, tiltRange)
+        bark.rotation.z += detRandLogPine(-tiltRange, tiltRange)
+        pivot.add(bark)
+      }
+      pivot.position.y = 8
+      pivot.rotation.x = Math.PI * 0.5
+      // obj.scale.y *= verticalScale
+      return pivot
+    }
+
     const sheep = () => {
       return makeSheep(
         getMeshMaterial('fleeceWhite'),
@@ -112,7 +163,16 @@ export default class SpriteMaker extends TileMaker {
         0
       )
     }
-    const indexedMeshes = [dummy, body, body2, hat, sword, shield, sheep]
+    const indexedMeshes = [
+      dummy,
+      body,
+      body2,
+      hat,
+      sword,
+      shield,
+      itemLog,
+      sheep
+    ]
 
     const t = 8
     for (let i = 0; i < t; i++) {

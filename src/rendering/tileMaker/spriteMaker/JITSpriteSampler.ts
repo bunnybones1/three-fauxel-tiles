@@ -1,8 +1,6 @@
 import { BufferGeometry } from 'three'
-import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
 import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
-import StepHelper2D from '../../../helpers/utils/StepHelper2D'
 import { wrap } from '../../../utils/math'
 
 import SpriteMaker from './SpriteMaker'
@@ -23,6 +21,7 @@ const metaSpriteStrings = [
   'hat',
   'sword',
   'shield',
+  'itemLog',
   'sheep',
   'skeleton',
   'animRun',
@@ -39,6 +38,7 @@ const visualSpriteStrings = [
   'hat',
   'sword',
   'shield',
+  'itemLog',
   'sheep',
   'sheepRun0',
   'sheepRun1',
@@ -124,7 +124,7 @@ export default class JITSpriteSampler {
   makeSprite(x: number, y: number, angle: number) {
     const id = __id
     // const sprite = new SpriteController(x, y, id, angle)
-    const meta = this.sampleMeta(id)
+    const meta = this.getMeta(id)
     const sprite = new SpriteController(x, y, id, angle, meta)
     __id++
     this._sprites.push(sprite)
@@ -136,7 +136,6 @@ export default class JITSpriteSampler {
   set spriteMaker(value: SpriteMaker) {
     throw new Error('Cannot change spriteMaker during runtime')
   }
-  metaNoiseGenerators: StepHelper2D[]
   bytesPerTile: number
   metaCache: Map<string, NamedBitsInNumber<typeof metaSpriteStrings>> =
     new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
@@ -147,53 +146,24 @@ export default class JITSpriteSampler {
     private _viewHeight: number
   ) {
     this.bytesPerTile = Math.ceil(visualSpriteStrings.length / 8)
-
-    const seed = 1
-    const bodyNoise = simpleThreshNoise(0.1, 0, 0, 0, seed)
-    const body2Noise = simpleThreshNoise(0.08, -100, -100, 0, seed)
-    const hatNoise = simpleThreshNoise(0.06, -50, -50, 0.5, seed)
-    const swordNoise = simpleThreshNoise(0.26, 50, 50, 0, seed)
-    const shieldNoise = simpleThreshNoise(0.36, 50, 150, 0, seed)
-    const sheepNoise = simpleThreshNoise(0.36, 50, 150, -0.9, seed)
-    const skeletonNoise = simpleThreshNoise(0.36, 50, 150, -0.9, seed)
-    const animRunNoise = simpleThreshNoise(0.36, 50, 150, -0.5, seed)
-    this.metaNoiseGenerators = [
-      bodyNoise,
-      body2Noise,
-      hatNoise,
-      swordNoise,
-      shieldNoise,
-      sheepNoise,
-      skeletonNoise,
-      animRunNoise
-    ]
   }
 
-  sampleMeta(id: number) {
+  getMeta(id: number) {
     const key = id.toString()
     if (this.metaCache.has(key)) {
       return this.metaCache.get(key)!
     }
-    const metaProps = new NamedBitsInNumber(
-      this.metaNoiseGenerators.reduce((accum, noise, j) => {
-        return (
-          accum +
-          (noise.getValue(wrap(id * 37, -100, 100), wrap(id * 124, -70, 70)) <<
-            j)
-        )
-      }, 0),
-      metaSpriteStrings
-    )
+    const metaProps = new NamedBitsInNumber(0, metaSpriteStrings)
     this.validateMeta(metaProps)
     console.log('valid', metaProps.has('sheep'))
     this.metaCache.set(key, metaProps)
     return metaProps
   }
   validateMeta(val: NamedBitsInNumber<typeof metaSpriteStrings>) {
-    if (!val.has('body') && !val.has('body2')) {
-      val.enableBit('body')
-    }
-    if (val.has('body')) {
+    // if (!val.has('body') && !val.has('body2')) {
+    //   val.enableBit('body')
+    // }
+    if (val.has('body') && val.has('body2')) {
       val.disableBit('body2')
     }
     if (val.has('sheep') || val.has('skeleton')) {
@@ -253,6 +223,9 @@ export default class JITSpriteSampler {
       }
       if (metaProps.has('shield')) {
         visProps.enableBit('shield')
+      }
+      if (metaProps.has('itemLog')) {
+        visProps.enableBit('itemLog')
       }
     }
     return visProps
