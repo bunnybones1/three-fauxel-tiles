@@ -174,9 +174,9 @@ export class FauxelMaterial extends RawShaderMaterial {
       fragmentShader,
       // alphaTest: 0.5,
       // transparent: true,
-      depthWrite: true,
-      depthTest: true,
-      side: DoubleSide
+      depthWrite: false,
+      depthTest: true
+      // side: DoubleSide
     })
 
     this.setSunAngle = (sunAngle: number) => {

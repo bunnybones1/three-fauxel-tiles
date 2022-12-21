@@ -15,12 +15,13 @@ import {
   WebGLRenderTarget
 } from 'three'
 import { clamp, lerp } from 'three/src/math/MathUtils'
-import { initOffset } from '~/constants'
-import { getMouseBoundViewTransform } from '~/helpers/viewTransformMouse'
-import { rand, rand2, wrap } from '~/utils/math'
-import { detRandLights } from '~/utils/random'
-import getKeyboardInput from '~/input/getKeyboardInput'
-import { KeyboardCodes } from '~/utils/KeyboardCodes'
+import { initOffset } from '../../constants'
+import { getMouseBoundViewTransform } from '../../helpers/viewTransformMouse'
+import { rand, rand2, wrap } from '../../utils/math'
+import { detRandLights } from '../../utils/random'
+import getKeyboardInput from '../../input/getKeyboardInput'
+import { KeyboardCodes } from '../../utils/KeyboardCodes'
+import PixelTextMesh from 'three-pixel-font'
 
 import lib from '@lib/index'
 import { getQuickKeyboardDirectionVector } from '../directionalKeyboardInputHelper'
@@ -29,6 +30,7 @@ import BaseTestScene from './BaseTestScene'
 import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTileSampler'
 import { removeFromArray } from '../../utils/arrayUtils'
 import { getUrlFlag, getUrlInt } from '../../utils/location'
+import NamedBitsInBytes from '../../../src/helpers/utils/NamedBitsInBytes'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
@@ -99,15 +101,33 @@ function makeWanderer(target: any, maxSpeed = 0.4) {
   target.wandererMaxSpeed = maxSpeed
   return wandererUpdate
 }
-function makeSolipsisticRespawner(solipsisticRespawnerTarget: any) {
+function makeSolipsisticRespawner(
+  solipsisticRespawnerTarget: any,
+  metaTileSampler: JITTileSampler
+) {
+  const tempSample = metaTileSampler.sampleMeta(0, 0)
+  const fastWaterOrRocks = tempSample.makeFastMultiMask(['water', 'rocks'])
+
   function solipsisticRespawnerUpdate(dt: number) {
     const distanceX = solipsisticRespawnerTarget.x - this.x
+    let x = this.x
+    let y = this.y
     if (Math.abs(distanceX) > 10) {
-      this.x = solipsisticRespawnerTarget.x + distanceX * 0.9
+      x = solipsisticRespawnerTarget.x + Math.sign(distanceX) * 9
     }
     const distanceY = solipsisticRespawnerTarget.y - this.y
     if (Math.abs(distanceY) > 10) {
-      this.y = solipsisticRespawnerTarget.y + distanceY * 0.9
+      y = solipsisticRespawnerTarget.y + Math.sign(distanceY) * 9
+    }
+    if (this.x !== x || this.y !== y) {
+      const tempSample = metaTileSampler.sampleMeta(
+        Math.round(x),
+        Math.round(y)
+      )
+      if (!tempSample.hasFast(fastWaterOrRocks)) {
+        this.x = x
+        this.y = y
+      }
     }
   }
   return solipsisticRespawnerUpdate
@@ -120,6 +140,7 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
   const fastTrees = tempSample.makeFastMultiMask(['treePine', 'treeMaple'])
   const fastRocks = tempSample.makeFastMask('rocks')
   const fastBeam = tempSample.makeFastMask('beam')
+  const fastBricksOrBushes = tempSample.makeFastMultiMask(['bricks', 'bush'])
   const fastHarvested = tempSample.makeFastMask('harvested')
   const fastMaturePlant = tempSample.makeFastMask('maturePlant')
   const fastMediumColliders = tempSample.makeFastMultiMask([
@@ -140,7 +161,7 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
     const y = this.y
     const otx = Math.floor(x)
     const oty = Math.floor(y)
-    let vDist = 0
+    let collisionCount = 0
     let vx = 0
     let vy = 0
     for (let ix = 0; ix < 2; ix++) {
@@ -150,6 +171,28 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
         const namedBits = metaTileSampler.sampleMeta(tx, ty)
         let size = 0
         if (
+          namedBits.hasFast(fastMediumColliders) ||
+          (namedBits.hasFast(fastTrees) && !namedBits.hasFast(fastHarvested))
+        ) {
+          size = 0.65
+          for (const co of cardinalOffsets) {
+            if (
+              metaTileSampler
+                .sampleMeta(tx + co[0], ty + co[1])
+                .hasFast(fastBricksOrBushes)
+            ) {
+              const dx = x - tx - co[0] * 0.5
+              const dy = y - ty - co[1] * 0.5
+              const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
+              if (dist < size) {
+                const ratio = 1 - dist / size
+                vx += dx * ratio
+                vy += dy * ratio
+                collisionCount++
+              }
+            }
+          }
+        } else if (
           namedBits.hasFast(fastSmallColliders) ||
           (namedBits.hasFast(fastTrees) &&
             namedBits.hasFast(fastHarvested) &&
@@ -169,15 +212,10 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
                 const ratio = 1 - dist / size
                 vx += dx * ratio
                 vy += dy * ratio
-                vDist++
+                collisionCount++
               }
             }
           }
-        } else if (
-          namedBits.hasFast(fastMediumColliders) ||
-          (namedBits.hasFast(fastTrees) && !namedBits.hasFast(fastHarvested))
-        ) {
-          size = 0.65
         } else if (
           namedBits.hasFast(fastRocks) &&
           !namedBits.hasFast(fastHarvested)
@@ -206,7 +244,7 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
             const ratio = 1 - dist / size
             vx += dx * ratio
             vy += dy * ratio
-            vDist++
+            collisionCount++
           }
         }
       }
@@ -214,9 +252,6 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
     const amt = dt / __idealFrameDuration
     this.x += vx * amt
     this.y += vy * amt
-    if (vDist === 4) {
-      this.y += 1
-    }
   }
 }
 
@@ -296,11 +331,12 @@ function makeKeyboardUpdater(
     const directionOverridesMovementAngle =
       directionVector.x !== 0 || directionVector.y !== 0
 
-    const newDirectionAngle = Math.atan2(-dv.y, dv.x) + Math.PI * 0.5
+    let newDirectionAngle = Math.atan2(-dv.y, dv.x) + Math.PI * 0.5
     if (directionOverridesMovementAngle) {
       newAngle = newDirectionAngle
     } else {
       newAngle = this.angle
+      newDirectionAngle = this.angle
     }
 
     if (!(mv.x === 0 && mv.y === 0)) {
@@ -309,8 +345,6 @@ function makeKeyboardUpdater(
         newAngle = newMovementAngle
       }
       const speed = 0.05 * adjDt
-      this.x += mv.x * speed
-      this.y -= mv.y * speed
       let movementDirectionAngleDelta = newMovementAngle - newDirectionAngle
       while (movementDirectionAngleDelta > Math.PI) {
         movementDirectionAngleDelta -= Math.PI * 2
@@ -318,14 +352,19 @@ function makeKeyboardUpdater(
       while (movementDirectionAngleDelta < -Math.PI) {
         movementDirectionAngleDelta += Math.PI * 2
       }
-      if (
-        movementDirectionAngleDelta > Math.PI * 0.5 ||
-        movementDirectionAngleDelta < Math.PI * -0.5
-      ) {
-        this.animTime -= 0.02
-      } else {
-        this.animTime += 0.02
-      }
+      const runningBackwards =
+        movementDirectionAngleDelta > Math.PI * 0.55 ||
+        movementDirectionAngleDelta < Math.PI * -0.55
+
+      const speedDirection = runningBackwards ? -1 : 1
+      const speedScale = lerp(
+        Math.cos(movementDirectionAngleDelta) * 0.5 + 0.5,
+        1,
+        0.65
+      )
+      this.animTime += 0.02 * speedScale * speedDirection
+      this.x += mv.x * speed * Math.abs(speedScale)
+      this.y -= mv.y * speed * Math.abs(speedScale)
     } else {
       this.animTime = 0
     }
@@ -402,6 +441,20 @@ function makeOffsetSpinUpdater(
 }
 
 const debugView = getUrlFlag('debugView')
+const sampleCoords = new Vector2()
+function regenSampleCoords(jitTileSampler: JITTileSampler, restricted: number) {
+  let attempts = 40
+  do {
+    attempts--
+    sampleCoords.x = Math.round(rand2(20))
+    sampleCoords.y = Math.round(rand2(20, 10))
+  } while (
+    jitTileSampler
+      .sampleMeta(sampleCoords.x, sampleCoords.y)
+      .hasFast(restricted) &&
+    attempts > 0
+  )
+}
 
 export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   mapCacheNeedsUpdate: boolean
@@ -436,10 +489,13 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
   mapCacheFinalViewCache: WebGLRenderTarget
   finalViewCacheScene: Scene
   finalViewCacheCamera: OrthographicCamera
+  testText: any
   constructor() {
-    super()
+    const camera = new OrthographicCamera(0, 1, 1, 0, -1, 1)
+    super(camera)
 
     const scene = this.scene
+    scene.add(camera)
     const transform = getMouseBoundViewTransform()
     const viewWidth = getUrlInt('viewTiles', 16)
     const viewHeight = getUrlInt('viewTiles', 16)
@@ -474,7 +530,10 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       makeKeyboardUpdater(this._wasdKeysDirection, this._arrowKeysDirection)
     )
     const tileAvoider = makeTileAvoider(mapScrollingView.jitTileSampler)
-    const solipsisticRespawner = makeSolipsisticRespawner(player)
+    const solipsisticRespawner = makeSolipsisticRespawner(
+      player,
+      mapScrollingView.jitTileSampler
+    )
     const spriteAvoider = makeSpriteAvoider()
     player.addUpdater(tileAvoider)
     player.addUpdater(spriteAvoider)
@@ -482,10 +541,15 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     player.x = getUrlInt('x', 0)
     player.y = getUrlInt('y', 0)
     spriteControllers.push(player)
+    const tempSample = (
+      mapScrollingView.jitTileSampler as JITTileSampler
+    ).sampleMeta(0, 0)
+    const fastWaterOrRocks = tempSample.makeFastMultiMask(['water', 'rocks'])
     for (let i = 0; i < 20; i++) {
+      regenSampleCoords(mapScrollingView.jitTileSampler, fastWaterOrRocks)
       const actor = new DummyController(
-        rand2(20),
-        rand2(20, 10),
+        sampleCoords.x,
+        sampleCoords.y,
         rand(-Math.PI, Math.PI)
       )
       const wanderer = makeWanderer(actor, 0.025)
@@ -796,8 +860,23 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     this.mapCacheFinalViewCache = mapCacheFinalViewCache
     this.finalViewCacheScene = finalViewCacheScene
     this.finalViewCacheCamera = finalViewCacheCamera
+
+    const testText = new PixelTextMesh.PixelTextMesh(
+      'hello',
+      undefined,
+      undefined,
+      (w, h) => {
+        testText.scale.x = ((w * 7) / 512) * 2
+        testText.scale.y = ((h * 8) / 512) * 2
+      }
+    )
+    testText.position.set(0.5, 0.5, 0)
+    scene.add(testText)
+    this.testText = testText
   }
   update(dt: number) {
+    const y = Math.cos(performance.now() * 0.005) * 0.01 + 0.65
+    this.testText.position.y = Math.round(y * 512) / 512
     for (let i = 0; i < this._spriteControllers.length; i++) {
       const tc = this._spriteControllers[i]
       const s = this._sprites[i]
@@ -843,6 +922,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
         this._wasdKeysDirection.clone().multiplyScalar(4 * 60 * dt)
       )
     }
+    this._pixelsOffset.round()
     this._tilesOffset.x = Math.floor(this._pixelsOffset.x / this._pixelsPerTile)
     this._tilesOffset.y = -Math.floor(
       this._pixelsOffset.y / this._pixelsPerTile

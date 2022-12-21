@@ -14,9 +14,8 @@ const MOBILE_FOV = 28
 export default class BaseTestScene {
   autoClear = true
   protected scene: Scene
-  protected camera: Camera
   protected bgColor: Color
-  constructor() {
+  constructor(protected camera?: Camera) {
     const scene = new Scene()
 
     const bgColor: Color = getUrlColor('bgColor', new Color(0x6f84bc))
@@ -24,22 +23,24 @@ export default class BaseTestScene {
     scene.autoUpdate = false
     scene.matrixAutoUpdate = false
 
-    const camera = new PerspectiveCamera(
-      device.isMobile ? MOBILE_FOV : FOV,
-      device.aspect,
-      0.1,
-      100
-    )
+    if (!camera) {
+      const pCamera = new PerspectiveCamera(
+        device.isMobile ? MOBILE_FOV : FOV,
+        device.aspect,
+        0.1,
+        100
+      )
+      device.onChange(() => {
+        pCamera.fov = device.isMobile ? MOBILE_FOV : FOV
+        pCamera.aspect = device.aspect
+        pCamera.updateProjectionMatrix()
+      }, true)
 
-    device.onChange(() => {
-      camera.fov = device.isMobile ? MOBILE_FOV : FOV
-      camera.aspect = device.aspect
-      camera.updateProjectionMatrix()
-    }, true)
-
-    camera.position.set(0, 2, 2)
-    camera.lookAt(0, 0, 0)
-    camera.updateProjectionMatrix()
+      pCamera.position.set(0, 2, 2)
+      pCamera.lookAt(0, 0, 0)
+      pCamera.updateProjectionMatrix()
+      camera = pCamera
+    }
 
     scene.add(camera)
 
