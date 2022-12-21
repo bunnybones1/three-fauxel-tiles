@@ -1,4 +1,4 @@
-import { BufferGeometry, Sprite } from 'three'
+import { BufferGeometry } from 'three'
 import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
 import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
@@ -117,7 +117,7 @@ export class SpriteController {
 }
 
 let __id = 0
-export default class JITTileSampler {
+export default class JITSpriteSampler {
   private _sprites: SpriteController[] = []
   offsetX = 0
   offsetY = 0
