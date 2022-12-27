@@ -42,7 +42,7 @@ export function makeWater(mat: Material, time = 0, maxStrength = 0.15) {
     const i3 = i * 3
     originalVec3.fromArray(posArr, i3)
     const resultVec3 = originalVec3.clone()
-    for (let j = 0; j < skews.length; j++) {
+    for (let j = 0; j < total; j++) {
       tempVec3.copy(originalVec3)
       if (flips[j]) {
         const x = tempVec3.x

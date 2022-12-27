@@ -3,36 +3,32 @@ import {
   Float32BufferAttribute,
   Uint16BufferAttribute
 } from 'three'
-import { rand } from '~/utils/math'
+import { rand } from '../utils/math'
 
 export default class SpritesPointGeometry extends BufferGeometry {
-  xyFrameAttr: Float32BufferAttribute
+  xyzAttr: Float32BufferAttribute
   idAttr: Float32BufferAttribute
   constructor(total: number) {
     super()
-    const partsPerItem = 3
-    const xyFrameArray = new Float32Array(total * partsPerItem)
+    const partsPerItem = 4
+    const xyzArray = new Float32Array(total * partsPerItem)
     for (let i = 0; i < total; i++) {
       const i3 = i * 3
-      xyFrameArray[i3] = rand(0, 1)
-      xyFrameArray[i3 + 1] = rand(0, 1)
-      xyFrameArray[i3 + 2] = ~~rand(0, 64)
+      xyzArray[i3] = rand(0, 1)
+      xyzArray[i3 + 1] = rand(0, 1)
+      xyzArray[i3 + 2] = 0
     }
 
-    const xyFrameAttr = new Float32BufferAttribute(
-      xyFrameArray,
-      partsPerItem,
-      false
-    )
-    this.xyFrameAttr = xyFrameAttr
-    this.setAttribute('xyFrame', xyFrameAttr)
+    const xyzAttr = new Float32BufferAttribute(xyzArray, partsPerItem, false)
+    this.xyzAttr = xyzAttr
+    this.setAttribute('xyz', xyzAttr)
 
-    const idArray = new Float32Array(total)
+    const idArray = new Uint16Array(total)
 
     for (let i = 0; i < total; i++) {
       idArray[i] = rand(0, 1)
     }
-    const idAttr = new Float32BufferAttribute(idArray, 1, false)
+    const idAttr = new Uint16BufferAttribute(idArray, 1, false)
     this.idAttr = idAttr
     this.setAttribute('id', idAttr)
 

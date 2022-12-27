@@ -11,14 +11,14 @@ export default class TestModelScene extends TestLightingScene {
     renderer.shadowMap.enabled = true
 
     const mesh = new Object3D()
-    const total = 4
+    const total = 4 * 4
     // const total = 32
     const variations: number[] = []
     for (let i = 0; i < total; i++) {
       variations.push(i / total)
     }
     variations
-      .map((v) => makeWater(getMeshMaterial('water'), 0.125, v))
+      .map((v) => makeWater(getMeshMaterial('water'), v, 0.5))
       .forEach((m) => mesh.add(m))
 
     mesh.traverse((n) => {

@@ -18,7 +18,7 @@ import { clamp, lerp } from 'three/src/math/MathUtils'
 import { initOffset } from '../../constants'
 import { getMouseBoundViewTransform } from '../../helpers/viewTransformMouse'
 import { rand, rand2, wrap } from '../../utils/math'
-import { detRandLights } from '../../utils/random'
+import { detRandLights, detRandPhysics } from '../../utils/random'
 import getKeyboardInput from '../../input/getKeyboardInput'
 import { KeyboardCodes } from '../../utils/KeyboardCodes'
 import PixelTextMesh from 'three-pixel-font'
@@ -30,12 +30,12 @@ import BaseTestScene from './BaseTestScene'
 import JITTileSampler from '../../../src/rendering/tileMaker/mapTileMaker/JITTileSampler'
 import { removeFromArray } from '../../utils/arrayUtils'
 import { getUrlFlag, getUrlInt } from '../../utils/location'
-import NamedBitsInBytes from '../../../src/helpers/utils/NamedBitsInBytes'
 
 const __pixelsPerTile = getUrlInt('pixelsPerTile', 32)
 
 class DummyController {
   private _updaters: Array<(dt: number) => void> = []
+  z = 0
   animTime = 0
   constructor(public x: number, public y: number, public angle: number) {
     //
@@ -101,6 +101,32 @@ function makeWanderer(target: any, maxSpeed = 0.4) {
   target.wandererMaxSpeed = maxSpeed
   return wandererUpdate
 }
+
+function spinnerUpdate(this: any, dt: number) {
+  this.angle += this.spinSpeed * dt
+}
+function makeSpinner(target: any, spinSpeed = 4) {
+  target.spinSpeed = spinSpeed
+  return spinnerUpdate
+}
+
+function hoverUpdate(this: any, dt: number) {
+  this.z =
+    Math.abs(Math.cos(this.hoverSpeed * performance.now() + this.hoverOffset)) *
+    this.hoverRange
+}
+function makeHover(
+  target: any,
+  hoverRange = 1,
+  hoverSpeed = 0.004,
+  hoverOffset = rand2(Math.PI * 2)
+) {
+  target.hoverRange = hoverRange
+  target.hoverSpeed = hoverSpeed
+  target.hoverOffset = hoverOffset
+  return hoverUpdate
+}
+
 function makeSolipsisticRespawner(
   solipsisticRespawnerTarget: any,
   metaTileSampler: JITTileSampler
@@ -433,7 +459,7 @@ function makeOffsetSpinUpdater(
   radius: number,
   angleOffset: number
 ) {
-  return function yoyoUpdater(dt: number) {
+  return function spinnerUpdater(dt: number) {
     const a = angleOffset + performance.now() * 0.0002
     this.x = x + Math.cos(a) * radius
     this.y = y + Math.sin(a) * radius
@@ -529,6 +555,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     player.addUpdater(
       makeKeyboardUpdater(this._wasdKeysDirection, this._arrowKeysDirection)
     )
+    // player.addUpdater(makeHover(player))
     const tileAvoider = makeTileAvoider(mapScrollingView.jitTileSampler)
     const solipsisticRespawner = makeSolipsisticRespawner(
       player,
@@ -594,12 +621,16 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     for (let i = 0; i < 200; i++) {
       regenSampleCoords(mapScrollingView.jitTileSampler, noLogsHere)
       const item = new DummyController(
-        sampleCoords.x,
-        sampleCoords.y,
+        sampleCoords.x + rand2(0.1),
+        sampleCoords.y + rand2(0.1),
         rand(-Math.PI, Math.PI)
       )
       item.addUpdater(tileAvoider)
       item.addUpdater(spriteAvoider)
+      const spinner = makeSpinner(item)
+      item.addUpdater(spinner)
+      const hover = makeHover(item)
+      item.addUpdater(hover)
       spriteControllers.push(item)
       const sprite = mapScrollingView.jitSpriteSampler.makeSprite(
         item.x,
@@ -766,7 +797,11 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
 
     const lanternLightControllers: DummyLightController[] = spriteControllers
       .map((spriteC, i) => {
-        if (i === 0 || detRandLights() > 0.95) {
+        const sprite = sprites[i]
+        if (
+          i === 0 ||
+          (detRandLights() > 0.25 && sprite.metaBytes.has('sheep'))
+        ) {
           const color = new Color().setHSL(
             // detRandLights(0, 100),
             // detRandLights(0.5, 0.8),
@@ -830,7 +865,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
           mapCacheMaterial
         )
         mapCachePreview.position.x = 0.5 + i * 0.1
-        mapCachePreview.position.y = -0.5 + i * -0.1
+        mapCachePreview.position.y = -0.5 + i * -0.1 + 1.5
         mapCachePreview.rotation.x = Math.PI * -0.25
         mapCachePreview.scale.multiplyScalar(1.2)
         scene.add(mapCachePreview)
@@ -907,7 +942,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     this.finalViewCacheCamera = finalViewCacheCamera
 
     const testText = new PixelTextMesh.PixelTextMesh(
-      'logs!',
+      '',
       undefined,
       undefined,
       (w, h) => {
@@ -928,6 +963,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       tc.update(dt)
       s.x = tc.x
       s.y = tc.y
+      s.z = tc.z
       s.animTime = tc.animTime
       s.angle =
         (~~(wrap(tc.angle / (Math.PI * 2), 0, 1) * 16) / 16) * Math.PI * 2

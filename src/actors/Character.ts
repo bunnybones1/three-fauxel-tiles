@@ -1,9 +1,9 @@
 import { Object3D, Vector2 } from 'three'
-import ICharacterController from '~/controllers/ICharacterController'
-import CharacterMesh from '~/meshes/CharacterMesh'
-import AvatarContactListener from '~/physics/AvatarContactListener'
-import PhysicsCharacter from '~/physics/PhysicsCharacter'
-import { World } from '~/vendor/Box2D/Box2D'
+import ICharacterController from '../controllers/ICharacterController'
+import CharacterMesh from '../meshes/CharacterMesh'
+import AvatarContactListener from '../physics/AvatarContactListener'
+import PhysicsCharacter from '../physics/PhysicsCharacter'
+import { World } from '../vendor/Box2D/Box2D'
 
 export default class Character {
   visuals: Object3D

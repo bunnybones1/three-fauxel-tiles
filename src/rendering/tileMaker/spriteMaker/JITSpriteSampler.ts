@@ -56,7 +56,16 @@ const visualSpriteStrings = [
   'skeletonRun4',
   'skeletonRun5',
   'skeletonRun6',
-  'skeletonRun7'
+  'skeletonRun7',
+  'wheelBarrow',
+  'wheelBarrowRun0',
+  'wheelBarrowRun1',
+  'wheelBarrowRun2',
+  'wheelBarrowRun3',
+  'wheelBarrowRun4',
+  'wheelBarrowRun5',
+  'wheelBarrowRun6',
+  'wheelBarrowRun7'
 ] as const
 
 type VisSprite = typeof visualSpriteStrings[number]
@@ -105,6 +114,7 @@ export class SpriteController {
       this.metaBytes.disableBit('animTime4')
     }
   }
+  z = 0
   constructor(
     public x: number,
     public y: number,
@@ -203,9 +213,9 @@ export default class JITSpriteSampler {
           (metaProps.has('animTime2') ? 2 : 0) +
           (metaProps.has('animTime4') ? 4 : 0)
         //@ts-ignore
-        visProps.enableBit('skeletonRun' + time)
+        visProps.enableBit('wheelBarrowRun' + time)
       } else {
-        visProps.enableBit('skeleton')
+        visProps.enableBit('wheelBarrow')
       }
     } else {
       if (metaProps.has('body')) {
@@ -261,12 +271,12 @@ export default class JITSpriteSampler {
   updateVis(bottomPointsGeo: BufferGeometry, topPointsGeo: BufferGeometry) {
     if (this._sprites.length > 0) {
       const ppt = this._pixelsPerTile
-      const xyBottomAttr = bottomPointsGeo.getAttribute('xy')
-      const xyBottomArr = xyBottomAttr.array as number[]
+      const xyzBottomAttr = bottomPointsGeo.getAttribute('xyz')
+      const xyzBottomArr = xyzBottomAttr.array as number[]
       const idBottomAttr = bottomPointsGeo.getAttribute('id')
       const idBottomArr = idBottomAttr.array as number[]
-      const xyTopAttr = topPointsGeo.getAttribute('xy')
-      const xyTopArr = xyTopAttr.array as number[]
+      const xyzTopAttr = topPointsGeo.getAttribute('xyz')
+      const xyzTopArr = xyzTopAttr.array as number[]
       const idTopAttr = topPointsGeo.getAttribute('id')
       const idTopArr = idTopAttr.array as number[]
       bottomPointsGeo.drawRange.count = 0
@@ -278,17 +288,20 @@ export default class JITSpriteSampler {
           __animFrameTimes[sprite.animFrame % __animFrameTimes.length]
         const x = sprite.x - this.offsetX
         const y = sprite.y - this.offsetY
+        const z = sprite.z
         if (x < 0 || x > this._viewWidth || y < 0 || y > this._viewHeight) {
           continue
         }
         const xSnap = Math.round(wrap(x, 0, this._viewWidth) * ppt) / ppt
         const ySnap = Math.round(wrap(y, 0, this._viewHeight) * ppt) / ppt
-        const id = sprite.id
-        const j2 = j * 2
-        xyBottomArr[j2] = xSnap
-        xyBottomArr[j2 + 1] = ySnap
-        xyTopArr[j2] = xSnap
-        xyTopArr[j2 + 1] = ySnap + 1
+        const zSnap = Math.round(z * ppt) / ppt
+        const j3 = j * 3
+        xyzBottomArr[j3] = xSnap
+        xyzBottomArr[j3 + 1] = ySnap
+        xyzBottomArr[j3 + 2] = zSnap
+        xyzTopArr[j3] = xSnap
+        xyzTopArr[j3 + 1] = ySnap + 1
+        xyzTopArr[j3 + 2] = zSnap
         const frame = sprite.metaBytes.has('animRun') ? currentFrame : undefined
         const sample = this.sampleVisIds(sprite, frame)
         idBottomArr[j] = sample.idBottom
@@ -300,9 +313,9 @@ export default class JITSpriteSampler {
       if (j === 0) {
         return false
       }
-      xyBottomAttr.needsUpdate = true
+      xyzBottomAttr.needsUpdate = true
       idBottomAttr.needsUpdate = true
-      xyTopAttr.needsUpdate = true
+      xyzTopAttr.needsUpdate = true
       idTopAttr.needsUpdate = true
       return true
     } else {

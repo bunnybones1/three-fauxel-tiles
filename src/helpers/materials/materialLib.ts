@@ -22,7 +22,8 @@ import { WorldNormalMeshMaterial } from '../../materials/WorldNormalMeshMaterial
 import { defaultNumber, NOOP } from '../../utils/jsUtils'
 import { makeSafetyCheckFromConstStringArray } from '../typeHelpers'
 
-const CuratedMaterialTypeStrings = [
+export const CuratedMaterialTypeStrings = [
+  'invisible',
   'ironBlack',
   'ground',
   'brick',
@@ -56,7 +57,8 @@ const CuratedMaterialTypeStrings = [
   'shinyBlack',
   'pitchBlack',
   'zombieSkin',
-  'bone'
+  'bone',
+  'snow'
 ] as const
 
 export type CuratedMaterialType = typeof CuratedMaterialTypeStrings[number]
@@ -86,6 +88,11 @@ export const isMaterialPass = makeSafetyCheckFromConstStringArray(
 export const standardMaterialParamLib: {
   [K in CuratedMaterialType]: MeshStandardMaterialParameters
 } = {
+  invisible: {
+    roughness: 1,
+    color: new Color(1, 0, 0),
+    visible: false
+  },
   ground: {
     roughness: 1,
     color: new Color(1, 1, 1),
@@ -271,6 +278,13 @@ export const standardMaterialParamLib: {
     color: new Color(0.5 * 2, 0.45 * 2, 0.3 * 2)
     // emissive: new Color(0.1, 0.45, 0.05).multiplyScalar(0.05),
     // wireframe: true,
+  },
+  snow: {
+    roughness: 4,
+    metalness: 0,
+    color: new Color(2, 2, 2)
+    // emissive: new Color(0.1, 0.45, 0.05).multiplyScalar(0.05),
+    // wireframe: true,
   }
 }
 
@@ -288,22 +302,26 @@ function __makeMeshMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
       return new MeshStandardMaterial(standardParams)
     case 'normals':
       return new WorldNormalMeshMaterial({
-        wireframe: standardParams.wireframe
+        wireframe: standardParams.wireframe,
+        visible: standardParams.visible
       })
     case 'depth':
       return new MeshDepthMaterial({
-        wireframe: standardParams.wireframe
+        wireframe: standardParams.wireframe,
+        visible: standardParams.visible
       })
     case 'customColor':
       return new BasicVec4MeshMaterial({
         data: __colorToVec4(standardParams.color, standardParams.opacity),
         wireframe: standardParams.wireframe,
-        vertexColors: standardParams.vertexColors
+        vertexColors: standardParams.vertexColors,
+        visible: standardParams.visible
       })
     case 'customEmissive':
       return new BasicVec4MeshMaterial({
         data: __colorToVec4(standardParams.emissive || 0, 1),
-        wireframe: standardParams.wireframe
+        wireframe: standardParams.wireframe,
+        visible: standardParams.visible
       })
     case 'customRoughnessMetalnessHeight':
       return new HeightMeshMaterial({
@@ -314,13 +332,15 @@ function __makeMeshMaterial(name: CuratedMaterialType, pass: MaterialPassType) {
           1
         ),
         heightChannel: 'b',
-        wireframe: standardParams.wireframe
+        wireframe: standardParams.wireframe,
+        visible: standardParams.visible
       })
     case 'customTopDownHeight':
       return new HeightMeshMaterial({
         data: new Vector4(0, 0, 0, 1),
         heightChannel: 'b',
-        wireframe: standardParams.wireframe
+        wireframe: standardParams.wireframe,
+        visible: standardParams.visible
       })
     default:
       throw new Error(`Please add implementation for ${pass}`)

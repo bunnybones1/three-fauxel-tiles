@@ -13,6 +13,12 @@ varying vec2 vUv;
   varying vec2 vInverseUv;
 #endif
 
+#ifdef USE_XYZ
+  varying float vZ;
+  uniform float zColorScale;
+#endif 
+
+
 void main() {
   // vec2 uvTile = floor(uTileMap.xy * 8.0) / 8.0 + fract(vUv * 64.0) / 8.0;
   vec2 flippedCoord = gl_PointCoord;
@@ -26,6 +32,9 @@ void main() {
       }
     #endif
     vec4 bgTexel = texture2D(uMapDepthCacheTexture, vInverseUv + TILE_VIEW_RATIO * flippedCoord);
+    #ifdef USE_XYZ
+      depthTileSample.b += vZ;
+    #endif
     if(depthTileSample.b < bgTexel.b) {
       discard;
     }
@@ -35,5 +44,9 @@ void main() {
   if(tileTexel.a < 0.1) {
     discard;
   }
+  #ifdef USE_XYZ
+    tileTexel.b += vZ * zColorScale;
+  #endif
+  
   gl_FragColor = tileTexel;
 }

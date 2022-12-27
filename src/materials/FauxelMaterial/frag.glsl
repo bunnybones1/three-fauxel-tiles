@@ -42,13 +42,16 @@ void main() {
   #ifdef USE_WATER
     texelColor.rgb *= mix(vec3(1.0), vec3(-0.2, 0.3, 0.8), waterMask); //water color blue
   #endif
-  vec4 texelNormals = texture2D(uTextureNormals, uv);
+
+  vec2 pixelHN = vec2(RELATIVE_PIXEL_SIZE, 0.0);
+  vec2 pixelVN = vec2(0.0, RELATIVE_PIXEL_SIZE);
+  vec4 texelNormals = texture2D(uTextureNormals, uv) * 2.0 - 1.0;
   vec4 texelEmissive = texture2D(uTextureEmissive, uv);
 
   // vec4 texelTopDownHeight = texture2D(uTextureTopDownHeight, uv);
   float roughness = 2.0 / texelRoughnessMetalnessHeight.r;
   float metalness = texelRoughnessMetalnessHeight.g;
-  vec3 surfaceNormal = texelNormals.rgb * 2.0 - 1.0;
+  vec3 surfaceNormal = texelNormals.rgb;
   float dotP = dot(surfaceNormal, uSunDirection) * (1.0 + metalness * 0.4);
   #ifdef USE_WATER
     float dotPWater = dot(waterData.rgb, uSunDirectionForWater);

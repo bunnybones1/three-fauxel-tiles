@@ -1,4 +1,4 @@
-import { cleanAnalogValue, GamePadAPI } from '~/helpers/utils/gamePad'
+import { cleanAnalogValue, GamePadAPI } from '../helpers/utils/gamePad'
 
 import ICharacterController from './ICharacterController'
 

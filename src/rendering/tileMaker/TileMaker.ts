@@ -14,7 +14,6 @@ import { MaterialPassType } from '../../helpers/materials/materialLib'
 import { assertPowerOfTwo } from '../../utils/math'
 import { verticalScale } from '../../constants'
 import { memoize } from '../../utils/memoizer'
-import { findClosestNumberIndex } from '../../../test/utils/arrayUtils'
 
 export default class TileMaker {
   protected _pivot: Object3D

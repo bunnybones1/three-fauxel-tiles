@@ -1,14 +1,18 @@
 import { DoubleSide, Matrix3, RawShaderMaterial, Uniform } from 'three'
-import { buildParameters } from '~/utils/jsUtils'
+import { buildParameters } from '../../utils/jsUtils'
 
 import fragmentShader from './frag.glsl'
 import vertexShader from './vert.glsl'
 
 interface Parameters {
   wireframe?: boolean
+  visible?: boolean
 }
 
-const __defaultParams: Parameters = {}
+const __defaultParams: Parameters = {
+  wireframe: false,
+  visible: true
+}
 
 export class WorldNormalMeshMaterial extends RawShaderMaterial {
   modelNormalMatrix: Matrix3
@@ -30,7 +34,8 @@ export class WorldNormalMeshMaterial extends RawShaderMaterial {
       depthWrite: true,
       depthTest: true,
       side: DoubleSide,
-      wireframe: params.wireframe || false
+      wireframe: params.wireframe,
+      visible: params.visible
     })
     this.modelNormalMatrix = this.uniforms.uModelNormalMatrix.value
   }

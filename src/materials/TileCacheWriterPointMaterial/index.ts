@@ -6,9 +6,9 @@ import {
   Vector2,
   Vector4
 } from 'three'
-import { buildParameters } from '~/utils/jsUtils'
-import { assertPowerOfTwo } from '~/utils/math'
-import { getTempTexture } from '~/utils/threeUtils'
+import { buildParameters } from '../../utils/jsUtils'
+import { assertPowerOfTwo } from '../../utils/math'
+import { getTempTexture } from '../../utils/threeUtils'
 
 import fragmentShader from './frag.glsl'
 import vertexShader from './vert.glsl'
@@ -25,6 +25,8 @@ export interface TileCacheWriterPointMaterialParameters {
   alternateDepthTileTex?: Texture
   depthSortByY?: boolean
   z: number
+  useXYZ: boolean
+  zSlideScale: number
 }
 
 const __defaultParams: TileCacheWriterPointMaterialParameters = {
@@ -34,7 +36,9 @@ const __defaultParams: TileCacheWriterPointMaterialParameters = {
   viewHeight: 1024,
   pixelsPerTile: 32,
   pixelsPerCacheEdge: 2048,
-  z: 0
+  z: 0,
+  useXYZ: false,
+  zSlideScale: 1
 }
 
 export class TileCacheWriterPointMaterial extends RawShaderMaterial {
@@ -44,6 +48,20 @@ export class TileCacheWriterPointMaterial extends RawShaderMaterial {
   }
   public set mapDepthCacheTexture(value: Texture) {
     this._mapDepthCacheTextureUniform.value = value
+  }
+  private _zSlideScaleUniform: Uniform
+  public get zSlideScale(): number {
+    return this._zSlideScaleUniform.value
+  }
+  public set zSlideScale(value: number) {
+    this._zSlideScaleUniform.value = value
+  }
+  private _zColorScaleUniform: Uniform
+  public get zColorScale(): number {
+    return this._zColorScaleUniform.value
+  }
+  public set zColorScale(value: number) {
+    this._zColorScaleUniform.value = value
   }
   public get tileTexture(): Texture {
     return this._tileTexUniform.value
@@ -96,6 +114,13 @@ export class TileCacheWriterPointMaterial extends RawShaderMaterial {
     if (params.depthSortByY) {
       defines.DEPTH_SORT_BY_Y = true
     }
+    const zSlideScaleUniform = new Uniform(params.zSlideScale)
+    const zColorScaleUniform = new Uniform(params.zColorScale)
+    if (params.useXYZ) {
+      defines.USE_XYZ = true
+      uniforms.zSlideScale = zSlideScaleUniform
+      uniforms.zColorScale = zColorScaleUniform
+    }
     super({
       uniforms,
       defines,
@@ -109,5 +134,7 @@ export class TileCacheWriterPointMaterial extends RawShaderMaterial {
     this._tileTexUniform = uTileTex
     this._alternateDepthTileTexUniform = alternateDepthTileTexUniform
     this._mapDepthCacheTextureUniform = mapDepthCacheTextureUniform
+    this._zSlideScaleUniform = zSlideScaleUniform
+    this._zColorScaleUniform = zColorScaleUniform
   }
 }

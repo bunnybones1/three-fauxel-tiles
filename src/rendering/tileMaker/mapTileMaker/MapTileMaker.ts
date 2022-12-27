@@ -1,9 +1,13 @@
 import {
   BoxBufferGeometry,
+  Material,
   Mesh,
   Object3D,
+  Raycaster,
+  SphereBufferGeometry,
   SphereGeometry,
   TorusKnotBufferGeometry,
+  Vector3,
   Vector4,
   WebGLRenderer
 } from 'three'
@@ -12,7 +16,9 @@ import GrassGeometry from '../../../geometries/GrassGeometry'
 import PyramidGeometry from '../../../geometries/PyramidGeometry'
 import {
   changeMeshMaterials,
+  CuratedMaterialType,
   getMeshMaterial,
+  isCuratedMaterial,
   MaterialPassType
 } from '../../../helpers/materials/materialLib'
 import { getChamferedBoxGeometry } from '../../../utils/geometry'
@@ -42,6 +48,56 @@ import { makeWater } from '../../../meshes/factoryWater'
 import { makeSandQuad } from '../../../meshes/factorySand'
 import { lerp } from 'three/src/math/MathUtils'
 import { makeDirtQuad } from '../../../meshes/factoryDirt'
+import { getCachedSphereGeometry } from '../../../utils/geometry'
+import { findOnlyVisibleMeshes } from '../../../../test/utils/isVisible'
+import { mergeMeshes } from '../../../utils/mergeMeshes'
+import { getUrlFlag, getUrlParam } from '../../../../test/utils/location'
+
+const slicknessByName: { [K in CuratedMaterialType]: number } = {
+  invisible: 0.3,
+  ironBlack: 1,
+  ground: 0.05,
+  brick: 0.9,
+  gold: 1,
+  silver: 1,
+  iron: 1,
+  copper: 1,
+  mortar: 1,
+  drywall: 1,
+  floor: 1,
+  wood: 0.9,
+  woodMaple: 0.9,
+  bark: 0.9,
+  barkMaple: 0.9,
+  skin: 1,
+  plastic: 0.8,
+  grass: 0.9,
+  bush: 0.95,
+  leafMaple: 0.9,
+  pineNeedle: 0.8,
+  berry: 1,
+  pants: 1,
+  pantsRed: 1,
+  rock: 0.94,
+  cyberGlow: 1,
+  cyberPanel: 1,
+  water: 1,
+  fleeceWhite: 1,
+  fleeceBlack: 1,
+  sheepNose: 1,
+  shinyBlack: 1,
+  pitchBlack: 1,
+  zombieSkin: 1,
+  bone: 1,
+  snow: 1
+}
+function getSlickness(materialName: string) {
+  if (isCuratedMaterial(materialName)) {
+    return slicknessByName[materialName]
+  } else {
+    return 1
+  }
+}
 
 export default class MapTileMaker extends DoubleCachedTileMaker {
   visualPropertyLookupStrings = [
@@ -356,7 +412,7 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     const groundMat = getMeshMaterial('ground')
     const plasticMat = getMeshMaterial('plastic')
     const waterMat = getMeshMaterial('water')
-    const grassMat = getMeshMaterial('grass')
+    const grassMat = getMeshMaterial(getUrlFlag('snow') ? 'invisible' : 'grass')
     const rocksMat = getMeshMaterial('rock')
     const bushMat = getMeshMaterial('bush')
     const berryMat = getMeshMaterial('berry')
@@ -552,11 +608,22 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     // this._camera.rotateY(Math.PI * -0.25)
     // pivot.add(drywall)
     // scene.add(ball)
+    // const useGrass = false
+    const useGrass = !getUrlFlag('snow')
+    grassMat.visible = !useGrass
 
-    const grassGeoA = memoize(() => new GrassGeometry())
-    const grassGeoH = memoize(() => new GrassGeometry())
-    const grassGeoV = memoize(() => new GrassGeometry())
-    const grassGeoCorner = memoize(() => new GrassGeometry())
+    const grassGeoA = memoize(
+      () => new GrassGeometry(useGrass ? 200 : 20, !useGrass)
+    )
+    const grassGeoH = memoize(
+      () => new GrassGeometry(useGrass ? 200 : 20, !useGrass)
+    )
+    const grassGeoV = memoize(
+      () => new GrassGeometry(useGrass ? 200 : 20, !useGrass)
+    )
+    const grassGeoCorner = memoize(
+      () => new GrassGeometry(useGrass ? 200 : 20, !useGrass)
+    )
     //grass
     const grassC = () => new Mesh(grassGeoA(), grassMat)
     const grassN = () => {
@@ -1195,6 +1262,56 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
           }
           this._indexedMeshesVisibility[j] = shouldShow
         }
+
+        let mergedSnow: Object3D | undefined
+        if (getUrlFlag('snow') && index > 0) {
+          const snowPivot = new Object3D()
+          const matSnow = getMeshMaterial('snow')
+          const snowBallProto = new Mesh(
+            getCachedSphereGeometry(2.5, 7, 5),
+            matSnow
+          )
+          snowBallProto.scale.y = (1 / Math.sqrt(2)) * 0.5
+          const snowBalls: Mesh[] = []
+          const origin = new Vector3(0, 64, 0)
+          const direction = new Vector3(0, -1, 0)
+          const ray = new Raycaster(origin, direction)
+          this._scene.updateMatrixWorld()
+          const colliders: Mesh[] = findOnlyVisibleMeshes(this._scene)
+          for (let ix = -18; ix <= 18; ix += 1) {
+            for (let iz = -24; iz <= 24; iz += 1) {
+              origin.x = ix
+              origin.z = iz
+              const intersections = ray.intersectObjects(colliders, true)
+              for (const intersection of intersections) {
+                if (intersection.object instanceof Mesh) {
+                  const slickness = getSlickness(
+                    intersection.object.material.name
+                  )
+                  if (
+                    intersection.point.y > 0.5 &&
+                    intersection.face &&
+                    intersection.face.normal.y > slickness
+                  ) {
+                    const snowBall = snowBallProto.clone()
+                    snowBall.position.copy(intersection.point)
+                    snowBalls.push(snowBall)
+                  }
+                  break
+                }
+              }
+            }
+          }
+          for (const snowBall of snowBalls) {
+            snowPivot.add(snowBall)
+          }
+
+          mergedSnow = mergeMeshes(snowPivot)
+          this._scene.add(mergedSnow)
+          mergedSnow.updateMatrix()
+          mergedSnow.updateWorldMatrix(false, true)
+        }
+
         // this._scene.updateMatrixWorld(true)
         for (const pass of this._passes) {
           renderer.setRenderTarget(this._renderTargets.get(pass)!)
@@ -1216,6 +1333,9 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
               ? this._cameraTopDown
               : this._cameraTiltedBottom
           )
+        }
+        if (mergedSnow) {
+          this._scene.remove(mergedSnow)
         }
         duration += performance.now() - startTime
         this.notifyThatNewTileIsMade(index)

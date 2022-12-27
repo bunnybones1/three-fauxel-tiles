@@ -53,19 +53,19 @@ export default class MapWithSpritesCacheRenderer {
   ) {
     const viewWidth = width * pixelsPerTile
     const viewHeight = height * pixelsPerTile
-    const xyBottomArr = new Float32Array(maxSprites * 2)
-    const xyTopArr = new Float32Array(maxSprites * 2)
+    const xyzBottomArr = new Float32Array(maxSprites * 3)
+    const xyzTopArr = new Float32Array(maxSprites * 3)
     const idBottomArr = new Uint16Array(maxSprites)
     const idTopArr = new Uint16Array(maxSprites)
 
     const tileBottomPointsGeo = new BufferGeometry()
-    const xyBottomAttr = new Float32BufferAttribute(xyBottomArr, 2)
-    tileBottomPointsGeo.setAttribute('xy', xyBottomAttr)
+    const xyzBottomAttr = new Float32BufferAttribute(xyzBottomArr, 3)
+    tileBottomPointsGeo.setAttribute('xyz', xyzBottomAttr)
     const idBottomAttr = new Uint16BufferAttribute(idBottomArr, 1)
     tileBottomPointsGeo.setAttribute('id', idBottomAttr)
     const tileTopPointsGeo = new BufferGeometry()
-    const xyTopAttr = new Float32BufferAttribute(xyTopArr, 2)
-    tileTopPointsGeo.setAttribute('xy', xyTopAttr)
+    const xyzTopAttr = new Float32BufferAttribute(xyzTopArr, 3)
+    tileTopPointsGeo.setAttribute('xyz', xyzTopAttr)
     const idTopAttr = new Uint16BufferAttribute(idTopArr, 1)
     tileTopPointsGeo.setAttribute('id', idTopAttr)
     const indexArr = new Uint16Array(maxSprites)
@@ -103,8 +103,10 @@ export default class MapWithSpritesCacheRenderer {
       alternateDepthTileTex: spriteMaker.getTexture(
         'customRoughnessMetalnessHeight'
       ),
-      depthSortByY: true
+      depthSortByY: true,
+      useXYZ: true
     }
+    console.log('pass ' + pass)
     const pointsBottomMaterial = new TileCacheWriterPointMaterial(matParams)
     const pointsBottom = new Points(tileBottomPointsGeo, pointsBottomMaterial)
     this._pointsBottomMaterial = pointsBottomMaterial
@@ -160,23 +162,29 @@ export default class MapWithSpritesCacheRenderer {
         this._mapCacheRenderer.mapCache.get(pass)!.texture
       renderer.setRenderTarget(this.mapCache.get(pass)!)
       const passTileTex = this._jitSpriteSampler.spriteMaker.getTexture(pass)
+      const isTopDownHeight = pass === 'customTopDownHeight'
+      const isHeight = pass.includes('Height')
       const passDepthTileTex = this._jitSpriteSampler.spriteMaker.getTexture(
-        pass === 'customTopDownHeight'
+        isTopDownHeight
           ? 'customTopDownHeight'
           : 'customRoughnessMetalnessHeight'
       )
       const passDepthMapTex = this._mapCacheRenderer.mapCache.get(
-        pass === 'customTopDownHeight'
+        isTopDownHeight
           ? 'customTopDownHeight'
           : 'customRoughnessMetalnessHeight'
       )!.texture
       this._pointsBottomMaterial.tileTexture = passTileTex
-      this._pointsBottomMaterial.tileTexture = passTileTex
       this._pointsBottomMaterial.mapDepthCacheTexture = passDepthMapTex
       this._pointsBottomMaterial.alternateDepthTileTexture = passDepthTileTex
+      this._pointsBottomMaterial.zSlideScale = isTopDownHeight ? 0 : 1
+      this._pointsBottomMaterial.zColorScale = isHeight ? 1 : 0
       this._pointsTopMaterial.tileTexture = passTileTex
       this._pointsTopMaterial.mapDepthCacheTexture = passDepthMapTex
       this._pointsTopMaterial.alternateDepthTileTexture = passDepthTileTex
+      this._pointsTopMaterial.alternateDepthTileTexture = passDepthTileTex
+      this._pointsTopMaterial.zSlideScale = isTopDownHeight ? 0 : 1
+      this._pointsTopMaterial.zColorScale = isHeight ? 1 : 0
       renderer.clearDepth()
       renderer.render(this.mapCacheScene, this.mapCacheCamera)
     }

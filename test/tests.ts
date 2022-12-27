@@ -26,6 +26,8 @@ import TestModelScene from './helpers/scenes/TestModelScene'
 import TestModel2Scene from './helpers/scenes/TestModel2Scene'
 import TestModel3Scene from './helpers/scenes/TestModel3Scene'
 import TestModel4Scene from './helpers/scenes/TestModel4Scene'
+import TestModel5Scene from './helpers/scenes/TestModel5Scene'
+import TestModel6Scene from './helpers/scenes/TestModel6Scene'
 // import TestStencilsScene from './helpers/scenes/TestStencils'
 // import TestTextScene from './helpers/scenes/TestText'
 // import TestTextPhysicsScene from './helpers/scenes/TestTextPhysics'
@@ -49,6 +51,8 @@ export const testClasses: { [K: string]: any } = {
   model2: TestModel2Scene, //pass
   model3: TestModel3Scene, //pass
   model4: TestModel4Scene, //pass
+  model5: TestModel5Scene, //pass
+  model6: TestModel6Scene, //pass
   cachedScrollingNoiseViewShader: TestCachedScrollingNoiseViewShaderScene, //pass
   cachedScrollingMeshesViewShader: TestCachedScrollingMeshesViewShaderScene, //pass
   cachedScrollingJitTileViewShader: TestCachedScrollingJitTileShaderScene //fail

@@ -4,6 +4,8 @@ import {
   Material,
   Mesh,
   Object3D,
+  Raycaster,
+  SphereBufferGeometry,
   Vector3
 } from 'three'
 import {

@@ -7,6 +7,7 @@ import {
   WebGLRenderer
 } from 'three'
 import { skeletonMaterialNames } from '../../../../test/helpers/skeletonMaterialNames'
+import { wheelBarrowMaterialNames } from '../../../../test/helpers/wheelBarrowMaterialNames'
 import { verticalScale } from '../../../constants'
 import {
   changeMeshMaterials,
@@ -15,6 +16,7 @@ import {
 } from '../../../helpers/materials/materialLib'
 import { makeSheep } from '../../../meshes/factorySheep'
 import { makeSkeleton } from '../../../meshes/factorySkeleton'
+import { makeWheelBarrow } from '../../../meshes/factoryWheelBarrow'
 import {
   getCachedChamferedBoxGeometry,
   getChamferedBoxGeometry
@@ -210,6 +212,27 @@ export default class SpriteMaker extends TileMaker {
         )
       }
       indexedMeshes.push(skeletonRunFrame)
+    }
+
+    const wheelBarrow = () => {
+      return makeWheelBarrow(
+        getMeshMaterial(wheelBarrowMaterialNames.wood),
+        getMeshMaterial(wheelBarrowMaterialNames.wood2),
+        0,
+        0
+      )
+    }
+    indexedMeshes.push(wheelBarrow)
+    for (let i = 0; i < t; i++) {
+      const time = i / t
+      const wheelBarrowRunFrame = () => {
+        return makeWheelBarrow(
+          getMeshMaterial(wheelBarrowMaterialNames.wood),
+          getMeshMaterial(wheelBarrowMaterialNames.wood2),
+          time
+        )
+      }
+      indexedMeshes.push(wheelBarrowRunFrame)
     }
 
     super(pixelsPerTile, pixelsPerCacheEdge, passes, indexedMeshes)

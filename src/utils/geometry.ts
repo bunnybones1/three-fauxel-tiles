@@ -74,3 +74,19 @@ export function getCachedChamferedBoxGeometry(
   }
   return __cachedOffsetChamferedBoxGeometry.get(key2)!
 }
+
+const __cachedSphereGeometry = new Map<string, SphereBufferGeometry>()
+export function getCachedSphereGeometry(
+  radius: number,
+  segsX: number,
+  segsY: number
+) {
+  const key = `${radius};${segsX};${segsY}`
+  if (!__cachedSphereGeometry.has(key)) {
+    __cachedSphereGeometry.set(
+      key,
+      new SphereBufferGeometry(radius, segsX, segsY)
+    )
+  }
+  return __cachedSphereGeometry.get(key)!
+}
