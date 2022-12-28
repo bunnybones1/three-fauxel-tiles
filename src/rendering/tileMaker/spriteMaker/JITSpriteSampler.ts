@@ -24,6 +24,7 @@ const metaSpriteStrings = [
   'itemLog',
   'sheep',
   'skeleton',
+  'wheelBarrow',
   'animRun',
   'animTime1',
   'animTime2',
@@ -195,28 +196,27 @@ export default class JITSpriteSampler {
       visualSpriteStrings
     )
 
+    function getSuffix() {
+      let suffix = ''
+      if (metaProps.has('animRun')) {
+        const time =
+          (metaProps.has('animTime1') ? 1 : 0) +
+          (metaProps.has('animTime2') ? 2 : 0) +
+          (metaProps.has('animTime4') ? 4 : 0)
+        suffix = 'Run' + time
+      }
+      return suffix
+    }
+
     if (metaProps.has('sheep')) {
-      if (metaProps.has('animRun')) {
-        const time =
-          (metaProps.has('animTime1') ? 1 : 0) +
-          (metaProps.has('animTime2') ? 2 : 0) +
-          (metaProps.has('animTime4') ? 4 : 0)
-        //@ts-ignore
-        visProps.enableBit('sheepRun' + time)
-      } else {
-        visProps.enableBit('sheep')
-      }
+      //@ts-ignore
+      visProps.enableBit('sheep' + getSuffix())
     } else if (metaProps.has('skeleton')) {
-      if (metaProps.has('animRun')) {
-        const time =
-          (metaProps.has('animTime1') ? 1 : 0) +
-          (metaProps.has('animTime2') ? 2 : 0) +
-          (metaProps.has('animTime4') ? 4 : 0)
-        //@ts-ignore
-        visProps.enableBit('wheelBarrowRun' + time)
-      } else {
-        visProps.enableBit('wheelBarrow')
-      }
+      //@ts-ignore
+      visProps.enableBit('skeleton' + getSuffix())
+    } else if (metaProps.has('wheelBarrow')) {
+      //@ts-ignore
+      visProps.enableBit('wheelBarrow' + getSuffix())
     } else {
       if (metaProps.has('body')) {
         visProps.enableBit('body')

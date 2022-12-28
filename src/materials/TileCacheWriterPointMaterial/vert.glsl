@@ -28,7 +28,7 @@ void main() {
     #ifdef USE_XYZ
         float z = xyz.z * PIXELS_PER_TILE / uViewRes.y * 2.0 * zSlideScale;
         gl_Position.y += z;
-        gl_Position.z -= z;
+        gl_Position.z -= z * 0.5;
         vZ = xyz.z * 0.5;
     #endif
     gl_PointSize = PIXELS_PER_TILE;

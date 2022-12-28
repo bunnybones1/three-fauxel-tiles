@@ -187,7 +187,6 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
     const y = this.y
     const otx = Math.floor(x)
     const oty = Math.floor(y)
-    let collisionCount = 0
     let vx = 0
     let vy = 0
     for (let ix = 0; ix < 2; ix++) {
@@ -214,7 +213,6 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
                 const ratio = 1 - dist / size
                 vx += dx * ratio
                 vy += dy * ratio
-                collisionCount++
               }
             }
           }
@@ -238,7 +236,6 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
                 const ratio = 1 - dist / size
                 vx += dx * ratio
                 vy += dy * ratio
-                collisionCount++
               }
             }
           }
@@ -270,7 +267,6 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
             const ratio = 1 - dist / size
             vx += dx * ratio
             vy += dy * ratio
-            collisionCount++
           }
         }
       }
@@ -279,6 +275,18 @@ function makeTileAvoider(metaTileSampler: JITTileSampler) {
     this.x += vx * amt
     this.y += vy * amt
   }
+}
+
+function heldItemUpdater() {
+  this.x = lerp(this.x, this.parent.x, 0.5)
+  this.y = lerp(this.y, this.parent.y, 0.5)
+  this.z = lerp(this.z, this.parent.z + 0.35, 0.5)
+  this.angle = this.parent.angle
+}
+
+function makeHeldItem(target: any, parent: any) {
+  target.parent = parent
+  return heldItemUpdater
 }
 
 const spriteTileOccupancy: Map<string, any[]> = new Map()
@@ -304,11 +312,23 @@ function makeSpriteAvoider() {
               const dy = y - other.y
               const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
               if (dist < spriteSize) {
-                const ratio = 1 - dist / spriteSize
-                vx += dx * ratio
-                vy += dy * ratio
-                other.x -= dx * ratio * amt
-                other.y -= dy * ratio * amt
+                if (
+                  (other.canBeHeld && this.canHoldItem) ||
+                  (this.canBeHeld && other.canHoldItem)
+                ) {
+                  const container = other.canHoldItem ? other : this
+                  const item = this === container ? other : this
+                  item.canBeHeld = false
+                  item.canHoldItem = true
+                  container.canHoldItem = false
+                  item.addUpdater(makeHeldItem(item, container))
+                } else if (Math.abs(this.z - other.z) < 0.2) {
+                  const ratio = 1 - dist / spriteSize
+                  vx += dx * ratio
+                  vy += dy * ratio
+                  other.x -= dx * ratio * amt
+                  other.y -= dy * ratio * amt
+                }
               }
             }
           }
@@ -578,6 +598,29 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     mapScrollingView.jitSpriteSampler.validateMeta(playerSprite.metaBytes)
     spriteControllers.push(player)
     sprites.push(playerSprite)
+
+    const wheelBarrow = new DummyController(
+      rand2(20),
+      rand2(20, 10),
+      rand(-Math.PI, Math.PI)
+    )
+    ;(wheelBarrow as any).canHoldItem = true
+    // wheelBarrow.addUpdater(makeHover(wheelBarrow))
+    wheelBarrow.addUpdater(tileAvoider)
+    wheelBarrow.addUpdater(spriteAvoider)
+    wheelBarrow.x = getUrlInt('x', 0)
+    wheelBarrow.y = getUrlInt('y', 0)
+
+    const wheelBarrowSprite = mapScrollingView.jitSpriteSampler.makeSprite(
+      wheelBarrow.x,
+      wheelBarrow.y,
+      wheelBarrow.angle
+    )
+    wheelBarrowSprite.metaBytes.enableBit('wheelBarrow')
+    mapScrollingView.jitSpriteSampler.validateMeta(wheelBarrowSprite.metaBytes)
+    spriteControllers.push(wheelBarrow)
+    sprites.push(wheelBarrowSprite)
+
     const tempSample = (
       mapScrollingView.jitTileSampler as JITTileSampler
     ).sampleMeta(0, 0)
@@ -627,10 +670,10 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       )
       item.addUpdater(tileAvoider)
       item.addUpdater(spriteAvoider)
-      const spinner = makeSpinner(item)
-      item.addUpdater(spinner)
-      const hover = makeHover(item)
-      item.addUpdater(hover)
+      // const spinner = makeSpinner(item)
+      // item.addUpdater(spinner)
+      // const hover = makeHover(item)
+      // item.addUpdater(hover)
       spriteControllers.push(item)
       const sprite = mapScrollingView.jitSpriteSampler.makeSprite(
         item.x,
@@ -638,6 +681,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
         item.angle
       )
       sprite.metaBytes.enableBit('itemLog')
+      ;(item as any).canBeHeld = true
       mapScrollingView.jitSpriteSampler.validateMeta(sprite.metaBytes)
       sprites.push(sprite)
     }
@@ -1063,9 +1107,19 @@ function rigHarvestAction(
   let buildActionState = false
   let lampPostActionState = false
   let unbuildActionState = false
+  let grabbing = false
   const onKey = (key: KeyboardCodes, down: boolean) => {
     switch (key) {
       case 'Space':
+        if (down && !grabbing) {
+          console.log('grab')
+          grabbing = down
+        } else if (!down && grabbing) {
+          console.log('release')
+          grabbing = down
+        }
+        break
+      case 'KeyC':
         if (down && !harvestActionState) {
           const coord = getCoordInFrontOfPlayer(player)
           const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
