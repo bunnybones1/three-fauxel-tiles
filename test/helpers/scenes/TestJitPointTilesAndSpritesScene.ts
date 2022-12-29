@@ -102,6 +102,25 @@ function makeWanderer(target: any, maxSpeed = 0.4) {
   return wandererUpdate
 }
 
+function grabberUpdate() {
+  if (this.grabbed) {
+    const other = this.grabbed
+    const deltaX = this.x - other.x
+    const deltaY = this.y - other.y
+    const a = Math.atan2(deltaY, deltaX) + Math.PI * 0.5
+    other.angle = a
+    this.angle = a + Math.PI
+    const coord = getCoordInFrontOfPlayer(this)
+    other.x = lerp(other.x, coord.x, 0.5)
+    other.y = lerp(other.y, coord.y, 0.5)
+    // other.x += 0.05
+  }
+}
+function makeGrabber(target: any) {
+  target.grabbed = null
+  return grabberUpdate
+}
+
 function spinnerUpdate(this: any, dt: number) {
   this.angle += this.spinSpeed * dt
 }
@@ -319,6 +338,7 @@ function makeSpriteAvoider() {
                   const container = other.canHoldItem ? other : this
                   const item = this === container ? other : this
                   item.canBeHeld = false
+                  item.canBeGrabbed = false
                   item.canHoldItem = true
                   container.canHoldItem = false
                   item.addUpdater(makeHeldItem(item, container))
@@ -586,6 +606,8 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
     player.addUpdater(tileAvoider)
     player.addUpdater(spriteAvoider)
     rigHarvestAction(player, mapScrollingView.jitTileSampler)
+    player.addUpdater(makeGrabber(player))
+
     player.x = getUrlInt('x', 0)
     player.y = getUrlInt('y', 0)
 
@@ -605,10 +627,11 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       rand(-Math.PI, Math.PI)
     )
     ;(wheelBarrow as any).canHoldItem = true
+    ;(wheelBarrow as any).canBeGrabbed = true
     // wheelBarrow.addUpdater(makeHover(wheelBarrow))
     wheelBarrow.addUpdater(tileAvoider)
     wheelBarrow.addUpdater(spriteAvoider)
-    wheelBarrow.x = getUrlInt('x', 0)
+    wheelBarrow.x = getUrlInt('x', 0) + 1
     wheelBarrow.y = getUrlInt('y', 0)
 
     const wheelBarrowSprite = mapScrollingView.jitSpriteSampler.makeSprite(
@@ -682,6 +705,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       )
       sprite.metaBytes.enableBit('itemLog')
       ;(item as any).canBeHeld = true
+      ;(item as any).canBeGrabbed = true
       mapScrollingView.jitSpriteSampler.validateMeta(sprite.metaBytes)
       sprites.push(sprite)
     }
@@ -1090,7 +1114,7 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
 }
 const pVec = new Vector2()
 const tVec = new Vector2()
-function getCoordInFrontOfPlayer(player: DummyController) {
+function getTileCoordInFrontOfPlayer(player: DummyController) {
   const a = player.angle - Math.PI * 0.5
   pVec.x = Math.cos(a)
   pVec.y = Math.sin(a)
@@ -1099,6 +1123,17 @@ function getCoordInFrontOfPlayer(player: DummyController) {
   tVec.y = Math.round(player.y + pVec.y)
   return tVec
 }
+
+function getCoordInFrontOfPlayer(player: DummyController) {
+  const a = player.angle - Math.PI * 0.5
+  pVec.x = Math.cos(a)
+  pVec.y = Math.sin(a)
+  pVec.multiplyScalar(0.75)
+  tVec.x = player.x + pVec.x
+  tVec.y = player.y + pVec.y
+  return tVec
+}
+
 function rigHarvestAction(
   player: DummyController,
   metaTileSampler: JITTileSampler
@@ -1108,20 +1143,56 @@ function rigHarvestAction(
   let lampPostActionState = false
   let unbuildActionState = false
   let grabbing = false
+
+  const grabDistance = 0.5
   const onKey = (key: KeyboardCodes, down: boolean) => {
     switch (key) {
       case 'Space':
         if (down && !grabbing) {
           console.log('grab')
+
+          const a = player.angle + Math.PI * -0.5
+          const coord = getCoordInFrontOfPlayer(player)
+
           grabbing = down
+
+          const x = coord.x
+          const y = coord.y
+          const otx = Math.floor(x - spriteSize)
+          const oty = Math.floor(y - spriteSize)
+          for (let ix = 0; ix < 2; ix++) {
+            for (let iy = 0; iy < 2; iy++) {
+              const tx = otx + ix
+              const ty = oty + iy
+              const nearbyKey = `${tx}:${ty}`
+              if (spriteTileOccupancy.has(nearbyKey)) {
+                for (const other of spriteTileOccupancy.get(nearbyKey)!) {
+                  if (
+                    other !== player &&
+                    other.canBeGrabbed &&
+                    !(player as any).grabbed
+                  ) {
+                    const dx = x - other.x
+                    const dy = y - other.y
+                    const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
+                    console.log(dist)
+                    if (dist < spriteSize) {
+                      ;(player as any).grabbed = other
+                    }
+                  }
+                }
+              }
+            }
+          }
         } else if (!down && grabbing) {
           console.log('release')
+          ;(player as any).grabbed = null
           grabbing = down
         }
         break
       case 'KeyC':
         if (down && !harvestActionState) {
-          const coord = getCoordInFrontOfPlayer(player)
+          const coord = getTileCoordInFrontOfPlayer(player)
           const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
           tileMeta.enableBit('harvested')
           tileMeta.disableBit('bush')
@@ -1131,7 +1202,7 @@ function rigHarvestAction(
         break
       case 'KeyB':
         if (down && !buildActionState) {
-          const coord = getCoordInFrontOfPlayer(player)
+          const coord = getTileCoordInFrontOfPlayer(player)
           const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
           if (!tileMeta.has('floor')) {
             tileMeta.enableBit('floor')
@@ -1146,7 +1217,7 @@ function rigHarvestAction(
         break
       case 'KeyX':
         if (down && !unbuildActionState) {
-          const coord = getCoordInFrontOfPlayer(player)
+          const coord = getTileCoordInFrontOfPlayer(player)
           const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
           if (tileMeta.has('lampPost')) {
             tileMeta.disableBit('lampPost')
@@ -1163,7 +1234,7 @@ function rigHarvestAction(
         break
       case 'KeyL':
         if (down && !lampPostActionState) {
-          const coord = getCoordInFrontOfPlayer(player)
+          const coord = getTileCoordInFrontOfPlayer(player)
           const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
           if (!tileMeta.has('lampPost')) {
             tileMeta.enableBit('lampPost')
