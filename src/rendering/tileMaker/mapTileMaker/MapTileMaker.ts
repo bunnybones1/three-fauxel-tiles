@@ -52,6 +52,7 @@ import { getCachedSphereGeometry } from '../../../utils/geometry'
 import { findOnlyVisibleMeshes } from '../../../../test/utils/isVisible'
 import { mergeMeshes } from '../../../utils/mergeMeshes'
 import { getUrlFlag, getUrlParam } from '../../../../test/utils/location'
+import { makeLog } from '../../../meshes/factoryLog'
 
 const slicknessByName: { [K in CuratedMaterialType]: number } = {
   invisible: 0.3,
@@ -104,6 +105,13 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'layer2',
     'nothingness',
     'floor',
+    'logWallCenter',
+    'logWallN',
+    'logWallE',
+    'logWallS',
+    'logWallW',
+    'logWallNS',
+    'logWallEW',
     'beamCenter',
     'beamN',
     'beamE',
@@ -514,14 +522,88 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     const brickWallSectionER = () =>
       makeBrickWallSectionsR(brickWallSectionEC())
 
-    //wooden beams, struts and studs
+    //wooden logWalls, struts and studs
+
+    const woodLogGeo = getChamferedBoxGeometry(6, 32, 6, 2)
+
+    const logWallCenter = () => {
+      const height = 32 * 1.2
+      const obj = new Object3D()
+      for (let iy = -1; iy <= 1; iy += 2) {
+        for (let ix = -1; ix <= 1; ix += 2) {
+          const logWallCenter = makeLog(logWallLogRadius, height)
+          logWallCenter.rotation.x = Math.PI * 0.5
+          logWallCenter.position.x = logWallLogRadius * ix
+          logWallCenter.position.z = logWallLogRadius * iy
+          logWallCenter.position.y = height * 0.5
+          obj.add(logWallCenter)
+        }
+      }
+      return obj
+    }
+
+    const logWallHeight = 5
+    const logWallLogRadius = 4
+    const makeLogWallFullSectionEW = () => {
+      const logWallFullSectionEW = new Object3D()
+      for (let i = 1; i < logWallHeight; i++) {
+        const log = makeLog(logWallLogRadius, 32)
+        log.rotation.y = Math.PI * 0.5
+        logWallFullSectionEW.add(log)
+        log.position.y = i * logWallLogRadius * 2
+      }
+      return logWallFullSectionEW
+    }
+    const logWallFullSectionEW = makeLogWallFullSectionEW
+
+    const logWallFullSectionNS = () => {
+      const obj = logWallFullSectionEW().clone(true)
+      obj.rotation.y += Math.PI * 0.5
+      obj.position.y -= logWallLogRadius
+      return obj
+    }
+
+    const makeShortLogWall = memoize(() => {
+      const shortLogWall = new Object3D()
+      for (let i = 1; i < logWallHeight; i++) {
+        const log = makeLog(logWallLogRadius, 24)
+        log.rotation.y = Math.PI * 0.5
+        shortLogWall.add(log)
+        log.position.y = i * logWallLogRadius * 2
+      }
+      return shortLogWall
+    })
+    const logWallE = () => {
+      const obj = new Object3D()
+      obj.add(makeShortLogWall().clone())
+      obj.position.x = 4
+      return obj
+    }
+    const logWallS = () => {
+      const obj = new Object3D()
+      obj.add(makeShortLogWall().clone())
+      obj.rotation.y = Math.PI * 0.5
+      obj.position.z = -4
+      obj.position.y -= logWallLogRadius
+      return obj
+    }
+    const logWallW = () => {
+      const obj = new Object3D()
+      obj.add(makeShortLogWall().clone())
+      obj.rotation.y = Math.PI
+      obj.position.x = -4
+      return obj
+    }
+    const logWallN = () => {
+      const obj = new Object3D()
+      obj.add(makeShortLogWall().clone())
+      obj.rotation.y = Math.PI * -0.5
+      obj.position.z = 4
+      obj.position.y -= logWallLogRadius
+      return obj
+    }
 
     const woodBeamGeo = getChamferedBoxGeometry(6, 32, 6, 1)
-    const beamCenter = () => {
-      const beamCenter = new Mesh(woodBeamGeo, woodMat)
-      beamCenter.position.y = 16
-      return beamCenter
-    }
 
     const makeStud = memoize(() => {
       const woodStudGeo = getChamferedBoxGeometry(4, 32 - 6, 6, 1)
@@ -529,6 +611,13 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       stud.position.y = 16
       return stud
     })
+
+    const beamCenter = () => {
+      const beamCenter = new Mesh(woodBeamGeo, woodMat)
+      beamCenter.position.y = 16
+      return beamCenter
+    }
+
     const makeBeamFullSectionEW = () => {
       const woodPlateGeo = getChamferedBoxGeometry(36, 3, 6, 1)
       const bottomPlate = new Mesh(woodPlateGeo, woodMat)
@@ -1094,6 +1183,13 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       dummy,
       nothingness,
       floor,
+      logWallCenter,
+      logWallN,
+      logWallE,
+      logWallS,
+      logWallW,
+      logWallFullSectionNS,
+      logWallFullSectionEW,
       beamCenter,
       beamN,
       beamE,

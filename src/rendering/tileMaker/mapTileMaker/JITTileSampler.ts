@@ -20,6 +20,7 @@ const metaTileStrings = [
   'sand',
   'beach',
   'floor',
+  'logWall',
   'beam',
   'bricks',
   'drywall',
@@ -135,6 +136,10 @@ export default class JITTileSampler {
     ])
     const waterNoise = new StepHelper2D(waterBase)
     const dirtNoise = new StepHelper2D(new InvertHelper2D(sandNoise))
+    const logWallNoise = new StepHelper2D(
+      new BoxFilterHelper2D(new NoiseHelper2D(0.08, -100, -100, seed)),
+      0.4
+    )
     const beamNoise = new StepHelper2D(
       new BoxFilterHelper2D(new NoiseHelper2D(0.08, -100, -100, seed)),
       0.4
@@ -218,6 +223,7 @@ export default class JITTileSampler {
       sandNoise,
       beachNoise,
       floorNoise,
+      logWallNoise,
       beamNoise,
       bricksNoise,
       drywallNoise,
@@ -326,6 +332,7 @@ export default class JITTileSampler {
 
     if (val.has('water')) {
       val.disableBit('floor')
+      val.disableBit('logWall')
       val.disableBit('beam')
       val.disableBit('bricks')
     }
@@ -354,6 +361,9 @@ export default class JITTileSampler {
     if (!val.has('floor') && val.has('beam')) {
       val.flipBit('beam')
     }
+    if (val.has('beam') && val.has('logWall')) {
+      val.flipBit('logWall')
+    }
     if (val.has('beam') && val.has('grass')) {
       val.flipBit('grass')
     }
@@ -375,6 +385,7 @@ export default class JITTileSampler {
     if (
       val.has('lampPost') &&
       (val.has('beam') ||
+        val.has('logWall') ||
         val.has('bush') ||
         val.has('bricks') ||
         val.has('goldPile') ||
@@ -387,6 +398,7 @@ export default class JITTileSampler {
       val.has('pyramid') &&
       (val.has('bush') ||
         val.has('beam') ||
+        val.has('logWall') ||
         val.has('lampPost') ||
         val.has('grass') ||
         !val.has('floor') ||
@@ -398,6 +410,7 @@ export default class JITTileSampler {
     if (
       val.has('rockyGround') &&
       (val.has('beam') ||
+        val.has('logWall') ||
         val.has('bush') ||
         val.has('floor') ||
         val.has('grass') ||
@@ -412,6 +425,7 @@ export default class JITTileSampler {
       val.has('goldPile') &&
       (val.has('bush') ||
         val.has('beam') ||
+        val.has('logWall') ||
         val.has('treePine') ||
         val.has('treeMaple') ||
         val.has('lampPost'))
@@ -785,6 +799,37 @@ export default class JITTileSampler {
           }
         }
       }
+
+      const propMaskLogWall = metaProps.makeFastMask('logWall')
+      const logWallC = metaProps.hasFast(propMaskLogWall)
+      const logWallN = metaPropsN.hasFast(propMaskLogWall)
+      const logWallE = metaPropsE.hasFast(propMaskLogWall)
+      const logWallS = metaPropsS.hasFast(propMaskLogWall)
+      const logWallW = metaPropsW.hasFast(propMaskLogWall)
+      if (logWallC) {
+        if (logWallE && logWallW) {
+          visProps.enableBit('logWallEW')
+        }
+        if (logWallS && logWallN) {
+          visProps.enableBit('logWallNS')
+        }
+        if (!logWallE && !logWallW && !logWallN && !logWallS) {
+          visProps.enableBit('logWallCenter')
+        }
+        if (logWallE) {
+          visProps.enableBit('logWallE')
+        }
+        if (logWallW) {
+          visProps.enableBit('logWallW')
+        }
+        if (logWallN) {
+          visProps.enableBit('logWallN')
+        }
+        if (logWallS) {
+          visProps.enableBit('logWallS')
+        }
+      }
+
       const propMaskBricks = metaProps.makeFastMask('bricks')
       if (metaProps.hasFast(propMaskBricks)) {
         const bricksS = metaPropsN.hasFast(propMaskBricks)

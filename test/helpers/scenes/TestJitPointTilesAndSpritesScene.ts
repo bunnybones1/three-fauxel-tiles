@@ -446,9 +446,53 @@ function makeKeyboardUpdater(
     } else if (angle > Math.PI) {
       angle -= Math.PI * 2
     }
-    const steppedAngle =
-      (Math.round((angle / Math.PI / 2) * 16) / 16) * Math.PI * 2
-    this.angle = steppedAngle
+    this.angle = angle
+
+    if (this.grabbed) {
+      // const coord = getCoordInFrontOfPlayer(this)
+      const dx = this.grabbed.x - this.x
+      const dy = this.grabbed.y - this.y
+      const angleOfGrabbed = Math.atan2(dy, dx)
+      const dist = Math.sqrt(dx * dx + dy * dy)
+
+      let angleDelta = angleOfGrabbed - angle + Math.PI * 0.5
+      if (angleDelta < -Math.PI) {
+        angleDelta += Math.PI * 2
+      } else if (angleDelta > Math.PI) {
+        angleDelta -= Math.PI * 2
+      }
+      let newX = 0
+      let newY = 0
+      let newAngle = 0
+      if (angleDelta < Math.PI * 0.45 && angleDelta > Math.PI * -0.45) {
+        newAngle = angle + Math.PI * -0.5
+      } else {
+        newAngle = angle + Math.PI * 0.5
+      }
+      newX = this.grabbed.x - Math.cos(newAngle) * dist
+      newY = this.grabbed.y - Math.sin(newAngle) * dist
+      this.x = lerp(this.x, newX, 0.1)
+      this.y = lerp(this.y, newY, 0.1)
+
+      // let adjustedAngle = angleOfGrabbed
+      // if (angleDelta < -0.1) {
+      //   adjustedAngle += 0.05
+      // } else if (angleDelta > 0.1) {
+      //   adjustedAngle -= 0.05
+      // }
+      // console.log(adjustedAngle)
+
+      // const coord = new Vector2()
+      // coord.x = this.x + Math.cos(adjustedAngle) * dist
+      // coord.y = this.y + Math.sin(adjustedAngle) * dist
+
+      // // this.grabbed.x = lerp(this.grabbed.x, coord.x, 0.5)
+      // // this.grabbed.y = lerp(this.grabbed.y, coord.y, 0.5)
+      // this.x = this.grabbed.x - Math.cos(angle + Math.PI * -0.5) * dist
+      // this.y = this.grabbed.y - Math.sin(angle + Math.PI * -0.5) * dist
+      // this.grabbed.x = coord.x
+      // this.grabbed.y = coord.y
+    }
   }
 }
 
@@ -1034,7 +1078,9 @@ export default class TestJitPointTilesAndSpritesScene extends BaseTestScene {
       s.z = tc.z
       s.animTime = tc.animTime
       s.angle =
-        (~~(wrap(tc.angle / (Math.PI * 2), 0, 1) * 16) / 16) * Math.PI * 2
+        (Math.round(wrap(tc.angle / (Math.PI * 2), 0, 1) * 16) / 16) *
+        Math.PI *
+        2
     }
     for (let i = 0; i < this._lightControllers.length; i++) {
       const tc = this._lightControllers[i]
@@ -1206,6 +1252,8 @@ function rigHarvestAction(
           const tileMeta = metaTileSampler.sampleMeta(coord.x, coord.y).clone()
           if (!tileMeta.has('floor')) {
             tileMeta.enableBit('floor')
+          } else if (!tileMeta.has('logWall') && !tileMeta.has('beam')) {
+            tileMeta.enableBit('logWall')
           } else if (!tileMeta.has('beam')) {
             tileMeta.enableBit('beam')
           } else if (!tileMeta.has('bricks')) {
