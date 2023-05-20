@@ -10,7 +10,9 @@ export default class BaseTest2DScene extends BaseTestScene {
   constructor() {
     super()
     this.camera = new OrthographicCamera(-1, 1, 1, -1, -1, 1)
-    const transform = getMouseBoundViewTransform('viewTransformTestBase2DScene')
+    const transform = getMouseBoundViewTransform(
+      'viewTransformTestBase2DScene2'
+    )
     this._transform = transform
   }
   update(dt: number) {

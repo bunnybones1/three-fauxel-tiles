@@ -1204,8 +1204,8 @@ function rigHarvestAction(
 
           const x = coord.x
           const y = coord.y
-          const otx = Math.floor(x - spriteSize)
-          const oty = Math.floor(y - spriteSize)
+          const otx = Math.floor(x - grabDistance)
+          const oty = Math.floor(y - grabDistance)
           for (let ix = 0; ix < 2; ix++) {
             for (let iy = 0; iy < 2; iy++) {
               const tx = otx + ix
@@ -1222,7 +1222,7 @@ function rigHarvestAction(
                     const dy = y - other.y
                     const dist = Math.max(0.01, Math.sqrt(dx * dx + dy * dy))
                     console.log(dist)
-                    if (dist < spriteSize) {
+                    if (dist < grabDistance) {
                       ;(player as any).grabbed = other
                     }
                   }
@@ -1273,6 +1273,18 @@ function rigHarvestAction(
             tileMeta.disableBit('bricks')
           } else if (tileMeta.has('beam')) {
             tileMeta.disableBit('beam')
+          } else if (tileMeta.has('logWall') && !tileMeta.has('window')) {
+            tileMeta.enableBit('window')
+          } else if (
+            tileMeta.has('logWall') &&
+            tileMeta.has('window') &&
+            !tileMeta.has('door')
+          ) {
+            tileMeta.enableBit('door')
+          } else if (tileMeta.has('logWall')) {
+            tileMeta.disableBit('logWall')
+            tileMeta.disableBit('window')
+            tileMeta.disableBit('door')
           } else if (tileMeta.has('floor')) {
             tileMeta.disableBit('floor')
           }

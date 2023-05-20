@@ -112,6 +112,10 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
     'logWallW',
     'logWallNS',
     'logWallEW',
+    'logDoorNS',
+    'logDoorEW',
+    'logWindowNS',
+    'logWindowEW',
     'beamCenter',
     'beamN',
     'beamE',
@@ -558,6 +562,52 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
 
     const logWallFullSectionNS = () => {
       const obj = logWallFullSectionEW().clone(true)
+      obj.rotation.y += Math.PI * 0.5
+      obj.position.y -= logWallLogRadius
+      return obj
+    }
+
+    const excludeLogDoorIds = [1, 2, 3]
+    const makeLogWallDoorSectionEW = () => {
+      const logWallFullSectionEW = new Object3D()
+      for (let i = 1; i < logWallHeight; i++) {
+        if (excludeLogDoorIds.includes(i)) {
+          continue
+        }
+        const log = makeLog(logWallLogRadius, 32)
+        log.rotation.y = Math.PI * 0.5
+        logWallFullSectionEW.add(log)
+        log.position.y = i * logWallLogRadius * 2
+      }
+      return logWallFullSectionEW
+    }
+    const logWallDoorSectionEW = makeLogWallDoorSectionEW
+
+    const logWallDoorSectionNS = () => {
+      const obj = logWallDoorSectionEW().clone(true)
+      obj.rotation.y += Math.PI * 0.5
+      obj.position.y -= logWallLogRadius
+      return obj
+    }
+
+    const excludeLogWindowIds = [2, 3]
+    const makeLogWallWindowSectionEW = () => {
+      const logWallFullSectionEW = new Object3D()
+      for (let i = 1; i < logWallHeight; i++) {
+        if (excludeLogWindowIds.includes(i)) {
+          continue
+        }
+        const log = makeLog(logWallLogRadius, 32)
+        log.rotation.y = Math.PI * 0.5
+        logWallFullSectionEW.add(log)
+        log.position.y = i * logWallLogRadius * 2
+      }
+      return logWallFullSectionEW
+    }
+    const logWallWindowSectionEW = makeLogWallWindowSectionEW
+
+    const logWallWindowSectionNS = () => {
+      const obj = logWallWindowSectionEW().clone(true)
       obj.rotation.y += Math.PI * 0.5
       obj.position.y -= logWallLogRadius
       return obj
@@ -1190,6 +1240,10 @@ export default class MapTileMaker extends DoubleCachedTileMaker {
       logWallW,
       logWallFullSectionNS,
       logWallFullSectionEW,
+      logWallDoorSectionNS,
+      logWallDoorSectionEW,
+      logWallWindowSectionNS,
+      logWallWindowSectionEW,
       beamCenter,
       beamN,
       beamE,

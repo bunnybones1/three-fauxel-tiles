@@ -1,83 +1,32 @@
 import { BufferGeometry } from 'three'
-import AdditiveGroupHelper2D from '../../../helpers/utils/AdditiveGroupHelper2D'
-import ClampHelper2D from '../../../helpers/utils/ClampHelper2D'
-import { simpleThreshNoise } from '../../../helpers/utils/helper2DFactory'
+import AdditiveGroupHelper3D from '../../../helpers/utils/AdditiveGroupHelper3D'
+import ClampHelper3D from '../../../helpers/utils/ClampHelper3D'
+import { simpleThreshNoise } from '../../../helpers/utils/helper3DFactory'
 import NamedBitsInBytes from '../../../helpers/utils/NamedBitsInBytes'
 import NamedBitsInNumber from '../../../helpers/utils/NamedBitsInNumber'
-import NoiseHelper2D from '../../../helpers/utils/NoiseHelper2D'
-import StepHelper2D from '../../../helpers/utils/StepHelper2D'
-import InvertHelper2D from '../../../helpers/utils/InvertHelper2D'
+import NoiseHelper3D from '../../../helpers/utils/NoiseHelper3D'
+import StepHelper3D from '../../../helpers/utils/StepHelper3D'
+import InvertHelper3D from '../../../helpers/utils/InvertHelper3D'
 import { CardinalStrings } from '../../../meshes/factorySand'
 import { wrap } from '../../../utils/math'
 
 import MapTileMaker from './MapTileMaker'
 import LocalStorageMap from '../../../utils/LocalStorageMap'
-import BoxFilterHelper2D from '../../../helpers/utils/BoxFilterHelper2D'
+import BoxFilterHelper3D from '../../../helpers/utils/BoxFilterHelper3D'
 
-const metaTileStrings = [
-  'water',
-  'dirt',
-  'sand',
-  'beach',
-  'floor',
-  'logWall',
-  'beam',
-  'bricks',
-  'drywall',
-  'grass',
-  'bush',
-  'goldPile',
-  'lampPost',
-  'testObject',
-  'pyramid',
-  'rockyGround',
-  'rocks',
-  'goldOreForRocks',
-  'silverOreForRocks',
-  'ironOreForRocks',
-  'copperOreForRocks',
-  'harvested',
-  'treePine',
-  'maturePlant',
-  'treeMaple'
-] as const
+const metaTileStrings = ['dirt', 'sand', 'rocks'] as const
 
 type MetaTile = typeof metaTileStrings[number]
 
-type BottomAndTopIds = {
-  idTop: number
-  idBottom: number
-}
-
 type NamedMetaBits = NamedBitsInNumber<typeof metaTileStrings>
 
-const __animFrameTimes = ['0', '1', '2', '3'] as const
-
 export default class JITTileSampler {
-  onTileMade = (index: number) => {
-    this.indicesOfNewlyMadeTiles.add(index)
-    this.dirty = true
-  }
-  dirty: boolean
   indicesOfMadeTiles: Set<number> = new Set()
-  indicesOfNewlyMadeTiles: Set<number> = new Set()
-  private _animFrame: number
-  public get animFrame(): number {
-    return this._animFrame
-  }
-  public set animFrame(value: number) {
-    if (value === this._animFrame) {
-      return
-    }
-    this.dirty = true
-    this._animFrame = value
-  }
   get offsetX(): number {
     return this._offsetX
   }
   set offsetX(value: number) {
     this._offsetsDirty = true
-    this.dirty = true
     this._offsetX = value
   }
   get offsetY(): number {
@@ -85,7 +34,6 @@ export default class JITTileSampler {
   }
   set offsetY(value: number) {
     this._offsetsDirty = true
-    this.dirty = true
     this._offsetY = value
   }
   get tileMaker(): MapTileMaker {
@@ -94,7 +42,7 @@ export default class JITTileSampler {
   set tileMaker(value: MapTileMaker) {
     throw new Error('Cannot change tileMaker during runtime')
   }
-  metaNoiseGenerators: StepHelper2D[]
+  metaNoiseGenerators: StepHelper3D[]
   bytesPerTile: number
   metaRawCache: Map<string, NamedMetaBits> = new Map() //maybe change this caching mechanism for something more memory friendly. e.i. Map<number, <Map<number, number>> ?
   metaCache: LocalStorageMap<string, NamedMetaBits> = new LocalStorageMap(
@@ -105,15 +53,6 @@ export default class JITTileSampler {
   dirtyVis: Set<string> = new Set()
   private _offsetX = 0
   private _offsetY = 0
-  private _offsetsDirty: boolean
-  get offsetsDirty(): boolean {
-    return this._offsetsDirty
-  }
-  set offsetsDirty(value: boolean) {
-    this._offsetsDirty = value
-  }
-  private _offsetXOld = 0
-  private _offsetYOld = 0
   constructor(
     private _tileMaker: MapTileMaker,
     private _viewWidthInTiles: number,
@@ -360,6 +299,9 @@ export default class JITTileSampler {
 
     if (!val.has('floor') && val.has('beam')) {
       val.flipBit('beam')
+    }
+    if (!val.has('floor') && val.has('logWall')) {
+      val.flipBit('logWall')
     }
     if (val.has('beam') && val.has('logWall')) {
       val.flipBit('logWall')
@@ -807,26 +749,43 @@ export default class JITTileSampler {
       const logWallS = metaPropsS.hasFast(propMaskLogWall)
       const logWallW = metaPropsW.hasFast(propMaskLogWall)
       if (logWallC) {
+        let fullWall = false
         if (logWallE && logWallW) {
-          visProps.enableBit('logWallEW')
+          fullWall = true
+          if (metaProps.has('window')) {
+            visProps.enableBit('logWindowEW')
+          } else if (metaProps.has('door')) {
+            visProps.enableBit('logDoorEW')
+          } else {
+            visProps.enableBit('logWallEW')
+          }
         }
         if (logWallS && logWallN) {
-          visProps.enableBit('logWallNS')
+          fullWall = true
+          if (metaProps.has('window')) {
+            visProps.enableBit('logWindowNS')
+          } else if (metaProps.has('door')) {
+            visProps.enableBit('logDoorNS')
+          } else {
+            visProps.enableBit('logWallNS')
+          }
         }
         if (!logWallE && !logWallW && !logWallN && !logWallS) {
           visProps.enableBit('logWallCenter')
         }
-        if (logWallE) {
-          visProps.enableBit('logWallE')
-        }
-        if (logWallW) {
-          visProps.enableBit('logWallW')
-        }
-        if (logWallN) {
-          visProps.enableBit('logWallN')
-        }
-        if (logWallS) {
-          visProps.enableBit('logWallS')
+        if (!fullWall) {
+          if (logWallE) {
+            visProps.enableBit('logWallE')
+          }
+          if (logWallW) {
+            visProps.enableBit('logWallW')
+          }
+          if (logWallN) {
+            visProps.enableBit('logWallN')
+          }
+          if (logWallS) {
+            visProps.enableBit('logWallS')
+          }
         }
       }
 

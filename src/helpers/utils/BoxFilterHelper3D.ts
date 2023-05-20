@@ -1,8 +1,8 @@
-import IHelper2D from './IHelper2D'
+import IHelper3D from './IHelper3D'
 
-export default class BoxFilterHelper2D implements IHelper2D {
+export default class BoxFilterHelper3D implements IHelper3D {
   constructor(
-    private _helper: IHelper2D,
+    private _helper: IHelper3D,
     private _minX = -16,
     private _maxX = 16,
     private _minY = _minX,
