@@ -8,6 +8,7 @@ import { SimplexNoiseMaterial } from './materials/SimplexNoiseMaterial'
 import { BasicTextureMaterial } from './materials/BasicTextureMaterial'
 import FibonacciSphereGeometry from './geometries/FibonacciSphereGeometry'
 import { getMeshMaterial } from './helpers/materials/materialLib'
+import { PegboardMesh } from './helpers/meshes/PegboardMesh'
 import { LightController } from './mapCache/PointLightRenderer'
 import { SpriteController } from './rendering/tileMaker/spriteMaker/JITSpriteSampler'
 import { createMapCacheViewPlane } from './helpers/utils/createMapCacheViewPlane'
@@ -25,6 +26,7 @@ export default {
   LightController,
   SpriteController,
   getMeshMaterial,
+  PegboardMesh,
   materials: {
     BasicFullScreenMaterial,
     SimplexNoiseMaterial,

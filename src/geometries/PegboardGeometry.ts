@@ -1,8 +1,6 @@
 import { BufferAttribute, BufferGeometry, Vector3 } from 'three'
 import { lerp, rand, rand2, unlerp } from '../utils/math'
 
-import { listenToProperty } from '../utils/propertyListeners'
-
 const __tileIndexOffsetLookup = {
   x: [
     [0.25, 0],
@@ -71,6 +69,8 @@ const __windings = [
 const __leftOrRightTriangle = [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]
 
 export default class PegboardGeometry extends BufferGeometry {
+  playerCoord = new Vector3(-5, 7, -3)
+
   constructor() {
     super()
 
@@ -118,28 +118,17 @@ export default class PegboardGeometry extends BufferGeometry {
     const colorAttr = new BufferAttribute(colorArr, 1)
     this.setAttribute('color', colorAttr)
     const sphereCenter = new Vector3(0, 0, -5)
-    const testCoord = new Vector3(-5, 7, 0)
-    const tempVal = { x: 0, y: 0, z: 0 }
-    listenToProperty(tempVal, 'x', (x) => {
-      testCoord.x = x
-    })
-    listenToProperty(tempVal, 'y', (y) => {
-      testCoord.y = y
-    })
-    listenToProperty(tempVal, 'z', (z) => {
-      testCoord.z = z
-    })
-
-    window.addEventListener('mousemove', (e) => {
-      tempVal.x = Math.round((e.clientX / window.innerWidth) * 20) - 10
-      tempVal.y = -(Math.round((e.clientY / window.innerHeight) * 20) - 10)
-    })
+    const playerCoord = this.playerCoord
 
     const vx = new Vector3()
     const vy = new Vector3()
     const vxy = new Vector3()
+    const vxy2 = new Vector3()
+
+    const snappedPlayerCoord = new Vector3()
 
     function updateGeometry() {
+      snappedPlayerCoord.copy(playerCoord).round()
       for (let ic = 0; ic < colorArr.length; ic++) {
         colorArr[ic] = rand()
       }
@@ -176,7 +165,7 @@ export default class PegboardGeometry extends BufferGeometry {
             .add(vy)
             .add(__offsets[windex])
             .sub(centerView)
-            .sub(testCoord)
+            .add(snappedPlayerCoord)
             .round()
           vxy.z -= Math.floor(iy / 6) //hack: no idea why this is necessary
           // let c = 0.3
@@ -188,9 +177,11 @@ export default class PegboardGeometry extends BufferGeometry {
           const depthToGo = size + predepth
           let occupied = false
           let purple = false
+          let green = false
+          let green2 = false
           for (let d = 1; d <= depthToGo; d++) {
             const onGrid = vxy.y % 8 === 0 || vxy.x % 8 === 0
-            if (onGrid && vxy.z === -5) {
+            if (onGrid && (vxy.z + 5) % 16 === 0) {
               occupied = true
               //
             } else if (
@@ -199,6 +190,16 @@ export default class PegboardGeometry extends BufferGeometry {
             ) {
               occupied = true
               purple = true
+            } else if (vxy.distanceTo(snappedPlayerCoord) < 1) {
+              occupied = true
+              green = true
+            } else {
+              vxy2.copy(vxy)
+              vxy2.z++
+              if (vxy2.distanceTo(snappedPlayerCoord) < 1) {
+                occupied = true
+                green2 = true
+              }
             }
             if (occupied) {
               // c = __colorLookup[axis]
@@ -223,9 +224,17 @@ export default class PegboardGeometry extends BufferGeometry {
             }
           }
           let indexX = tileIndex[0]
-          const indexY = tileIndex[1]
+          let indexY = tileIndex[1]
           if (!purple) {
-            indexX += 0.5
+            if (green) {
+              indexX += 0.25
+              indexY += 24 / 80
+            } else if (green2) {
+              indexY += 48 / 80
+            } else {
+              indexX += 0.5
+              indexY += 48 / 80
+            }
           }
           tileIndexArr[i6] = indexX
           tileIndexArr[i6 + 1] = indexY
