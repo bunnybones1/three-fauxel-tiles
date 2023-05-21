@@ -3,12 +3,6 @@ import { lerp, rand, rand2, unlerp } from '../utils/math'
 
 import { listenToProperty } from '../utils/propertyListeners'
 
-const __axisLookup = ['x', 'y', 'z']
-const __colorLookup = {
-  x: 0.5,
-  y: 0.8,
-  z: 1.2
-}
 const __tileIndexOffsetLookup = {
   x: [
     [0.25, 0],
@@ -61,16 +55,11 @@ const __windings = [
   '+z+x+y'
 ]
 
-const __leftOrRight = [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]
+const __leftOrRightTriangle = [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]
 
 export default class PegboardGeometry extends BufferGeometry {
   constructor() {
     super()
-
-    const dCutoff = 0
-    // window.addEventListener('mousemove', (e) => {
-    //   dCutoff = Math.round((e.clientX / window.innerWidth) * 30)
-    // })
 
     const size = 32
     const cells = size * size
@@ -129,21 +118,15 @@ export default class PegboardGeometry extends BufferGeometry {
 
     const vx = new Vector3()
     const vy = new Vector3()
-    const v = new Vector3()
+    const vxy = new Vector3()
 
-    let frame = 0
-
-    function makeColors() {
+    function updateGeometry() {
       for (let ic = 0; ic < colorArr.length; ic++) {
         colorArr[ic] = rand()
       }
       const now = performance.now()
       const radius = lerp(1, 6, unlerp(-1, 1, Math.sin(now * 0.001)))
       const radiusSq = radius * radius
-
-      // tempVal.z = Math.round(
-      //   lerp(-1, 5, unlerp(-1, 1, Math.sin(now * 0.001)))
-      // )
 
       const centerView = new Vector3()
       const halfSize = size * 0.5
@@ -169,48 +152,32 @@ export default class PegboardGeometry extends BufferGeometry {
           const hy = iy / 3
           vx.set(hx, hx, 0)
           vy.set(-hy, hy, hy)
-          // v.copy(vx).add(vy).round()
-          v.copy(vx)
+          vxy
+            .copy(vx)
             .add(vy)
             .add(__offsets[windex])
             .sub(centerView)
             .sub(testCoord)
             .round()
-          v.z -= Math.floor(iy / 6) //hack: no idea why this is necessary
-          // v.z += oy
-          // v.x -= ox
-          // v.y -= ox
+          vxy.z -= Math.floor(iy / 6) //hack: no idea why this is necessary
           // let c = 0.3
           let c = 0
-          if (frame === 0 && ix < 2 && iy < 24) {
-            console.log(
-              `${ix} ${iy}, ${hx.toFixed(2)} ${hy.toFixed(2)}, ${v.toArray()}`
-            )
-            // const t = wholeCoords[wholeLookup[windex]].clone().sub(v).round()
-            // console.log(windex)
-            // const t = wholeCoords[wholeLookup[windex]]
-            // console.log(`v(${t.x}, ${t.y}, ${t.z}),`)
-            // console.log(`${ix} ${iy}, v(${v.x}, ${v.y}, ${v.z}),`)
-          }
 
           const winding = __windings[windex]
           let iSub = 0
           let axis = winding[1]
           const depthToGo = size + predepth
           for (let d = 1; d <= depthToGo; d++) {
-            // if(ix === 0 && iy === 0) {
-            //   console.log(v.toArray())
-            // }
+            const onGrid = vxy.y % 8 === 0 || vxy.x % 8 === 0
             if (
-              v.distanceToSquared(sphereCenter) < radiusSq ||
-              d === dCutoff ||
-              (v.y % 8 === 0 && v.z === -5) ||
-              (v.x % 8 === 0 && v.z === -5)
+              (vxy.distanceToSquared(sphereCenter) < radiusSq &&
+                !(onGrid && (vxy.z === -4 || vxy.z === -3))) ||
+              (onGrid && vxy.z === -5)
             ) {
-              // const c = o
               // c = __colorLookup[axis]
               c = 1
-              tileIndex = __tileIndexOffsetLookup[axis][__leftOrRight[windex]]
+              tileIndex =
+                __tileIndexOffsetLookup[axis][__leftOrRightTriangle[windex]]
               break
             }
 
@@ -219,10 +186,10 @@ export default class PegboardGeometry extends BufferGeometry {
 
             switch (winding[iSub]) {
               case '+':
-                v[axis] += __drillDir[axis]
+                vxy[axis] += __drillDir[axis]
                 break
               case '-':
-                v[axis] -= __drillDir[axis]
+                vxy[axis] -= __drillDir[axis]
                 break
               default:
                 throw new Error('not a + or -')
@@ -239,11 +206,10 @@ export default class PegboardGeometry extends BufferGeometry {
           colorArr[i3 + 2] = rand2(0, c)
         }
       }
-      frame++
     }
-    makeColors()
+    updateGeometry()
     setInterval(() => {
-      makeColors()
+      updateGeometry()
       colorAttr.needsUpdate = true
       tileIndexAttr.needsUpdate = true
     }, 16)
