@@ -6,17 +6,30 @@ import { listenToProperty } from '../utils/propertyListeners'
 const __tileIndexOffsetLookup = {
   x: [
     [0.25, 0],
-    [0.25, -1 / 4]
+    [0.25, -0.25]
   ],
   y: [
-    [-0.25, -1 / 4],
+    [-0.25, -0.25],
     [-0.25, 0]
   ],
   z: [
-    [-0.25, 1 / 4],
-    [0.25, 1 / 4]
+    [-0.25, 0.25],
+    [0.25, 0.25]
   ]
 }
+
+const __scale = [32 / 64, 32 / 80]
+function prescale(allNums: number[][]) {
+  for (const nums of allNums) {
+    nums[0] *= __scale[0]
+    nums[1] *= __scale[1]
+  }
+}
+
+prescale(__tileIndexOffsetLookup.x)
+prescale(__tileIndexOffsetLookup.y)
+prescale(__tileIndexOffsetLookup.z)
+
 const __drillDir = {
   x: -1,
   y: 1,
@@ -68,6 +81,12 @@ export default class PegboardGeometry extends BufferGeometry {
     const positionTemplates = [positionTemplate1, positionTemplate2]
     const uvTemplate1 = new Float32Array([0.75, 0.25, 0.25, 0.5, 0.75, 0.75])
     const uvTemplate2 = new Float32Array([0.25, 0.25, 0.75, 0.5, 0.25, 0.75])
+    for (let i2 = 0; i2 < uvTemplate1.length; i2 += 2) {
+      uvTemplate1[i2] *= __scale[0]
+      uvTemplate1[i2 + 1] *= __scale[1]
+      uvTemplate2[i2] *= __scale[0]
+      uvTemplate2[i2 + 1] *= __scale[1]
+    }
     // const uvTemplate1 = new Float32Array([1, 0, 0, 0.5, 1, 1])
     // const uvTemplate2 = new Float32Array([0, 0, 1, 0.5, 0, 1])
     const uvTemplates = [uvTemplate1, uvTemplate2]
@@ -167,13 +186,21 @@ export default class PegboardGeometry extends BufferGeometry {
           let iSub = 0
           let axis = winding[1]
           const depthToGo = size + predepth
+          let occupied = false
+          let purple = false
           for (let d = 1; d <= depthToGo; d++) {
             const onGrid = vxy.y % 8 === 0 || vxy.x % 8 === 0
-            if (
-              (vxy.distanceToSquared(sphereCenter) < radiusSq &&
-                !(onGrid && (vxy.z === -4 || vxy.z === -3))) ||
-              (onGrid && vxy.z === -5)
+            if (onGrid && vxy.z === -5) {
+              occupied = true
+              //
+            } else if (
+              vxy.distanceToSquared(sphereCenter) < radiusSq &&
+              !(onGrid && (vxy.z === -4 || vxy.z === -3))
             ) {
+              occupied = true
+              purple = true
+            }
+            if (occupied) {
               // c = __colorLookup[axis]
               c = 1
               tileIndex =
@@ -195,12 +222,17 @@ export default class PegboardGeometry extends BufferGeometry {
                 throw new Error('not a + or -')
             }
           }
-          tileIndexArr[i6] = tileIndex[0]
-          tileIndexArr[i6 + 1] = tileIndex[1]
-          tileIndexArr[i6 + 2] = tileIndex[0]
-          tileIndexArr[i6 + 3] = tileIndex[1]
-          tileIndexArr[i6 + 4] = tileIndex[0]
-          tileIndexArr[i6 + 5] = tileIndex[1]
+          let indexX = tileIndex[0]
+          const indexY = tileIndex[1]
+          if (!purple) {
+            indexX += 0.5
+          }
+          tileIndexArr[i6] = indexX
+          tileIndexArr[i6 + 1] = indexY
+          tileIndexArr[i6 + 2] = indexX
+          tileIndexArr[i6 + 3] = indexY
+          tileIndexArr[i6 + 4] = indexX
+          tileIndexArr[i6 + 5] = indexY
           colorArr[i3] = rand2(0, c)
           colorArr[i3 + 1] = rand2(0, c)
           colorArr[i3 + 2] = rand2(0, c)

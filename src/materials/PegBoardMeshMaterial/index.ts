@@ -34,7 +34,7 @@ export default class PegboardMeshMaterial extends RawShaderMaterial {
   ) {
     const params = buildParameters(__defaultParams, options)
     const uTexture = new Uniform(getTempTexture())
-    loadTexture('game/tilemaps/stone.png').then((tex) => {
+    loadTexture('game/tilemaps/test-blocks.png').then((tex) => {
       uTexture.value = tex
       tex.magFilter = tex.minFilter = NearestFilter
     })
