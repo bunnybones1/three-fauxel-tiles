@@ -9,6 +9,9 @@ import { BasicTextureMaterial } from './materials/BasicTextureMaterial'
 import FibonacciSphereGeometry from './geometries/FibonacciSphereGeometry'
 import { getMeshMaterial } from './helpers/materials/materialLib'
 import { PegboardMesh } from './helpers/meshes/PegboardMesh'
+import LandscapeTileIndex3D from './helpers/utils/LandscapeTileIndex3D'
+import Memoize3D from './helpers/utils/Memoize3D'
+import { TILES } from './helpers/utils/tilesEnum'
 import { LightController } from './mapCache/PointLightRenderer'
 import { SpriteController } from './rendering/tileMaker/spriteMaker/JITSpriteSampler'
 import { createMapCacheViewPlane } from './helpers/utils/createMapCacheViewPlane'
@@ -27,6 +30,9 @@ export default {
   SpriteController,
   getMeshMaterial,
   PegboardMesh,
+  LandscapeTileIndex3D,
+  Memoize3D,
+  TILES,
   materials: {
     BasicFullScreenMaterial,
     SimplexNoiseMaterial,

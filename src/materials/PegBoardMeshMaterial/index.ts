@@ -5,6 +5,8 @@ import {
   NearestFilter,
   RawShaderMaterial,
   Uniform,
+  Vector2,
+  Vector3,
   Vector4
 } from 'three'
 import { buildParameters } from '../../utils/jsUtils'
@@ -20,10 +22,12 @@ import fragmentShader from './frag.glsl'
 import vertexShader from './vert.glsl'
 
 interface Parameters {
+  smoothOffset: Vector2
   data: Vector4
 }
 
 const __defaultParams: Parameters = {
+  smoothOffset: new Vector2(),
   data: new Vector4(0.5, 0.5, 0.5, 0.5)
 }
 
@@ -40,7 +44,8 @@ export default class PegboardMeshMaterial extends RawShaderMaterial {
     })
     const uniforms = {
       texture: uTexture,
-      color: new Uniform(params.data)
+      color: new Uniform(params.data),
+      smoothOffset: new Uniform(params.smoothOffset)
     }
 
     const defines = {} as any

@@ -27,4 +27,10 @@ export default class NoiseHelper3D implements IHelper3D {
       this._offset
     )
   }
+  invalidate(x: number, y: number, z: number) {
+    //
+  }
+  setValue(x: number, y: number, z: number, value: number) {
+    //
+  }
 }
